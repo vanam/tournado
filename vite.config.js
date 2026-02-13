@@ -9,13 +9,12 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       injectRegister: null,
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       manifest: false,
       workbox: {
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        skipWaiting: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       },
     }),

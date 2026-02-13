@@ -202,6 +202,10 @@ export const en: TranslationMap = {
   'notFound.title': 'Page Not Found',
   'notFound.message': 'The page you are looking for does not exist.',
   'notFound.backHome': 'Back to Home',
+
+  'toast.newVersion': 'New version available',
+  'toast.reload': 'Reload',
+  'toast.dismiss': 'Dismiss',
 };
 
 export const cs: TranslationMap = {
@@ -408,6 +412,10 @@ export const cs: TranslationMap = {
   'notFound.title': 'Stránka nenalezena',
   'notFound.message': 'Stránka, kterou hledáte, neexistuje.',
   'notFound.backHome': 'Zpět na úvod',
+
+  'toast.newVersion': 'K dispozici je nová verze',
+  'toast.reload': 'Obnovit',
+  'toast.dismiss': 'Zavřít',
 };
 
 export const de: TranslationMap = {
@@ -612,6 +620,10 @@ export const de: TranslationMap = {
   'notFound.title': 'Seite nicht gefunden',
   'notFound.message': 'Die gesuchte Seite existiert nicht.',
   'notFound.backHome': 'Zurück zur Startseite',
+
+  'toast.newVersion': 'Neue Version verfügbar',
+  'toast.reload': 'Neu laden',
+  'toast.dismiss': 'Schließen',
 };
 
 export const es: TranslationMap = {
@@ -816,4 +828,8 @@ export const es: TranslationMap = {
   'notFound.title': 'Página no encontrada',
   'notFound.message': 'La página que buscas no existe.',
   'notFound.backHome': 'Volver al Inicio',
+
+  'toast.newVersion': 'Nueva versión disponible',
+  'toast.reload': 'Recargar',
+  'toast.dismiss': 'Cerrar',
 };

@@ -14,7 +14,12 @@ if ('trustedTypes' in window) {
   })
 }
 
-registerSW({ immediate: true })
+const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    window.dispatchEvent(new CustomEvent('pwa-update-available', { detail: { updateSW } }));
+  },
+})
 
 const rootElement = document.querySelector('#root')
 if (!rootElement) {
