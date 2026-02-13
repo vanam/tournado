@@ -1,0 +1,12 @@
+node_modules
+dist
+dev-dist
+.env
+.env.*
+*.local
+
+
+.idea
+*.iml
+
+telemetry-id
