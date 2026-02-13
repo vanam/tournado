@@ -49,7 +49,7 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
             event.stopPropagation();
             onDelete(tournament.id);
           }}
-          className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] text-sm opacity-0 group-hover:opacity-100 transition-colors"
+          className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-colors"
         >
           {t('card.delete')}
         </button>

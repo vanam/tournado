@@ -60,7 +60,7 @@ export const RRMatchCard = ({
       }}
     >
       <span
-        className={`flex-1 text-right ${
+        className={`flex-1 text-right min-w-0 truncate text-xs sm:text-sm ${
           match.winnerId === match.player1Id ? 'font-semibold text-[var(--color-primary-dark)]' : ''
         }`}
       >
@@ -98,7 +98,7 @@ export const RRMatchCard = ({
         <span className="text-[var(--color-faintest)] text-xs min-w-[3rem] text-center">{t('score.vs')}</span>
       )}
       <span
-        className={`flex-1 ${
+        className={`flex-1 min-w-0 truncate text-xs sm:text-sm ${
           match.winnerId === match.player2Id ? 'font-semibold text-[var(--color-primary-dark)]' : ''
         }`}
       >

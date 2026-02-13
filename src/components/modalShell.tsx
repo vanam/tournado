@@ -78,7 +78,7 @@ export const ModalShell = ({
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <div
-      className={`fixed inset-0 bg-[var(--color-overlay)] backdrop-blur-[2px] flex items-center justify-center ${zIndexClass}`}
+      className={`fixed inset-0 bg-[var(--color-overlay)] backdrop-blur-[2px] flex items-center justify-center px-4 ${zIndexClass}`}
       role="dialog"
       aria-modal="true"
       tabIndex={-1}

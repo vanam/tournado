@@ -49,7 +49,7 @@ export const HomePage = (): ReactElement => {
           <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('home.title')}</h1>
           <p className="text-sm text-[var(--color-muted)] mt-1">{t('home.cta')}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {tournaments.length > 1 && (
             <button
               onClick={() => { setShowDeleteAll(true); }}
@@ -71,7 +71,12 @@ export const HomePage = (): ReactElement => {
         <div className="text-center py-16 text-[var(--color-subtle)]">
           <p className="text-4xl mb-4">&#127955;</p>
           <p className="text-lg font-medium mb-3">{t('home.noTournaments')}</p>
-          <p className="text-sm">{t('home.noTournamentsDesc')}</p>
+          <Link
+            to="/create"
+            className="inline-block bg-[var(--color-primary)] text-[var(--color-surface)] px-6 py-3 rounded-lg text-sm font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] transition-colors"
+          >
+            {t('home.noTournamentsDesc')}
+          </Link>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

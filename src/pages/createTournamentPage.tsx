@@ -167,7 +167,7 @@ export const CreateTournamentPage = (): ReactElement => {
           <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
             {t('create.formatLabel')}
           </label>
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
             {Object.values(FORMATS).map((f) => (
               <label
                 key={f}
@@ -195,7 +195,7 @@ export const CreateTournamentPage = (): ReactElement => {
           <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
             {t('create.scoringLabel')}
           </label>
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
             {Object.values(SCORE_MODES).map((mode) => (
               <label
                 key={mode}
@@ -304,7 +304,7 @@ export const CreateTournamentPage = (): ReactElement => {
               <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
                 {t('create.bracketTypeLabel')}
               </label>
-              <div className="flex gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
                 {Object.values(BRACKET_TYPES).map((bt) => (
                   <label
                     key={bt}

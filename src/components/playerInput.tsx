@@ -120,57 +120,61 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
           </div>
         )}
       </div>
-      <div className="flex gap-2 mb-3">
-        <input
-          type="text"
-          value={name}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-            setName(e.target.value);
-            setError('');
-          }}
-          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              addPlayer(e);
-            }
-          }}
-          placeholder={t('players.placeholder')}
-          className="flex-1 border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-        />
-        <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+      <div className="mb-3 space-y-2">
+        <div className="grid grid-cols-[1fr_auto] gap-2 sm:flex sm:gap-2">
           <input
-            type="checkbox"
-            checked={useElo}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => { setUseElo(e.target.checked); }}
-            className="accent-[var(--color-primary)]"
+            type="text"
+            value={name}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+              setName(e.target.value);
+              setError('');
+            }}
+            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addPlayer(e);
+              }
+            }}
+            placeholder={t('players.placeholder')}
+            className="min-w-0 sm:flex-1 border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
           />
-          {t('players.useElo')}
-        </label>
-        <input
-          type="number"
-          min="0"
-          value={elo}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-            setElo(e.target.value);
-            setError('');
-          }}
-          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              addPlayer(e);
-            }
-          }}
-          placeholder={t('players.eloPlaceholder')}
-          disabled={!useElo}
-          className="w-24 border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-40"
-        />
-        <button
-          type="button"
-          onClick={addPlayer}
-          className="bg-[var(--color-primary)] text-[var(--color-surface)] px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]"
-        >
-          {t('players.add')}
-        </button>
+          <button
+            type="button"
+            onClick={addPlayer}
+            className="bg-[var(--color-primary)] text-[var(--color-surface)] px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]"
+          >
+            {t('players.add')}
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+            <input
+              type="checkbox"
+              checked={useElo}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => { setUseElo(e.target.checked); }}
+              className="accent-[var(--color-primary)]"
+            />
+            {t('players.useElo')}
+          </label>
+          <input
+            type="number"
+            min="0"
+            value={elo}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+              setElo(e.target.value);
+              setError('');
+            }}
+            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addPlayer(e);
+              }
+            }}
+            placeholder={t('players.eloPlaceholder')}
+            disabled={!useElo}
+            className="w-24 border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-40"
+          />
+        </div>
       </div>
       {error && <p className="text-[var(--color-accent)] text-sm mb-2">{error}</p>}
       <ul className="space-y-1">

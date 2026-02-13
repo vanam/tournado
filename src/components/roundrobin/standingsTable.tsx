@@ -125,16 +125,16 @@ export const StandingsTable = ({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b-2 border-[var(--color-border)] text-left text-[var(--color-muted)]">
-            <th className="py-2.5 pr-3 text-xs uppercase tracking-wider font-semibold">{t('standings.rank')}</th>
-            <th className="py-2.5 pr-3 text-xs uppercase tracking-wider font-semibold">{t('standings.player')}</th>
-            <th className="py-2.5 pr-3 text-center text-xs uppercase tracking-wider font-semibold">{t('standings.played')}</th>
-            <th className="py-2.5 pr-3 text-center text-xs uppercase tracking-wider font-semibold">{t('standings.wins')}</th>
-            <th className="py-2.5 pr-3 text-center text-xs uppercase tracking-wider font-semibold">{t('standings.losses')}</th>
-            <th className="py-2.5 pr-3 text-center text-xs uppercase tracking-wider font-semibold">{t('standings.sets')}</th>
+            <th className="py-2.5 pr-2 sm:pr-3 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.rank')}</th>
+            <th className="py-2.5 pr-2 sm:pr-3 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.player')}</th>
+            <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.played')}</th>
+            <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.wins')}</th>
+            <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.losses')}</th>
+            <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.sets')}</th>
             {showBalls && (
-              <th className="py-2.5 pr-3 text-center text-xs uppercase tracking-wider font-semibold">{t('standings.balls')}</th>
+              <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.balls')}</th>
             )}
-            <th className="py-2.5 text-center text-xs uppercase tracking-wider font-semibold">{t('standings.points')}</th>
+            <th className="py-2.5 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.points')}</th>
           </tr>
         </thead>
         <tbody>

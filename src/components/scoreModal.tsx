@@ -219,10 +219,10 @@ export const ScoreModal = ({
         />
       )}
       <ModalShell onClose={onClose} onPrimaryAction={handleSave} primaryActionDisabled={!winner}>
-        <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
+        <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl p-6 w-full max-w-md">
           <h3 className="text-lg font-bold mb-5 pb-3 border-b border-[var(--color-border-soft)]">{t('score.title')}</h3>
           <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-4">
-            <div className="text-right font-medium text-sm">
+            <div className="text-right font-medium text-xs sm:text-sm min-w-0 truncate">
               {p1 ? (
                 <>
                   {p1.name}
@@ -235,7 +235,7 @@ export const ScoreModal = ({
               ) : null}
             </div>
             <div className="text-[var(--color-faint)] text-sm">{t('score.vs')}</div>
-            <div className="font-medium text-sm">
+            <div className="font-medium text-xs sm:text-sm min-w-0 truncate">
               {p2 ? (
                 <>
                   {p2.name}
@@ -362,7 +362,7 @@ export const ScoreModal = ({
             </p>
           )}
 
-          <div className="flex gap-2 justify-end pt-4 mt-2 border-t border-[var(--color-border-soft)]">
+          <div className="flex flex-wrap gap-2 justify-end pt-4 mt-2 border-t border-[var(--color-border-soft)]">
             {hasResult && (
               <button
                 onClick={handleClear}

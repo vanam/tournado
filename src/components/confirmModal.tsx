@@ -20,7 +20,7 @@ export const ConfirmModal = ({
 }: ConfirmModalProps): ReactElement => {
   return (
     <ModalShell onClose={onCancel} onPrimaryAction={onConfirm} zIndexClass="z-150">
-      <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
+      <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl p-6 w-full max-w-md">
         <h3 className="text-lg font-bold mb-2">{title}</h3>
         <p className="text-sm text-[var(--color-text)] mb-6">{message}</p>
         <div className="flex gap-2 justify-end">
