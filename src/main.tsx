@@ -4,6 +4,15 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import { App } from './app'
 import { LanguageProvider } from './i18n/languageContext'
+import { validateScriptURL } from './utils/scriptUrlValidation'
+
+const ALLOWED_ORIGINS = new Set([window.location.origin])
+
+if ('trustedTypes' in window) {
+  ;(window.trustedTypes as TrustedTypePolicyFactory).createPolicy('default', {
+    createScriptURL: (input: string) => validateScriptURL(input, ALLOWED_ORIGINS),
+  })
+}
 
 registerSW({ immediate: true })
 
