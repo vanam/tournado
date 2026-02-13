@@ -1,0 +1,27 @@
+{
+  "id": "tournado.com",
+  "name": "Tournado",
+  "short_name": "Tournado",
+  "lang": "en",
+  "dir": "ltr",
+  "description": "Table tennis tournament management app.",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/assets/favicon/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/favicon/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "theme_color": "#689FBD",
+  "background_color": "#689FBD",
+  "display": "standalone"
+}
