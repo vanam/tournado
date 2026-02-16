@@ -100,7 +100,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/components/**/*.{ts,tsx}', 'src/pages/**/*.{ts,tsx}'],
+    files: ['src/components/**/*.tsx', 'src/pages/**/*.tsx'],
     rules: {
       'unicorn/filename-case': [
         'error',

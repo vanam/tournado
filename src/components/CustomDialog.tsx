@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
@@ -29,7 +30,7 @@ export const CustomDialog = ({
   onPrimaryAction,
   primaryActionDisabled,
   children,
-}: Readonly<CustomDialogProps>): ReactNode => {
+}: Readonly<CustomDialogProps>): React.JSX.Element => {
   const { isTopModal } = useModalStack();
 
   useEffect(() => {
@@ -48,11 +49,10 @@ export const CustomDialog = ({
       }
     }
 
-    if (open) {
-      window.addEventListener('keydown', onKeyDown);
-      return (): void => { window.removeEventListener('keydown', onKeyDown); };
-    }
-    return undefined;
+    if (!open) return;
+
+    window.addEventListener('keydown', onKeyDown);
+    return (): void => { window.removeEventListener('keydown', onKeyDown); };
   }, [open, isTopModal, onOpenChange, onPrimaryAction, primaryActionDisabled]);
 
   return (
