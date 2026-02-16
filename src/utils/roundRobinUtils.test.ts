@@ -4,7 +4,7 @@ import {
   computeStandings,
   isScheduleComplete,
 } from './roundRobinUtils';
-import { SCORE_MODES } from '../constants';
+import { SCORE_MODES } from '../types';
 import type { Player, Match } from '../types';
 
 function makePlayers(n: number): Player[] {

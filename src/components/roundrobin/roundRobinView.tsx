@@ -9,8 +9,9 @@ import { FinalResultsTable } from '../common/finalResultsTable';
 import { computeStandings, isScheduleComplete } from '../../utils/roundRobinUtils';
 import { buildRoundRobinResults } from '../../utils/resultsUtils';
 import { useTranslation } from '../../i18n/useTranslation';
-import { SCORE_MODES, DEFAULT_MAX_SETS, FORMATS } from '../../constants';
+import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
+import { SCORE_MODES, FORMATS } from '../../types';
 import type { Match, RoundRobinTournament, SetScore } from '../../types';
 import { RoundSchedule } from './roundSchedule';
 

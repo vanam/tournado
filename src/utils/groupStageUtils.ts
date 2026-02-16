@@ -16,7 +16,7 @@ import {computeStandings, generateSchedule, isScheduleComplete} from './roundRob
 import {generateBracket, nextPowerOf2} from './bracketUtils';
 import {generateDoubleElim} from './doubleElimUtils';
 import {hasWalkover} from './scoreUtils';
-import {BRACKET_TYPES, SCORE_MODES} from '../constants';
+import {BRACKET_TYPES, SCORE_MODES} from '../types';
 
 const GROUP_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 

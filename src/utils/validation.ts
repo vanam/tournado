@@ -1,4 +1,4 @@
-import { FORMATS, BRACKET_TYPES, SCORE_MODES } from '../constants';
+import { FORMATS, BRACKET_TYPES, SCORE_MODES } from '../types';
 import type {
   Tournament,
   Player,
@@ -40,16 +40,16 @@ function isNullish(value: unknown): value is null | undefined {
   return value === null || value === undefined;
 }
 
-function isValidFormat(value: unknown): value is (typeof FORMATS)[keyof typeof FORMATS] {
-  return Object.values(FORMATS).includes(value as (typeof FORMATS)[keyof typeof FORMATS]);
+function isValidFormat(value: unknown): value is FORMATS {
+  return Object.values(FORMATS).includes(value as FORMATS);
 }
 
-function isValidBracketType(value: unknown): value is (typeof BRACKET_TYPES)[keyof typeof BRACKET_TYPES] {
-  return Object.values(BRACKET_TYPES).includes(value as (typeof BRACKET_TYPES)[keyof typeof BRACKET_TYPES]);
+function isValidBracketType(value: unknown): value is BRACKET_TYPES {
+  return Object.values(BRACKET_TYPES).includes(value as BRACKET_TYPES);
 }
 
-function isValidScoreMode(value: unknown): value is (typeof SCORE_MODES)[keyof typeof SCORE_MODES] {
-  return Object.values(SCORE_MODES).includes(value as (typeof SCORE_MODES)[keyof typeof SCORE_MODES]);
+function isValidScoreMode(value: unknown): value is SCORE_MODES {
+  return Object.values(SCORE_MODES).includes(value as SCORE_MODES);
 }
 
 function isValidSetScore(value: unknown): value is [number, number] {

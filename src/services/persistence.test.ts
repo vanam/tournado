@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPersistenceService, type PersistenceService } from './persistence';
 import { createMemoryStorageAdapter } from './memoryStorageAdapter';
-import { FORMATS } from '../constants';
+import { FORMATS } from '../types';
 import type { Tournament } from '../types';
 
 function makeTournament(id: string, name: string): Tournament {

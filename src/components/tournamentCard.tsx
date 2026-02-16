@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FORMATS } from '../constants';
 import { useTranslation } from '../i18n/useTranslation';
+import { FORMATS } from '../types';
 import type { Format, Tournament } from '../types';
 
 const FORMAT_KEYS: Record<Format, string> = {

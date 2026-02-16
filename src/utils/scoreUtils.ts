@@ -1,5 +1,6 @@
 import type { SetScore, ScoreMode } from '../types';
 import { MAX_POINTS } from '../components/scoreModal';
+import { SCORE_MODES } from '../types';
 
 export function isWalkoverScore(value: number | string): boolean {
   const numeric = Number(value);
@@ -35,7 +36,7 @@ export function getSetTotals(scores: SetScore[], options: SetTotalsOptions = {})
     return { p1Sets: 0, p2Sets: 0 };
   }
 
-  if (scoringMode === 'SETS') {
+  if (scoringMode === SCORE_MODES.SETS) {
     const first = validScores[0];
     if (!first) return { p1Sets: 0, p2Sets: 0 };
     const a = first[0];

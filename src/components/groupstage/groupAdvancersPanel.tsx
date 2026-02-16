@@ -2,7 +2,7 @@ import { useMemo, Fragment, useState, type ReactElement } from 'react';
 import type { Group, GroupAdvancerEntry, ScoreMode, StandingsRow } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 import { indexToGroupLabel } from '../../utils/groupStageUtils';
-import { SCORE_MODES } from '../../constants';
+import { SCORE_MODES } from '../../types';
 
 type TranslationFn = (key: string, params?: Record<string, string | number>) => string;
 

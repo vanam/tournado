@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { RRMatchCard } from './rrMatchCard';
 import { useTranslation } from '../../i18n/useTranslation';
-import { SCORE_MODES } from '../../constants';
+import { SCORE_MODES } from '../../types';
 import type { Match, Player, RoundRobinSchedule, ScoreMode } from '../../types';
 
 interface RoundScheduleProps {

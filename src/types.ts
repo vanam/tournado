@@ -1,8 +1,23 @@
-import type { BRACKET_TYPES, FORMATS, SCORE_MODES } from './constants';
+export enum FORMATS {
+  SINGLE_ELIM = 'SINGLE_ELIM',
+  DOUBLE_ELIM = 'DOUBLE_ELIM',
+  ROUND_ROBIN = 'ROUND_ROBIN',
+  GROUPS_TO_BRACKET = 'GROUPS_TO_BRACKET',
+}
 
-export type Format = (typeof FORMATS)[keyof typeof FORMATS];
-export type ScoreMode = (typeof SCORE_MODES)[keyof typeof SCORE_MODES];
-export type BracketType = (typeof BRACKET_TYPES)[keyof typeof BRACKET_TYPES];
+export enum BRACKET_TYPES {
+  SINGLE_ELIM = 'single_elim',
+  DOUBLE_ELIM = 'double_elim',
+}
+
+export enum SCORE_MODES {
+  SETS = 'SETS',
+  POINTS = 'POINTS',
+}
+
+export type Format = FORMATS;
+export type ScoreMode = SCORE_MODES;
+export type BracketType = BRACKET_TYPES;
 
 // --- Core Data ---
 
@@ -191,22 +206,22 @@ interface TournamentBase {
 }
 
 export interface SingleElimTournament extends TournamentBase {
-  format: typeof FORMATS.SINGLE_ELIM;
+  format: FORMATS.SINGLE_ELIM;
   bracket: Bracket;
 }
 
 export interface DoubleElimTournament extends TournamentBase {
-  format: typeof FORMATS.DOUBLE_ELIM;
+  format: FORMATS.DOUBLE_ELIM;
   doubleElim: DoubleElim;
 }
 
 export interface RoundRobinTournament extends TournamentBase {
-  format: typeof FORMATS.ROUND_ROBIN;
+  format: FORMATS.ROUND_ROBIN;
   schedule: RoundRobinSchedule;
 }
 
 export interface GroupsToBracketTournament extends TournamentBase {
-  format: typeof FORMATS.GROUPS_TO_BRACKET;
+  format: FORMATS.GROUPS_TO_BRACKET;
   groupStage: GroupStage;
   groupStagePlayoffs?: GroupStagePlayoffs | null;
   groupStageBrackets?: GroupStagePlayoffs | null;

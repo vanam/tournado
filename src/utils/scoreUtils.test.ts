@@ -7,7 +7,7 @@ import {
   hasWalkover,
   isWalkoverScore,
 } from './scoreUtils';
-import { SCORE_MODES } from '../constants';
+import { SCORE_MODES } from '../types';
 import type { SetScore } from '../types';
 
 describe('walkover helpers', () => {

@@ -1,7 +1,7 @@
 import { computeStandings } from './roundRobinUtils';
 import { getBracketWinner } from './bracketUtils';
 import { getDoubleElimWinner } from './doubleElimUtils';
-import { SCORE_MODES } from '../constants';
+import { SCORE_MODES } from '../types';
 import type { Player, Bracket, RoundRobinSchedule, StandingsRow, RankedResult, DoubleElim, ScoreMode, Match } from '../types';
 
 interface TieKeyRow {

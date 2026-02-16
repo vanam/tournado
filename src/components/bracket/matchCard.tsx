@@ -1,7 +1,7 @@
 import type { ReactElement, KeyboardEvent } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { formatSetPointEntries, getSetTotals, hasWalkover } from '../../utils/scoreUtils';
-import { SCORE_MODES } from '../../constants';
+import { SCORE_MODES } from '../../types';
 import type { Match, Player, ScoreMode } from '../../types';
 
 interface MatchCardProps {

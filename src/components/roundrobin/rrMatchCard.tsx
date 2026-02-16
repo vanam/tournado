@@ -7,7 +7,7 @@ import {
   hasWalkover,
   isWalkoverScore,
 } from '../../utils/scoreUtils';
-import { SCORE_MODES } from '../../constants';
+import { SCORE_MODES } from '../../types';
 import type { Match, Player, ScoreMode, SetScore } from '../../types';
 
 interface SetResultEntry {

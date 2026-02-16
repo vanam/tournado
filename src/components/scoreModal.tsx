@@ -3,8 +3,9 @@ import type { ChangeEvent, ReactElement } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import { ConfirmModal } from './confirmModal';
 import { ModalShell } from './modalShell';
-import { SCORE_MODES, DEFAULT_MAX_SETS } from '../constants';
+import { DEFAULT_MAX_SETS } from '../constants';
 import { getSetTotals, getWalkoverSetWinner, hasWalkover } from '../utils/scoreUtils';
+import { SCORE_MODES } from '../types';
 import type { Match, Player, ScoreMode, SetScore } from '../types';
 
 export const MAX_POINTS = 111;

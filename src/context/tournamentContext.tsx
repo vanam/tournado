@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
 import type { Tournament, GroupsToBracketTournament } from '../types';
 import { persistence } from '../services/persistence';
-import { FORMATS } from '../constants';
+import { FORMATS } from '../types';
 
 interface TournamentContextValue {
   tournament: Tournament | null;

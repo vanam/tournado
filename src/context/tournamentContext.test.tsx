@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { FORMATS } from '../constants';
+import { FORMATS } from '../types';
 import type { SingleElimTournament, GroupsToBracketTournament } from '../types';
 
 function emptyUnsubscribe(): void {}

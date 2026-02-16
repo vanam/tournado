@@ -20,9 +20,10 @@ import {
 import { advanceWinner, getBracketWinner, clearMatchResult, canEditMatch } from '../../utils/bracketUtils';
 import { advanceDoubleElim, clearDoubleElimMatch, getDoubleElimWinner, canEditDoubleElimMatch } from '../../utils/doubleElimUtils';
 import { useTranslation } from '../../i18n/useTranslation';
-import { BRACKET_TYPES, DEFAULT_MAX_SETS, SCORE_MODES } from '../../constants';
+import { DEFAULT_MAX_SETS } from '../../constants';
 import { ResultsMatrix } from '../roundrobin/resultsMatrix';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
+import { BRACKET_TYPES, SCORE_MODES } from '../../types';
 import type {
   Bracket,
   DoubleElim,

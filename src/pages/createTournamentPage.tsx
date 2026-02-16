@@ -1,7 +1,7 @@
 import type {ReactElement} from 'react';
 import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {BRACKET_TYPES, DEFAULT_MAX_SETS, FORMATS, SCORE_MODES, MIN_PLAYERS} from '../constants';
+import {DEFAULT_MAX_SETS, MIN_PLAYERS} from '../constants';
 import {useTranslation} from '../i18n/useTranslation';
 import {usePageTitle} from '../hooks/usePageTitle';
 import {persistence} from '../services/persistence';
@@ -10,6 +10,7 @@ import {generateSchedule} from '../utils/roundRobinUtils';
 import {createGroupStage, indexToGroupLabel} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
 import {PlayerInput} from '../components/playerInput';
+import {BRACKET_TYPES, FORMATS, SCORE_MODES} from '../types';
 import type {BracketType, Format, Player, ScoreMode, Tournament} from '../types';
 
 const FORMAT_KEYS: Record<Format, string> = {

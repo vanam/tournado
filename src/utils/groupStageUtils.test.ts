@@ -6,7 +6,7 @@ import {
   getGroupAdvancers,
   isGroupStageComplete,
 } from './groupStageUtils';
-import { SCORE_MODES } from '../constants';
+import { SCORE_MODES } from '../types';
 import type { Player, SetScore } from '../types';
 
 function makePlayers(list: number[]): Player[] {

@@ -1,5 +1,5 @@
 import { getSetTotals, isWalkoverScore } from './scoreUtils';
-import { SCORE_MODES } from '../constants';
+import { SCORE_MODES } from '../types';
 import { createMatchIdGenerator } from './matchIdGenerator';
 import { createMatch } from './matchFactory';
 import type { Player, Match, Round, RoundRobinSchedule, StandingsRow, ScoreMode, RoundRobinTiebreakDetails } from '../types';

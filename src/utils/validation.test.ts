@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isValidTournament, validateTournaments } from './validation';
-import { FORMATS, SCORE_MODES } from '../constants';
+import { FORMATS, SCORE_MODES } from '../types';
 import type { Tournament, Player, Match, Bracket, RoundRobinSchedule, DoubleElim, GroupStage } from '../types';
 
 function makePlayer(overrides: Partial<Player> = {}): Player {

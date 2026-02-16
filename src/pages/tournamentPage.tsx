@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FORMATS } from '../constants';
+import { FORMATS } from '../types';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { TournamentProvider, useTournament } from '../context/tournamentContext';

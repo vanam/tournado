@@ -13,8 +13,9 @@ import {
 } from '../../utils/doubleElimUtils';
 import { buildDoubleElimResults } from '../../utils/resultsUtils';
 import { useTranslation } from '../../i18n/useTranslation';
-import { DEFAULT_MAX_SETS, SCORE_MODES, FORMATS } from '../../constants';
+import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
+import { SCORE_MODES, FORMATS } from '../../types';
 import type { DoubleElimTournament, Match, SetScore } from '../../types';
 
 type DoubleElimTab = 'playoff' | 'results';
