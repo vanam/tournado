@@ -1,6 +1,5 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import { App } from './app'
 import { LanguageProvider } from './i18n/languageContext'
@@ -13,13 +12,6 @@ if ('trustedTypes' in window) {
     createScriptURL: (input: string) => validateScriptURL(input, ALLOWED_ORIGINS),
   })
 }
-
-const updateSW = registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    window.dispatchEvent(new CustomEvent('pwa-update-available', { detail: { updateSW } }));
-  },
-})
 
 const rootElement = document.querySelector('#root')
 if (!rootElement) {

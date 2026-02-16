@@ -1,29 +1,15 @@
-import { type ReactElement, useEffect } from 'react';
+import type { ReactElement } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
+import { usePwaUpdate } from '../hooks/usePwaUpdate';
 import { LanguageSwitcher } from './languageSwitcher';
-import { showToast } from './toastUtils';
 import { ToastContainer } from './toast';
 
 export const Layout = (): ReactElement => {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
 
-  useEffect(() => {
-    const handler = (e: Event): void => {
-      const updateSW = (e as CustomEvent<{ updateSW: (reloadPage?: boolean) => Promise<void> }>).detail.updateSW;
-      showToast({
-        message: t('toast.newVersion'),
-        action: { label: t('toast.reload'), onClick: (): void => { void updateSW(true); } },
-        dismissLabel: t('toast.dismiss'),
-        duration: Infinity,
-      });
-    };
-    window.addEventListener('pwa-update-available', handler);
-    return (): void => {
-      window.removeEventListener('pwa-update-available', handler);
-    };
-  }, [t]);
+  usePwaUpdate();
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)] app-background flex flex-col">
