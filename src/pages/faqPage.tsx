@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
-import { usePageTitle } from '../utils/usePageTitle';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export const FaqPage = (): ReactElement => {
   const { t } = useTranslation();

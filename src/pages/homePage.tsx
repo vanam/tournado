@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { persistence } from '../services/persistence';
 import { useTranslation } from '../i18n/useTranslation';
-import { usePageTitle } from '../utils/usePageTitle';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { TournamentCard } from '../components/tournamentCard';
 import { ConfirmModal } from '../components/confirmModal';
 import type { Tournament } from '../types';

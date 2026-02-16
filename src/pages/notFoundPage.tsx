@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
-import { usePageTitle } from '../utils/usePageTitle';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export const NotFoundPage = (): ReactElement => {
   const { t } = useTranslation();

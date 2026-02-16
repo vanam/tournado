@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {BRACKET_TYPES, DEFAULT_MAX_SETS, FORMATS, SCORE_MODES, MIN_PLAYERS} from '../constants';
 import {useTranslation} from '../i18n/useTranslation';
-import {usePageTitle} from '../utils/usePageTitle';
+import {usePageTitle} from '../hooks/usePageTitle';
 import {persistence} from '../services/persistence';
 import {generateBracket} from '../utils/bracketUtils';
 import {generateSchedule} from '../utils/roundRobinUtils';
