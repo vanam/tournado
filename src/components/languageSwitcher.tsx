@@ -1,11 +1,12 @@
 import { useTranslation } from '../i18n/useTranslation';
+import type { LanguageKey } from '../types';
 import type { ChangeEvent, ReactElement } from 'react';
 
 export const LanguageSwitcher = (): ReactElement => {
   const { language, setLanguage } = useTranslation();
 
   function handleChange(event: ChangeEvent<HTMLSelectElement>): void {
-    setLanguage(event.target.value);
+    setLanguage(event.target.value as LanguageKey);
   }
 
   return (

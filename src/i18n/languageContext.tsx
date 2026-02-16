@@ -1,13 +1,11 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { ReactElement, ReactNode } from 'react';
-import type { I18nContext, TranslationMap, TranslationValue } from '../types';
+import type { I18nContext, LanguageKey, TranslationMap, TranslationValue } from '../types';
 import { en, cs, de, es } from './translations';
 import { LanguageContext } from './context';
 
-const translations: Record<'en' | 'cs' | 'de' | 'es', TranslationMap> = { en, cs, de, es };
+const translations: Record<LanguageKey, TranslationMap> = { en, cs, de, es };
 const STORAGE_KEY = 'tt-lang';
-
-type LanguageKey = keyof typeof translations;
 
 function detectLanguage(): LanguageKey {
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -33,7 +31,7 @@ export const LanguageProvider = ({ children }: LanguageProviderProps): ReactElem
   const pluralRules = useMemo(() => new Intl.PluralRules(language), [language]);
 
   const setLanguage = useCallback<I18nContext['setLanguage']>((lang) => {
-    const nextLanguage = lang in translations ? (lang as LanguageKey) : 'en';
+    const nextLanguage = lang in translations ? lang : 'en';
     setLanguageState(nextLanguage);
     localStorage.setItem(STORAGE_KEY, nextLanguage);
   }, []);
