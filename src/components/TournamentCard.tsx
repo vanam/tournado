@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
 import { Format } from '../types';
 import type { Tournament } from '../types';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 const FORMAT_KEYS: Record<Format, string> = {
   [Format.SINGLE_ELIM]: 'format.singleElim',
@@ -28,8 +30,8 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
   };
 
   return (
-    <div
-      className="group rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm p-5 hover:shadow-lg hover:border-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+    <Card
+      className="group cursor-pointer hover:shadow-lg hover:border-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200"
       role="button"
       tabIndex={0}
       onClick={handleCardActivate}
@@ -40,34 +42,40 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
         }
       }}
     >
-      <div className="flex items-start justify-between">
-        <span className="text-lg font-semibold text-[var(--color-primary-dark)] group-hover:text-[var(--color-primary)] transition-colors">
-          {tournament.name}
-        </span>
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete(tournament.id);
-          }}
-          className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-colors"
-        >
-          {t('card.delete')}
-        </button>
-      </div>
-      <p className="text-sm text-[var(--color-muted)] mt-1">
-        {t(FORMAT_KEYS[tournament.format])} &middot;{' '}
-        {t('tournament.players', { count: tournament.players.length })}
-      </p>
-      <p className="text-xs text-[var(--color-subtle)] mt-1">
-        {t('card.created', { date: new Date(tournament.createdAt).toLocaleDateString() })}
-      </p>
-      {winner && (
-        <p className="text-xs text-[var(--color-accent)] font-medium mt-2">
-          {t('card.winner', {
-            name: winner.name,
-          })}
+      <CardHeader className="p-5">
+        <div className="flex items-start justify-between">
+          <CardTitle className="text-lg font-semibold text-[var(--color-primary-dark)] group-hover:text-[var(--color-primary)] transition-colors">
+            {tournament.name}
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(tournament.id);
+            }}
+            className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 h-auto px-2 py-1"
+          >
+            {t('card.delete')}
+          </Button>
+        </div>
+        <CardDescription className="text-sm text-[var(--color-muted)] mt-1">
+          {t(FORMAT_KEYS[tournament.format])} &middot;{' '}
+          {t('tournament.players', { count: tournament.players.length })}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-5 pt-0">
+        <p className="text-xs text-[var(--color-subtle)]">
+          {t('card.created', { date: new Date(tournament.createdAt).toLocaleDateString() })}
         </p>
-      )}
-    </div>
+        {winner && (
+          <p className="text-xs text-[var(--color-accent)] font-medium mt-2">
+            {t('card.winner', {
+              name: winner.name,
+            })}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
-}
+};

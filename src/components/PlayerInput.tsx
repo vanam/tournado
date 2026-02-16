@@ -2,6 +2,10 @@ import { useState } from 'react';
 import type { ChangeEvent, KeyboardEvent, ReactElement, SyntheticEvent } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import type { Player } from '../types';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Label } from '@/components/ui/Label';
+import { Checkbox } from '@/components/ui/Checkbox';
 
 interface PlayerInputProps {
   players: Player[];
@@ -97,32 +101,34 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="block text-sm font-medium text-[var(--color-text)]">
+        <Label className="block text-sm font-medium text-[var(--color-text)]">
           {t('players.title', { count: players.length })}
-        </label>
+        </Label>
         {players.length > 1 && (
           <div className="flex items-center gap-3">
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={sortPlayersByElo}
               disabled={!useElo}
-              className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] disabled:opacity-40 disabled:pointer-events-none"
+              className="text-sm px-0 h-auto"
             >
               {t('players.sortByElo')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="link"
               onClick={shufflePlayers}
-              className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+              className="text-sm px-0 h-auto"
             >
               {t('players.shuffle')}
-            </button>
+            </Button>
           </div>
         )}
       </div>
       <div className="mb-3 space-y-2">
         <div className="grid grid-cols-[1fr_auto] gap-2 sm:flex sm:gap-2">
-          <input
+          <Input
             type="text"
             value={name}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
@@ -136,27 +142,24 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
               }
             }}
             placeholder={t('players.placeholder')}
-            className="min-w-0 sm:flex-1 border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+            className="min-w-0 sm:flex-1"
           />
-          <button
+          <Button
             type="button"
             onClick={addPlayer}
-            className="bg-[var(--color-primary)] text-[var(--color-surface)] px-4 py-2 rounded-lg text-sm hover:bg-[var(--color-primary-dark)]"
           >
             {t('players.add')}
-          </button>
+          </Button>
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-            <input
-              type="checkbox"
+          <Label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+            <Checkbox
               checked={useElo}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => { setUseElo(e.target.checked); }}
-              className="accent-[var(--color-primary)]"
+              onCheckedChange={(checked) => { setUseElo(checked === true); }}
             />
             {t('players.useElo')}
-          </label>
-          <input
+          </Label>
+          <Input
             type="number"
             min="0"
             value={elo}
@@ -172,7 +175,7 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
             }}
             placeholder={t('players.eloPlaceholder')}
             disabled={!useElo}
-            className="w-24 border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-40"
+            className="w-24"
           />
         </div>
       </div>
@@ -192,32 +195,38 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
                 {t('players.elo', { elo: player.elo })}
               </span>
             )}
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => { moveUp(index); }}
               disabled={index === 0}
-              className="text-[var(--color-faint)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)] disabled:opacity-30 px-1.5 py-0.5 rounded"
+              className="h-auto px-1.5 py-0.5 text-[var(--color-faint)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)]"
             >
               &uarr;
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => { moveDown(index); }}
               disabled={index === players.length - 1}
-              className="text-[var(--color-faint)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)] disabled:opacity-30 px-1.5 py-0.5 rounded"
+              className="h-auto px-1.5 py-0.5 text-[var(--color-faint)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)]"
             >
               &darr;
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => { removePlayer(player.id); }}
-              className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] hover:bg-[var(--color-accent-soft)] px-1.5 py-0.5 rounded"
+              className="h-auto px-1.5 py-0.5 text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] hover:bg-[var(--color-accent-soft)]"
             >
               &times;
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
     </div>
   );
-}
+};

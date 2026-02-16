@@ -2,6 +2,7 @@ import { useState, Fragment, type ReactElement } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { ScoreMode } from '../../types';
 import type { StandingsRow, RoundRobinTiebreakDetails, RoundRobinCriteriaKey, CriteriaRow } from '../../types';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 
 interface StandingsTableProps {
   standings: StandingsRow[];
@@ -76,17 +77,17 @@ const TiebreakTable = ({ details, applied, t, showBalls }: TiebreakTableProps): 
     <table className="w-full text-[0.7rem] text-[var(--color-muted)]">
       <tbody>
         {rows.map((row) => (
-          <tr key={row.key} className="border-t border-[var(--color-border-soft)]">
-            <td className="py-1 pr-2 font-medium">
+          <TableRow key={row.key} className="border-t border-[var(--color-border-soft)]">
+            <TableCell className="py-1 pr-2 font-medium p-0">
               <span
                 className="underline decoration-dotted underline-offset-2 cursor-help"
                 title={row.help}
               >
                 {row.label}
               </span>
-            </td>
-            <td className="py-1 text-right">{row.value}</td>
-          </tr>
+            </TableCell>
+            <TableCell className="py-1 text-right p-0">{row.value}</TableCell>
+          </TableRow>
         ))}
       </tbody>
     </table>
@@ -106,23 +107,22 @@ export const StandingsTable = ({
   const showBalls = scoringMode === ScoreMode.POINTS;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b-2 border-[var(--color-border)] text-left text-[var(--color-muted)]">
-            <th className="py-2.5 pr-2 sm:pr-3 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.rank')}</th>
-            <th className="py-2.5 pr-2 sm:pr-3 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.player')}</th>
-            <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.played')}</th>
-            <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.wins')}</th>
-            <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.losses')}</th>
-            <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.sets')}</th>
-            {showBalls && (
-              <th className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.balls')}</th>
-            )}
-            <th className="py-2.5 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap">{t('standings.points')}</th>
-          </tr>
-        </thead>
-        <tbody>
+    <Table>
+      <TableHeader>
+        <TableRow className="border-b-2 border-[var(--color-border)]">
+          <TableHead className="py-2.5 pr-2 sm:pr-3 text-xs uppercase tracking-wider font-semibold whitespace-nowrap text-[var(--color-muted)]">{t('standings.rank')}</TableHead>
+          <TableHead className="py-2.5 pr-2 sm:pr-3 text-xs uppercase tracking-wider font-semibold whitespace-nowrap text-[var(--color-muted)]">{t('standings.player')}</TableHead>
+          <TableHead className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap text-[var(--color-muted)]">{t('standings.played')}</TableHead>
+          <TableHead className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap text-[var(--color-muted)]">{t('standings.wins')}</TableHead>
+          <TableHead className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap text-[var(--color-muted)]">{t('standings.losses')}</TableHead>
+          <TableHead className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap text-[var(--color-muted)]">{t('standings.sets')}</TableHead>
+          {showBalls && (
+            <TableHead className="py-2.5 pr-2 sm:pr-3 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap text-[var(--color-muted)]">{t('standings.balls')}</TableHead>
+          )}
+          <TableHead className="py-2.5 text-center text-xs uppercase tracking-wider font-semibold whitespace-nowrap text-[var(--color-muted)]">{t('standings.points')}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
           {standings.map((row, i) => {
             const isDirectQualifier =
               (row.played > 0 || isSinglePlayerGroup) &&
@@ -150,15 +150,15 @@ export const StandingsTable = ({
 
             return (
               <Fragment key={row.playerId}>
-                <tr
-                  className={`border-b border-[var(--color-border-soft)] hover:bg-[var(--color-soft)] transition-colors ${rowClass} ${hasTiebreak ? 'cursor-pointer' : ''}`}
+                <TableRow
+                  className={`transition-colors ${rowClass} ${hasTiebreak ? 'cursor-pointer' : ''}`}
                   onClick={hasTiebreak ? toggleExpanded : undefined}
                   onKeyDown={hasTiebreak ? handleKeyDown : undefined}
                   role={hasTiebreak ? 'button' : undefined}
                   tabIndex={hasTiebreak ? 0 : undefined}
                   aria-expanded={hasTiebreak ? isExpanded : undefined}
                 >
-                  <td className="py-2.5 pr-3 text-[var(--color-faint)] tabular-nums">
+                  <TableCell className="py-2.5 pr-3 text-[var(--color-faint)] tabular-nums">
                     {hasTiebreak && (
                       <span
                         className="mr-1 inline-flex h-3 w-3 items-center justify-center text-[var(--color-muted)]"
@@ -174,8 +174,8 @@ export const StandingsTable = ({
                       </span>
                     )}
                     {i + 1}
-                  </td>
-                  <td className="py-2.5 pr-3 font-medium">
+                  </TableCell>
+                  <TableCell className="py-2.5 pr-3 font-medium">
                     <span className="inline-flex items-center gap-2">
                       <span>{row.name}</span>
                       {isWildCard && (
@@ -189,37 +189,36 @@ export const StandingsTable = ({
                         </span>
                       )}
                     </span>
-                  </td>
-                  <td className="py-2.5 pr-3 text-center tabular-nums">{row.played}</td>
-                  <td className="py-2.5 pr-3 text-center tabular-nums">{row.wins}</td>
-                  <td className="py-2.5 pr-3 text-center tabular-nums">{row.losses}</td>
-                  <td className="py-2.5 pr-3 text-center tabular-nums">
+                  </TableCell>
+                  <TableCell className="py-2.5 pr-3 text-center tabular-nums">{row.played}</TableCell>
+                  <TableCell className="py-2.5 pr-3 text-center tabular-nums">{row.wins}</TableCell>
+                  <TableCell className="py-2.5 pr-3 text-center tabular-nums">{row.losses}</TableCell>
+                  <TableCell className="py-2.5 pr-3 text-center tabular-nums">
                     {row.setsWon}-{row.setsLost}
-                  </td>
+                  </TableCell>
                   {showBalls && (
-                    <td className="py-2.5 pr-3 text-center tabular-nums">
+                    <TableCell className="py-2.5 pr-3 text-center tabular-nums">
                       {row.pointsWon}-{row.pointsLost}
-                    </td>
+                    </TableCell>
                   )}
-                  <td className="py-2.5 text-center font-semibold tabular-nums">{row.points}</td>
-                </tr>
+                  <TableCell className="py-2.5 text-center font-semibold tabular-nums">{row.points}</TableCell>
+                </TableRow>
                 {isExpanded && row.tiebreakDetails && (
-                  <tr className={`border-b border-[var(--color-border-soft)] ${rowClass}`}>
-                    <td className="px-2" colSpan={colSpan}>
+                  <TableRow className={rowClass}>
+                    <TableCell className="px-2" colSpan={colSpan}>
                       <TiebreakTable
                         details={row.tiebreakDetails}
                         applied={row.tiebreakDetails.tiebreakApplied}
                         t={t}
                         showBalls={showBalls}
                       />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
               </Fragment>
             );
           })}
-        </tbody>
-      </table>
-    </div>
+      </TableBody>
+    </Table>
   );
 }

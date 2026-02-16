@@ -12,6 +12,9 @@ import {generateDoubleElim} from '../utils/doubleElimUtils';
 import {PlayerInput} from '../components/PlayerInput';
 import {BracketType, Format, ScoreMode} from '../types';
 import type {Player, Tournament} from '../types';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 
 const FORMAT_KEYS: Record<Format, string> = {
   [Format.SINGLE_ELIM]: 'format.singleElim',
@@ -149,10 +152,10 @@ export const CreateTournamentPage = (): ReactElement => {
 
       <form onSubmit={handleSubmit} className="space-y-7">
         <div>
-          <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
+          <Label className="block text-sm font-medium text-[var(--color-text)] mb-1">
             {t('create.nameLabel')}
-          </label>
-          <input
+          </Label>
+          <Input
             type="text"
             value={name}
             onChange={(e) => {
@@ -160,14 +163,13 @@ export const CreateTournamentPage = (): ReactElement => {
               setError('');
             }}
             placeholder={t('create.namePlaceholder')}
-            className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+          <Label className="block text-sm font-medium text-[var(--color-text)] mb-2">
             {t('create.formatLabel')}
-          </label>
+          </Label>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
             {Object.values(Format).map((f) => (
               <label
@@ -193,9 +195,9 @@ export const CreateTournamentPage = (): ReactElement => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+          <Label className="block text-sm font-medium text-[var(--color-text)] mb-2">
             {t('create.scoringLabel')}
-          </label>
+          </Label>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
             {Object.values(ScoreMode).map((mode) => (
               <label
@@ -222,15 +224,15 @@ export const CreateTournamentPage = (): ReactElement => {
 
         {format !== Format.GROUPS_TO_BRACKET && (
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
+            <Label className="block text-sm font-medium text-[var(--color-text)] mb-1">
               {t('create.maxSetsLabel')}
-            </label>
-            <input
+            </Label>
+            <Input
               type="number"
               min="1"
               value={maxSets}
               onChange={(e) => { setMaxSets(normalizeMaxSets(e.target.value)); }}
-              className="w-24 border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-24"
             />
           </div>
         )}
@@ -241,70 +243,70 @@ export const CreateTournamentPage = (): ReactElement => {
               {t('create.groupStageTitle')}
             </div>
             <div className="flex flex-wrap gap-4">
-              <label className="text-xs text-[var(--color-muted)]">
+              <Label className="text-xs text-[var(--color-muted)]">
                 {t('create.maxSetsGroupLabel')}
-                <input
+                <Input
                   type="number"
                   min="1"
                   value={groupStageMaxSets}
                   onChange={(e) => { setGroupStageMaxSets(normalizeMaxSets(e.target.value)); }}
-                  className="mt-1 w-24 border border-[var(--color-border)] rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                  className="mt-1 w-24 h-8 px-2 py-1"
                 />
-              </label>
-              <label className="text-xs text-[var(--color-muted)]">
+              </Label>
+              <Label className="text-xs text-[var(--color-muted)]">
                 {t('create.maxSetsBracketLabel')}
-                <input
+                <Input
                   type="number"
                   min="1"
                   value={bracketMaxSets}
                   onChange={(e) => { setBracketMaxSets(normalizeMaxSets(e.target.value)); }}
-                  className="mt-1 w-24 border border-[var(--color-border)] rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                  className="mt-1 w-24 h-8 px-2 py-1"
                 />
-              </label>
+              </Label>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
+              <Label className="block text-sm font-medium text-[var(--color-text)] mb-1">
                 {t('create.groupCountLabel')}
-              </label>
-              <input
+              </Label>
+              <Input
                 type="number"
                 min="1"
                 value={groupCount}
                 onChange={(e) => { handleGroupCountChange(e.target.value); }}
-                className="w-24 border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-24"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+              <Label className="block text-sm font-medium text-[var(--color-text)] mb-2">
                 {t('create.qualifiersLabel')}
-              </label>
+              </Label>
               <div className="grid grid-cols-2 gap-2">
                 {Array.from({ length: groupCount }, (_, i) => (
-                  <label key={i} className="text-xs text-[var(--color-muted)]">
+                  <Label key={i} className="text-xs text-[var(--color-muted)]">
                     {t('create.groupLabel', { label: indexToGroupLabel(i) })}
-                    <input
+                    <Input
                       type="number"
                       min="0"
                       value={qualifiers[i] ?? 0}
                       onChange={(e) => { handleQualifierChange(i, e.target.value); }}
-                      className="mt-1 w-full border border-[var(--color-border)] rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                      className="mt-1 w-full h-8 px-2 py-1"
                     />
-                  </label>
+                  </Label>
                 ))}
               </div>
             </div>
-            <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+            <Label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
               <input
                 type="checkbox"
                 checked={consolation}
                 onChange={(e) => { setConsolation(e.target.checked); }}
               />
               {t('create.consolationLabel')}
-            </label>
+            </Label>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+              <Label className="block text-sm font-medium text-[var(--color-text)] mb-2">
                 {t('create.bracketTypeLabel')}
-              </label>
+              </Label>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
                 {Object.values(BracketType).map((bt) => (
                   <label
@@ -335,12 +337,12 @@ export const CreateTournamentPage = (): ReactElement => {
 
         {error && <p className="text-[var(--color-accent)] text-sm">{error}</p>}
 
-        <button
+        <Button
           type="submit"
           className="w-full bg-[var(--color-primary)] text-[var(--color-surface)] py-3 rounded-lg font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] active:scale-[0.99]"
         >
           {t('create.submit')}
-        </button>
+        </Button>
       </form>
     </div>
   );

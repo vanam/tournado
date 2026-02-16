@@ -13,7 +13,11 @@
       "Bash(npx vitest:*)",
       "Bash(npx tsx:*)",
       "Bash(git mv:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(wc:*)",
+      "Bash(node:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npx vite build)"
     ]
   }
 }

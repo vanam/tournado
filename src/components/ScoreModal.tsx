@@ -2,7 +2,12 @@ import { useState } from 'react';
 import type { ChangeEvent, ReactElement } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import { ConfirmModal } from './ConfirmModal';
-import { ModalShell } from './ModalShell';
+import { CustomDialog } from './CustomDialog';
+import { DialogContent } from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { DEFAULT_MAX_SETS } from '../constants';
 import { getSetTotals, getWalkoverSetWinner, hasWalkover } from '../utils/scoreUtils';
 import { ScoreMode } from '../types';
@@ -219,8 +224,8 @@ export const ScoreModal = ({
           onCancel={cancelClear}
         />
       )}
-      <ModalShell onClose={onClose} onPrimaryAction={handleSave} primaryActionDisabled={!winner}>
-        <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl p-6 w-full max-w-md">
+      <CustomDialog open={true} onOpenChange={(open) => { if (!open) onClose(); }} onPrimaryAction={handleSave} primaryActionDisabled={!winner}>
+        <DialogContent className="max-w-md">
           <h3 className="text-lg font-bold mb-5 pb-3 border-b border-[var(--color-border-soft)]">{t('score.title')}</h3>
           <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-4">
             <div className="text-right font-medium text-xs sm:text-sm min-w-0 truncate">
@@ -252,16 +257,14 @@ export const ScoreModal = ({
 
           {canUseWalkover && (
             <div className="flex items-center gap-2 mb-4">
-              <input
+              <Checkbox
                 id="walkover"
-                type="checkbox"
                 checked={walkover}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => { toggleWalkover(e.target.checked); }}
-                className="h-4 w-4"
+                onCheckedChange={(checked) => { toggleWalkover(checked === true); }}
               />
-              <label htmlFor="walkover" className="text-sm text-[var(--color-text)]">
+              <Label htmlFor="walkover" className="text-sm text-[var(--color-text)]">
                 WO
-              </label>
+              </Label>
             </div>
           )}
 
@@ -275,71 +278,67 @@ export const ScoreModal = ({
                   className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center"
                 >
                   <div className="flex items-center gap-2">
-                    <input
+                    <Input
                       type="number"
                       min={isSetOnly ? 0 : undefined}
                       max={isSetOnly ? maxSets : MAX_POINTS}
                       value={score[0]}
                       onChange={(e: ChangeEvent<HTMLInputElement>) => { updateScore(i, 0, e.target.value); }}
                       disabled={isWalkoverLockedSet || (walkover && !isSetOnly)}
-                      className="border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-center text-sm w-full disabled:bg-[var(--color-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                      className="text-center disabled:bg-[var(--color-soft)]"
                     />
                     {!isSetOnly && (
-                      <button
+                      <Button
                         type="button"
+                        size="sm"
+                        variant={score[0] === MAX_POINTS && score[1] === 0 ? "default" : "outline"}
                         onClick={() =>
                           { applySetWalkover(i, 0, !(score[0] === MAX_POINTS && score[1] === 0)); }
                         }
                         disabled={isAutoWalkoverSet}
-                        className={
-                          score[0] === MAX_POINTS && score[1] === 0
-                            ? 'px-2 py-1 text-xs font-semibold rounded border border-[var(--color-primary-dark)] bg-[var(--color-primary)] text-[var(--color-surface)] disabled:opacity-50 disabled:cursor-not-allowed'
-                            : 'px-2 py-1 text-xs font-semibold rounded border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-border-strong)] disabled:opacity-50 disabled:cursor-not-allowed'
-                        }
-                        aria-pressed={score[0] === MAX_POINTS && score[1] === 0}
+                        className="px-2 py-1 text-xs"
                       >
                         WO
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <span className="text-[var(--color-faint)] text-sm">
                     {isSetOnly ? t('score.setsResult') : t('score.set', { n: i + 1 })}
                   </span>
                   <div className="flex items-center gap-2">
-                    <input
+                    <Input
                       type="number"
                       min={isSetOnly ? 0 : undefined}
                       max={isSetOnly ? maxSets : MAX_POINTS}
                       value={score[1]}
                       onChange={(e: ChangeEvent<HTMLInputElement>) => { updateScore(i, 1, e.target.value); }}
                       disabled={isWalkoverLockedSet || (walkover && !isSetOnly)}
-                      className="border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-center text-sm w-full disabled:bg-[var(--color-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                      className="text-center disabled:bg-[var(--color-soft)]"
                     />
                     {!isSetOnly && (
-                      <button
+                      <Button
                         type="button"
+                        size="sm"
+                        variant={score[1] === MAX_POINTS && score[0] === 0 ? "default" : "outline"}
                         onClick={() =>
                           { applySetWalkover(i, 1, !(score[1] === MAX_POINTS && score[0] === 0)); }
                         }
                         disabled={isAutoWalkoverSet}
-                        className={
-                          score[1] === MAX_POINTS && score[0] === 0
-                            ? 'px-2 py-1 text-xs font-semibold rounded border border-[var(--color-primary-dark)] bg-[var(--color-primary)] text-[var(--color-surface)] disabled:opacity-50 disabled:cursor-not-allowed'
-                            : 'px-2 py-1 text-xs font-semibold rounded border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-border-strong)] disabled:opacity-50 disabled:cursor-not-allowed'
-                        }
-                        aria-pressed={score[1] === MAX_POINTS && score[0] === 0}
+                        className="px-2 py-1 text-xs"
                       >
                         WO
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {!isSetOnly && scores.length > 1 && !walkover && !walkoverInfo && (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => { removeSet(i); }}
-                      className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] text-sm"
+                      className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)]"
                     >
                       &times;
-                    </button>
+                    </Button>
                   )}
                 </div>
               );
@@ -347,12 +346,13 @@ export const ScoreModal = ({
           </div>
 
           {!isSetOnly && scores.length < maxSets && (
-            <button
+            <Button
+              variant="link"
               onClick={addSet}
-              className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] mb-4 block"
+              className="text-sm mb-4 px-0"
             >
               {t('score.addSet')}
-            </button>
+            </Button>
           )}
 
           {winner && (
@@ -365,29 +365,29 @@ export const ScoreModal = ({
 
           <div className="flex flex-wrap gap-2 justify-end pt-4 mt-2 border-t border-[var(--color-border-soft)]">
             {hasResult && (
-              <button
+              <Button
+                variant="ghost"
                 onClick={handleClear}
-                className="px-4 py-2 text-sm text-[var(--color-accent)] hover:text-[var(--color-primary-dark)]"
+                className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)]"
               >
                 {t('score.clear')}
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              variant="ghost"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)]"
             >
               {t('score.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSave}
               disabled={!winner}
-              className="bg-[var(--color-primary)] text-[var(--color-surface)] px-5 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('score.save')}
-            </button>
+            </Button>
           </div>
-        </div>
-      </ModalShell>
+        </DialogContent>
+      </CustomDialog>
     </>
   );
-}
+};

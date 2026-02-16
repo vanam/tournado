@@ -47,7 +47,13 @@
 
     /* Tooling */
     "skipLibCheck": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+
+    /* Path aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
 
   "include": [

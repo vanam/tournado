@@ -8,6 +8,7 @@ import {
 } from '../../utils/scoreUtils';
 import { ScoreMode } from '../../types';
 import type { Match, Player, RoundRobinSchedule, SetScore } from '../../types';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 
 interface SetEntry {
   text: string;
@@ -51,36 +52,35 @@ export const ResultsMatrix = ({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-separate border-spacing-0">
-        <thead>
-          <tr>
-            <th className="py-2 pr-3 sticky left-0 z-10" />
-            {players.map((p) => (
-              <th
-                key={p.id}
-                className="py-2 pr-3 text-left font-medium text-[var(--color-text)] sticky left-0 z-10 whitespace-nowrap"
-              >
-                {p.name}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
+    <Table className="border-separate border-spacing-0">
+      <TableHeader>
+        <TableRow className="border-b-0 hover:bg-transparent">
+          <TableHead className="py-2 pr-3 sticky left-0 z-10" />
+          {players.map((p) => (
+            <TableHead
+              key={p.id}
+              className="py-2 pr-3 text-left font-medium text-[var(--color-text)] sticky left-0 z-10 whitespace-nowrap"
+            >
+              {p.name}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
           {players.map((rowPlayer) => (
-            <tr key={rowPlayer.id} className="border-b border-[var(--color-border-soft)]">
-              <th className="py-2 pr-3 text-left font-medium text-[var(--color-text)] sticky left-0 z-10 whitespace-nowrap">
+            <TableRow key={rowPlayer.id}>
+              <TableHead className="py-2 pr-3 text-left font-medium text-[var(--color-text)] sticky left-0 z-10 whitespace-nowrap">
                 {rowPlayer.name}
-              </th>
+              </TableHead>
               {players.map((colPlayer) => {
                 if (rowPlayer.id === colPlayer.id) {
                   return (
-                    <td
+                    <TableCell
                       key={colPlayer.id}
                       className="py-2 px-2 text-center bg-[var(--color-soft)] text-[var(--color-faint)]"
                     >
                       -
-                    </td>
+                    </TableCell>
                   );
                 }
 
@@ -89,20 +89,20 @@ export const ResultsMatrix = ({
                   if (match?.walkover || hasWalkover(match?.scores ?? [])) {
                     const rowIsWinner = match?.winnerId === rowPlayer.id;
                     return (
-                      <td
+                      <TableCell
                         key={colPlayer.id}
                         className={`py-2 px-2 text-center ${
                           rowIsWinner ? 'font-semibold' : 'text-[var(--color-muted)]'
                         }`}
                       >
                         <div className="font-mono text-xs">WO</div>
-                      </td>
+                      </TableCell>
                     );
                   }
                   return (
-                    <td key={colPlayer.id} className="py-2 px-2 text-center text-[var(--color-faintest)]">
+                    <TableCell key={colPlayer.id} className="py-2 px-2 text-center text-[var(--color-faintest)]">
                       -
-                    </td>
+                    </TableCell>
                   );
                 }
 
@@ -139,7 +139,7 @@ export const ResultsMatrix = ({
                   : [];
 
                 return (
-                  <td key={colPlayer.id} className="py-2 px-2 text-center">
+                  <TableCell key={colPlayer.id} className="py-2 px-2 text-center">
                     <div
                       className={`font-mono text-xs ${
                         rowIsWinner ? 'font-semibold' : 'text-[var(--color-text)]'
@@ -160,13 +160,12 @@ export const ResultsMatrix = ({
                         ))}
                       </div>
                     )}
-                  </td>
+                  </TableCell>
                 );
               })}
-            </tr>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+      </TableBody>
+    </Table>
   );
 }

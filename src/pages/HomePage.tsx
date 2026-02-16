@@ -7,6 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { TournamentCard } from '../components/TournamentCard';
 import { ConfirmModal } from '../components/ConfirmModal';
 import type { Tournament } from '../types';
+import { Button } from '@/components/ui/Button';
 
 export const HomePage = (): ReactElement => {
   const [tournaments, setTournaments] = useState<Tournament[]>(() => persistence.loadAll());
@@ -51,19 +52,22 @@ export const HomePage = (): ReactElement => {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {tournaments.length > 1 && (
-            <button
+            <Button
               onClick={() => { setShowDeleteAll(true); }}
+              variant="ghost"
               className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] px-3 py-2 text-sm rounded-lg border border-[var(--color-accent-border)] hover:border-[var(--color-accent)] transition-colors"
             >
               {t('home.deleteAll')}
-            </button>
+            </Button>
           )}
-          <Link
-            to="/create"
-            className="bg-[var(--color-primary)] text-[var(--color-surface)] px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] transition-colors"
-          >
-            {t('home.newTournament')}
-          </Link>
+          <Button asChild>
+            <Link
+              to="/create"
+              className="bg-[var(--color-primary)] text-[var(--color-surface)] px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] transition-colors"
+            >
+              {t('home.newTournament')}
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -71,12 +75,14 @@ export const HomePage = (): ReactElement => {
         <div className="text-center py-16 text-[var(--color-subtle)]">
           <p className="text-4xl mb-4">&#127955;</p>
           <p className="text-lg font-medium mb-3">{t('home.noTournaments')}</p>
-          <Link
-            to="/create"
-            className="inline-block bg-[var(--color-primary)] text-[var(--color-surface)] px-6 py-3 rounded-lg text-sm font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] transition-colors"
-          >
-            {t('home.noTournamentsDesc')}
-          </Link>
+          <Button asChild>
+            <Link
+              to="/create"
+              className="inline-block bg-[var(--color-primary)] text-[var(--color-surface)] px-6 py-3 rounded-lg text-sm font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] transition-colors"
+            >
+              {t('home.noTournamentsDesc')}
+            </Link>
+          </Button>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
