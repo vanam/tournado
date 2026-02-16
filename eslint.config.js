@@ -99,4 +99,15 @@ export default defineConfig([
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
+  {
+    files: ['src/components/**/*.{ts,tsx}', 'src/pages/**/*.{ts,tsx}'],
+    rules: {
+      'unicorn/filename-case': [
+        'error',
+        {
+          case: 'pascalCase',
+        },
+      ],
+    },
+  },
 ])

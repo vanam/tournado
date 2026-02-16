@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
-import { ErrorBoundary } from './errorBoundary';
+import { ErrorBoundary } from './ErrorBoundary';
 
 vi.mock('../i18n/useTranslation', () => ({
   useTranslation: (): { t: (key: string) => string } => ({

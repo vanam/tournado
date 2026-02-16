@@ -1,5 +1,5 @@
 import type { SetScore, ScoreMode } from '../types';
-import { MAX_POINTS } from '../components/scoreModal';
+import { MAX_POINTS } from '../components/ScoreModal';
 import { SCORE_MODES } from '../types';
 
 export function isWalkoverScore(value: number | string): boolean {

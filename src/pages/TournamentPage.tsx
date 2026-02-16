@@ -4,11 +4,11 @@ import { FORMATS } from '../types';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { TournamentProvider, useTournament } from '../context/tournamentContext';
-import { BracketView } from '../components/bracket/bracketView';
-import { DoubleElimView } from '../components/doubleelim/doubleElimView';
-import { RoundRobinView } from '../components/roundrobin/roundRobinView';
-import { PlayerList } from '../components/playerList';
-import { GroupStageView } from '../components/groupstage/groupStageView';
+import { BracketView } from '../components/bracket/BracketView';
+import { DoubleElimView } from '../components/doubleelim/DoubleElimView';
+import { RoundRobinView } from '../components/roundrobin/RoundRobinView';
+import { PlayerList } from '../components/PlayerList';
+import { GroupStageView } from '../components/groupstage/GroupStageView';
 import type { Format } from '../types';
 
 const FORMAT_KEYS: Record<Format, string> = {

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
-import { HomePage } from './homePage';
+import { HomePage } from './HomePage';
 import { FORMATS } from '../types';
 import type { Tournament } from '../types';
 

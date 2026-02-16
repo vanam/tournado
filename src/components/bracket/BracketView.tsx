@@ -1,10 +1,10 @@
 import { useState, type ReactElement } from 'react';
-import { ScoreModal } from '../scoreModal';
-import { BracketRounds } from '../common/bracketRounds';
-import { WinnerBanner } from '../common/winnerBanner';
-import { TabBar } from '../common/tabBar';
-import { FinalResultsTable } from '../common/finalResultsTable';
-import { MatchCard } from './matchCard';
+import { ScoreModal } from '../ScoreModal';
+import { BracketRounds } from '../common/BracketRounds';
+import { WinnerBanner } from '../common/WinnerBanner';
+import { TabBar } from '../common/TabBar';
+import { FinalResultsTable } from '../common/FinalResultsTable';
+import { MatchCard } from './MatchCard';
 import { advanceWinner, getBracketWinner, clearMatchResult, canEditMatch } from '../../utils/bracketUtils';
 import { buildBracketResults } from '../../utils/resultsUtils';
 import { useTranslation } from '../../i18n/useTranslation';

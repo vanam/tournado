@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { MatchCard } from '../bracket/matchCard';
+import { MatchCard } from '../bracket/MatchCard';
 import { canEditMatch } from '../../utils/bracketUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import type { Bracket, Match, Player, ScoreMode } from '../../types';

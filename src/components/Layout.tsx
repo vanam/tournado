@@ -2,8 +2,8 @@ import type { ReactElement } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePwaUpdate } from '../hooks/usePwaUpdate';
-import { LanguageSwitcher } from './languageSwitcher';
-import { ToastContainer } from './toast';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { ToastContainer } from './Toast';
 
 export const Layout = (): ReactElement => {
   const { t } = useTranslation();

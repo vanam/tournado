@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import type { ToastOptions } from './toast';
+import type { ToastOptions } from '../components/Toast';
 
 export const showToast = (options: ToastOptions): void => {
   const action = options.action ? {

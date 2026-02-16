@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { RoundSchedule } from '../roundrobin/roundSchedule';
-import { StandingsTable } from '../roundrobin/standingsTable';
-import { ScoreModal } from '../scoreModal';
-import { TabBar } from '../common/tabBar';
-import { BracketRounds } from '../common/bracketRounds';
-import { WinnerBanner } from '../common/winnerBanner';
-import { FinalResultsTable } from '../common/finalResultsTable';
+import { RoundSchedule } from '../roundrobin/RoundSchedule';
+import { StandingsTable } from '../roundrobin/StandingsTable';
+import { ScoreModal } from '../ScoreModal';
+import { TabBar } from '../common/TabBar';
+import { BracketRounds } from '../common/BracketRounds';
+import { WinnerBanner } from '../common/WinnerBanner';
+import { FinalResultsTable } from '../common/FinalResultsTable';
 import { buildBracketResults, buildDoubleElimResults, offsetResults, sortResults } from '../../utils/resultsUtils';
-import { GroupAdvancersPanel } from './groupAdvancersPanel';
-import { MatchCard } from '../bracket/matchCard';
+import { GroupAdvancersPanel } from './GroupAdvancersPanel';
+import { MatchCard } from '../bracket/MatchCard';
 import {
   buildGroupStagePlayoffs,
   getGroupPlayers,
@@ -21,7 +21,7 @@ import { advanceWinner, getBracketWinner, clearMatchResult, canEditMatch } from 
 import { advanceDoubleElim, clearDoubleElimMatch, getDoubleElimWinner, canEditDoubleElimMatch } from '../../utils/doubleElimUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
-import { ResultsMatrix } from '../roundrobin/resultsMatrix';
+import { ResultsMatrix } from '../roundrobin/ResultsMatrix';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
 import { BRACKET_TYPES, SCORE_MODES } from '../../types';
 import type {

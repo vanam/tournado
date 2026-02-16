@@ -1,11 +1,11 @@
 import type { ReactElement } from 'react';
 import { useState } from 'react';
-import { StandingsTable } from './standingsTable';
-import { ScoreModal } from '../scoreModal';
-import { ResultsMatrix } from './resultsMatrix';
-import { TabBar } from '../common/tabBar';
-import { WinnerBanner } from '../common/winnerBanner';
-import { FinalResultsTable } from '../common/finalResultsTable';
+import { StandingsTable } from './StandingsTable';
+import { ScoreModal } from '../ScoreModal';
+import { ResultsMatrix } from './ResultsMatrix';
+import { TabBar } from '../common/TabBar';
+import { WinnerBanner } from '../common/WinnerBanner';
+import { FinalResultsTable } from '../common/FinalResultsTable';
 import { computeStandings, isScheduleComplete } from '../../utils/roundRobinUtils';
 import { buildRoundRobinResults } from '../../utils/resultsUtils';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -13,7 +13,7 @@ import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
 import { SCORE_MODES, FORMATS } from '../../types';
 import type { Match, RoundRobinTournament, SetScore } from '../../types';
-import { RoundSchedule } from './roundSchedule';
+import { RoundSchedule } from './RoundSchedule';
 
 type RoundRobinTab = 'standings' | 'matrix' | 'schedule' | 'results';
 

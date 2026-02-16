@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { ModalShell } from './modalShell';
+import { ModalShell } from './ModalShell';
 
 interface ConfirmModalProps {
   title: string;

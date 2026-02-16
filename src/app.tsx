@@ -1,13 +1,13 @@
 import type { ReactElement } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
-import { Layout } from './components/layout';
-import { ErrorBoundary } from './components/errorBoundary';
-import { HomePage } from './pages/homePage';
-import { CreateTournamentPage } from './pages/createTournamentPage';
-import { TournamentPage } from './pages/tournamentPage';
-import { FaqPage } from './pages/faqPage';
-import { CreditsPage } from './pages/creditsPage';
-import { NotFoundPage } from './pages/notFoundPage';
+import { Layout } from './components/Layout';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { HomePage } from './pages/HomePage';
+import { CreateTournamentPage } from './pages/CreateTournamentPage';
+import { TournamentPage } from './pages/TournamentPage';
+import { FaqPage } from './pages/FaqPage';
+import { CreditsPage } from './pages/CreditsPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 export const App = (): ReactElement => {
   return (

@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { persistence } from '../services/persistence';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
-import { TournamentCard } from '../components/tournamentCard';
-import { ConfirmModal } from '../components/confirmModal';
+import { TournamentCard } from '../components/TournamentCard';
+import { ConfirmModal } from '../components/ConfirmModal';
 import type { Tournament } from '../types';
 
 export const HomePage = (): ReactElement => {

@@ -9,7 +9,7 @@ import {generateBracket} from '../utils/bracketUtils';
 import {generateSchedule} from '../utils/roundRobinUtils';
 import {createGroupStage, indexToGroupLabel} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
-import {PlayerInput} from '../components/playerInput';
+import {PlayerInput} from '../components/PlayerInput';
 import {BRACKET_TYPES, FORMATS, SCORE_MODES} from '../types';
 import type {BracketType, Format, Player, ScoreMode, Tournament} from '../types';
 

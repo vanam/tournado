@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { registerSW } from 'virtual:pwa-register';
-import { showToast } from '../components/toastUtils';
+import { showToast } from '../utils/toastUtils';
 import { useTranslation } from '../i18n/useTranslation';
 
 let registered = false;
