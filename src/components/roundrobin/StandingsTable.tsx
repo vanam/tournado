@@ -1,7 +1,7 @@
 import { useState, Fragment, type ReactElement } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
-import { SCORE_MODES } from '../../types';
-import type { ScoreMode, StandingsRow, RoundRobinTiebreakDetails } from '../../types';
+import { ScoreMode } from '../../types';
+import type { StandingsRow, RoundRobinTiebreakDetails, RoundRobinCriteriaKey, CriteriaRow } from '../../types';
 
 interface StandingsTableProps {
   standings: StandingsRow[];
@@ -10,28 +10,13 @@ interface StandingsTableProps {
   scoringMode?: ScoreMode;
 }
 
-type CriteriaKey =
-  | 'headToHead'
-  | 'headToHeadSetDiff'
-  | 'headToHeadSetsWon'
-  | 'setDiff'
-  | 'setsWon'
-  | 'pointsDiff';
-
-interface CriteriaRow {
-  key: CriteriaKey;
-  label: string;
-  value: string;
-  help: string;
-}
-
 function buildCriteriaRows(
   details: RoundRobinTiebreakDetails,
   applied: string[],
   t: (key: string) => string,
   showBalls: boolean
-): CriteriaRow[] {
-  const filteredApplied = applied.filter((key): key is CriteriaKey =>
+): CriteriaRow<RoundRobinCriteriaKey>[] {
+  const filteredApplied = applied.filter((key): key is RoundRobinCriteriaKey =>
     key === 'headToHead' ||
     key === 'headToHeadSetDiff' ||
     key === 'headToHeadSetsWon' ||
@@ -40,7 +25,7 @@ function buildCriteriaRows(
     key === 'pointsDiff'
   );
 
-  const labelMap: Record<CriteriaKey, string> = {
+  const labelMap: Record<RoundRobinCriteriaKey, string> = {
     headToHead: t('roundRobin.tiebreakH2H'),
     headToHeadSetDiff: t('roundRobin.tiebreakH2HSetDiff'),
     headToHeadSetsWon: t('roundRobin.tiebreakH2HSetsWon'),
@@ -49,7 +34,7 @@ function buildCriteriaRows(
     pointsDiff: t('roundRobin.tiebreakPointsDiff'),
   };
 
-  const helpMap: Record<CriteriaKey, string> = {
+  const helpMap: Record<RoundRobinCriteriaKey, string> = {
     headToHead: t('roundRobin.tiebreakH2HHelp'),
     headToHeadSetDiff: t('roundRobin.tiebreakH2HSetDiffHelp'),
     headToHeadSetsWon: t('roundRobin.tiebreakH2HSetsWonHelp'),
@@ -112,13 +97,13 @@ export const StandingsTable = ({
   standings,
   highlightCount = 0,
   wildCardIds,
-  scoringMode = SCORE_MODES.SETS,
+  scoringMode = ScoreMode.SETS,
 }: StandingsTableProps): ReactElement => {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const qualifierCount = Math.max(0, Number.parseInt(String(highlightCount), 10) || 0);
   const isSinglePlayerGroup = standings.length === 1 && qualifierCount > 0;
-  const showBalls = scoringMode === SCORE_MODES.POINTS;
+  const showBalls = scoringMode === ScoreMode.POINTS;
 
   return (
     <div className="overflow-x-auto">

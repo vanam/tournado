@@ -1,8 +1,8 @@
 import { computeStandings } from './roundRobinUtils';
 import { getBracketWinner } from './bracketUtils';
 import { getDoubleElimWinner } from './doubleElimUtils';
-import { SCORE_MODES } from '../types';
-import type { Player, Bracket, RoundRobinSchedule, StandingsRow, RankedResult, DoubleElim, ScoreMode, Match } from '../types';
+import { ScoreMode } from '../types';
+import type { Player, Bracket, RoundRobinSchedule, StandingsRow, RankedResult, DoubleElim, Match } from '../types';
 
 interface TieKeyRow {
   points?: number | undefined;
@@ -29,7 +29,7 @@ interface RankInfo {
 function tieKey(row: TieKeyRow, scoringMode: ScoreMode): string {
   const setDiff = (row.setsWon ?? 0) - (row.setsLost ?? 0);
   const parts = [row.points ?? 0, setDiff, row.setsWon ?? 0];
-  if (scoringMode === SCORE_MODES.POINTS) {
+  if (scoringMode === ScoreMode.POINTS) {
     const pointsDiff = (row.pointsWon ?? 0) - (row.pointsLost ?? 0);
     parts.push(pointsDiff);
   }
@@ -37,7 +37,7 @@ function tieKey(row: TieKeyRow, scoringMode: ScoreMode): string {
 }
 
 export function buildStandingsResults(standings: StandingsRow[], options: RoundRobinOptions = {}): StandingsResultRow[] {
-  const scoringMode = options.scoringMode ?? SCORE_MODES.SETS;
+  const scoringMode = options.scoringMode ?? ScoreMode.SETS;
   const results: StandingsResultRow[] = [];
   let index = 0;
 

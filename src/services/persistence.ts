@@ -1,15 +1,5 @@
-import type { Tournament } from '../types';
-import type { TournamentStorageAdapter } from './storageAdapter';
+import type { Tournament, TournamentStorageAdapter, PersistenceService } from '../types';
 import { createLocalStorageAdapter } from './localStorageAdapter';
-
-export interface PersistenceService {
-  save: (tournament: Tournament) => void;
-  load: (id: string) => Tournament | null;
-  loadAll: () => Tournament[];
-  delete: (id: string) => void;
-  deleteAll: () => void;
-  subscribe: (callback: () => void) => () => void;
-}
 
 export function createPersistenceService(
   adapter: TournamentStorageAdapter = createLocalStorageAdapter()

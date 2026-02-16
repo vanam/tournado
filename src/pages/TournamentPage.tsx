@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FORMATS } from '../types';
+import { Format } from '../types';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { TournamentProvider, useTournament } from '../context/tournamentContext';
@@ -9,13 +9,12 @@ import { DoubleElimView } from '../components/doubleelim/DoubleElimView';
 import { RoundRobinView } from '../components/roundrobin/RoundRobinView';
 import { PlayerList } from '../components/PlayerList';
 import { GroupStageView } from '../components/groupstage/GroupStageView';
-import type { Format } from '../types';
 
 const FORMAT_KEYS: Record<Format, string> = {
-  [FORMATS.SINGLE_ELIM]: 'format.singleElim',
-  [FORMATS.ROUND_ROBIN]: 'format.roundRobin',
-  [FORMATS.GROUPS_TO_BRACKET]: 'format.groupsToBracket',
-  [FORMATS.DOUBLE_ELIM]: 'format.doubleElim',
+  [Format.SINGLE_ELIM]: 'format.singleElim',
+  [Format.ROUND_ROBIN]: 'format.roundRobin',
+  [Format.GROUPS_TO_BRACKET]: 'format.groupsToBracket',
+  [Format.DOUBLE_ELIM]: 'format.doubleElim',
 };
 
 const TournamentContent = (): ReactElement => {
@@ -63,10 +62,10 @@ const TournamentContent = (): ReactElement => {
 
       <PlayerList />
 
-      {tournament.format === FORMATS.SINGLE_ELIM && <BracketView />}
-      {tournament.format === FORMATS.ROUND_ROBIN && <RoundRobinView />}
-      {tournament.format === FORMATS.DOUBLE_ELIM && <DoubleElimView />}
-      {tournament.format === FORMATS.GROUPS_TO_BRACKET && <GroupStageView />}
+      {tournament.format === Format.SINGLE_ELIM && <BracketView />}
+      {tournament.format === Format.ROUND_ROBIN && <RoundRobinView />}
+      {tournament.format === Format.DOUBLE_ELIM && <DoubleElimView />}
+      {tournament.format === Format.GROUPS_TO_BRACKET && <GroupStageView />}
     </div>
   );
 }

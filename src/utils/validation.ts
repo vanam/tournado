@@ -1,4 +1,4 @@
-import { FORMATS, BRACKET_TYPES, SCORE_MODES } from '../types';
+import { Format, BracketType, ScoreMode } from '../types';
 import type {
   Tournament,
   Player,
@@ -40,16 +40,16 @@ function isNullish(value: unknown): value is null | undefined {
   return value === null || value === undefined;
 }
 
-function isValidFormat(value: unknown): value is FORMATS {
-  return Object.values(FORMATS).includes(value as FORMATS);
+function isValidFormat(value: unknown): value is Format {
+  return Object.values(Format).includes(value as Format);
 }
 
-function isValidBracketType(value: unknown): value is BRACKET_TYPES {
-  return Object.values(BRACKET_TYPES).includes(value as BRACKET_TYPES);
+function isValidBracketType(value: unknown): value is BracketType {
+  return Object.values(BracketType).includes(value as BracketType);
 }
 
-function isValidScoreMode(value: unknown): value is SCORE_MODES {
-  return Object.values(SCORE_MODES).includes(value as SCORE_MODES);
+function isValidScoreMode(value: unknown): value is ScoreMode {
+  return Object.values(ScoreMode).includes(value as ScoreMode);
 }
 
 function isValidSetScore(value: unknown): value is [number, number] {
@@ -196,19 +196,19 @@ export function isValidTournament(value: unknown): value is Tournament {
   if (!isValidFormat(value['format'])) return false;
 
   switch (value['format']) {
-    case FORMATS.SINGLE_ELIM: {
+    case Format.SINGLE_ELIM: {
       if (!isValidBracket(value['bracket'])) return false;
       break;
     }
-    case FORMATS.DOUBLE_ELIM: {
+    case Format.DOUBLE_ELIM: {
       if (!isValidDoubleElim(value['doubleElim'])) return false;
       break;
     }
-    case FORMATS.ROUND_ROBIN: {
+    case Format.ROUND_ROBIN: {
       if (!isValidRoundRobinSchedule(value['schedule'])) return false;
       break;
     }
-    case FORMATS.GROUPS_TO_BRACKET: {
+    case Format.GROUPS_TO_BRACKET: {
       if (!isValidGroupStage(value['groupStage'])) return false;
       if ('groupStagePlayoffs' in value && !isNullish(value['groupStagePlayoffs']) && !isValidGroupStagePlayoffs(value['groupStagePlayoffs'])) return false;
       if ('groupStageBrackets' in value && !isNullish(value['groupStageBrackets']) && !isValidGroupStagePlayoffs(value['groupStageBrackets'])) return false;

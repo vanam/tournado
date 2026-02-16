@@ -1,14 +1,14 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
-import { FORMATS } from '../types';
-import type { Format, Tournament } from '../types';
+import { Format } from '../types';
+import type { Tournament } from '../types';
 
 const FORMAT_KEYS: Record<Format, string> = {
-  [FORMATS.SINGLE_ELIM]: 'format.singleElim',
-  [FORMATS.ROUND_ROBIN]: 'format.roundRobin',
-  [FORMATS.GROUPS_TO_BRACKET]: 'format.groupsToBracket',
-  [FORMATS.DOUBLE_ELIM]: 'format.doubleElim',
+  [Format.SINGLE_ELIM]: 'format.singleElim',
+  [Format.ROUND_ROBIN]: 'format.roundRobin',
+  [Format.GROUPS_TO_BRACKET]: 'format.groupsToBracket',
+  [Format.DOUBLE_ELIM]: 'format.doubleElim',
 };
 
 interface TournamentCardProps {

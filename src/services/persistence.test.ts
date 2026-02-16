@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createPersistenceService, type PersistenceService } from './persistence';
+import { createPersistenceService } from './persistence';
 import { createMemoryStorageAdapter } from './memoryStorageAdapter';
-import { FORMATS } from '../types';
-import type { Tournament } from '../types';
+import { Format } from '../types';
+import type { Tournament, PersistenceService } from '../types';
 
 function makeTournament(id: string, name: string): Tournament {
   return {
@@ -10,7 +10,7 @@ function makeTournament(id: string, name: string): Tournament {
     name,
     players: [],
     createdAt: '2024-01-01',
-    format: FORMATS.SINGLE_ELIM,
+    format: Format.SINGLE_ELIM,
     bracket: { rounds: [], thirdPlaceMatch: null },
   };
 }

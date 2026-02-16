@@ -1,7 +1,6 @@
 import { STORAGE_KEY } from '../constants';
-import type { Tournament } from '../types';
+import type { Tournament, TournamentStorageAdapter } from '../types';
 import { validateTournaments } from '../utils/validation';
-import type { TournamentStorageAdapter } from './storageAdapter';
 
 export function createLocalStorageAdapter(): TournamentStorageAdapter {
   return {

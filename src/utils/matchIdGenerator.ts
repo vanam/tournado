@@ -1,7 +1,4 @@
-export interface MatchIdGenerator {
-  nextId: (prefix?: string) => string;
-  reset: () => void;
-}
+import type { MatchIdGenerator } from '../types';
 
 export function createMatchIdGenerator(startAt = 0): MatchIdGenerator {
   let counter = startAt;

@@ -1,17 +1,7 @@
 import { type ReactElement } from 'react';
 import { Toaster } from 'sonner';
 
-export interface ToastAction {
-  label: string;
-  onClick: () => void;
-}
-
-export interface ToastOptions {
-  message: string;
-  action?: ToastAction;
-  dismissLabel?: string;
-  duration?: number;
-}
+export type { ToastAction, ToastOptions } from '../types';
 
 export const ToastContainer = (): ReactElement => {
   return (

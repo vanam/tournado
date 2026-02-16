@@ -23,7 +23,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { ResultsMatrix } from '../roundrobin/ResultsMatrix';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
-import { BRACKET_TYPES, SCORE_MODES } from '../../types';
+import { BracketType, ScoreMode } from '../../types';
 import type {
   Bracket,
   DoubleElim,
@@ -31,7 +31,6 @@ import type {
   GroupStagePlayoffs,
   Match,
   Player,
-  ScoreMode,
   SetScore,
   GroupAdvancerEntry,
 } from '../../types';
@@ -311,11 +310,11 @@ export const GroupStageView = (): ReactElement | null => {
   const players = useMemo(() => tournament?.players ?? [], [tournament?.players]);
   const playoffs = tournament ? getPlayoffs(tournament) : null;
 
-  const scoringMode = tournament?.scoringMode ?? SCORE_MODES.SETS;
+  const scoringMode = tournament?.scoringMode ?? ScoreMode.SETS;
   const groupStageMaxSets = tournament?.groupStageMaxSets ?? tournament?.maxSets ?? DEFAULT_MAX_SETS;
   const bracketMaxSets = tournament?.bracketMaxSets ?? tournament?.maxSets ?? DEFAULT_MAX_SETS;
-  const bracketType = playoffs?.bracketType ?? groupStage?.settings.bracketType ?? BRACKET_TYPES.SINGLE_ELIM;
-  const isDoubleElim = bracketType === BRACKET_TYPES.DOUBLE_ELIM;
+  const bracketType = playoffs?.bracketType ?? groupStage?.settings.bracketType ?? BracketType.SINGLE_ELIM;
+  const isDoubleElim = bracketType === BracketType.DOUBLE_ELIM;
 
   const standingsByGroup = useMemo(
     () => groupStage ? getGroupStandings(groupStage, players, { scoringMode, maxSets: groupStageMaxSets }) : [],

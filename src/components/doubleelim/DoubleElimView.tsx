@@ -15,7 +15,7 @@ import { buildDoubleElimResults } from '../../utils/resultsUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
-import { SCORE_MODES, FORMATS } from '../../types';
+import { ScoreMode, Format } from '../../types';
 import type { DoubleElimTournament, Match, SetScore } from '../../types';
 
 type DoubleElimTab = 'playoff' | 'results';
@@ -28,14 +28,14 @@ function shouldShowFinal(match?: Match | null): boolean {
 }
 
 export const DoubleElimView = (): ReactElement | null => {
-  const { tournament, updateTournament } = useTypedTournament<DoubleElimTournament>(FORMATS.DOUBLE_ELIM);
+  const { tournament, updateTournament } = useTypedTournament<DoubleElimTournament>(Format.DOUBLE_ELIM);
   const { t } = useTranslation();
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [tab, setTab] = useState<DoubleElimTab>('playoff');
 
   const doubleElim = tournament?.doubleElim;
   const players = useMemo(() => tournament?.players ?? [], [tournament?.players]);
-  const scoringMode = tournament?.scoringMode ?? SCORE_MODES.SETS;
+  const scoringMode = tournament?.scoringMode ?? ScoreMode.SETS;
   const maxSets = tournament?.maxSets ?? DEFAULT_MAX_SETS;
 
   const tabs: { id: DoubleElimTab; label: string }[] = [

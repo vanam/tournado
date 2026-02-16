@@ -5,8 +5,8 @@ import { ConfirmModal } from './ConfirmModal';
 import { ModalShell } from './ModalShell';
 import { DEFAULT_MAX_SETS } from '../constants';
 import { getSetTotals, getWalkoverSetWinner, hasWalkover } from '../utils/scoreUtils';
-import { SCORE_MODES } from '../types';
-import type { Match, Player, ScoreMode, SetScore } from '../types';
+import { ScoreMode } from '../types';
+import type { Match, Player, SetScore } from '../types';
 
 export const MAX_POINTS = 111;
 
@@ -53,21 +53,21 @@ export const ScoreModal = ({
   players,
   onSave,
   onClose,
-  scoringMode = SCORE_MODES.SETS,
+  scoringMode = ScoreMode.SETS,
   maxSets: maxSetsProp = DEFAULT_MAX_SETS,
 }: ScoreModalProps): ReactElement => {
   const { t } = useTranslation();
   const maxSets = Number.isFinite(maxSetsProp) && maxSetsProp > 0 ? maxSetsProp : DEFAULT_MAX_SETS;
   const p1 = players.find((p) => p.id === match.player1Id);
   const p2 = players.find((p) => p.id === match.player2Id);
-  const isSetOnly = scoringMode === SCORE_MODES.SETS;
+  const isSetOnly = scoringMode === ScoreMode.SETS;
   const canUseWalkover = isSetOnly;
 
   const initialScores: SetScore[] = ((): SetScore[] => {
     if (match.scores.length > 0) {
       if (isSetOnly) {
         const { p1Sets, p2Sets } = getSetTotals(match.scores, {
-          scoringMode: SCORE_MODES.SETS,
+          scoringMode: ScoreMode.SETS,
           maxSets,
         });
         return [[p1Sets, p2Sets]];

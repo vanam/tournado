@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
 import type { Tournament, GroupsToBracketTournament } from '../types';
 import { persistence } from '../services/persistence';
-import { FORMATS } from '../types';
+import { Format } from '../types';
 
 interface TournamentContextValue {
   tournament: Tournament | null;
@@ -108,7 +108,7 @@ export function useGroupsToBracketTournament(): {
   const { tournament, updateTournament, isLoading } = useTournament();
 
   const typedTournament =
-    tournament?.format === FORMATS.GROUPS_TO_BRACKET
+    tournament?.format === Format.GROUPS_TO_BRACKET
       ? tournament
       : null;
 
@@ -119,7 +119,7 @@ export function useGroupsToBracketTournament(): {
         | ((prev: GroupsToBracketTournament) => GroupsToBracketTournament)
     ) => {
       updateTournament((prev) => {
-        if (prev.format !== FORMATS.GROUPS_TO_BRACKET) return prev;
+        if (prev.format !== Format.GROUPS_TO_BRACKET) return prev;
         if (typeof updater === 'function') {
           return updater(prev);
         }

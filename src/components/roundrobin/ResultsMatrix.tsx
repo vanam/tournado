@@ -6,8 +6,8 @@ import {
   hasWalkover,
   isWalkoverScore,
 } from '../../utils/scoreUtils';
-import { SCORE_MODES } from '../../types';
-import type { Match, Player, RoundRobinSchedule, ScoreMode, SetScore } from '../../types';
+import { ScoreMode } from '../../types';
+import type { Match, Player, RoundRobinSchedule, SetScore } from '../../types';
 
 interface SetEntry {
   text: string;
@@ -24,10 +24,10 @@ interface ResultsMatrixProps {
 export const ResultsMatrix = ({
   players,
   schedule,
-  scoringMode = SCORE_MODES.SETS,
+  scoringMode = ScoreMode.SETS,
   maxSets,
 }: ResultsMatrixProps): ReactElement => {
-  const showPoints = scoringMode === SCORE_MODES.POINTS;
+  const showPoints = scoringMode === ScoreMode.POINTS;
 
   const matchIndex = useMemo(() => {
     const index = new Map<string, Match>();

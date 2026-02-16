@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { FORMATS } from '../types';
+import { Format } from '../types';
 import type { SingleElimTournament, GroupsToBracketTournament } from '../types';
 
 function emptyUnsubscribe(): void {}
@@ -23,7 +23,7 @@ function makeSingleElimTournament(id: string, name: string): SingleElimTournamen
     name,
     players: [{ id: 'p1', name: 'Player 1' }],
     createdAt: '2024-01-01',
-    format: FORMATS.SINGLE_ELIM,
+    format: Format.SINGLE_ELIM,
     bracket: { rounds: [], thirdPlaceMatch: null },
   };
 }
@@ -34,7 +34,7 @@ function makeGroupsToBracketTournament(id: string, name: string): GroupsToBracke
     name,
     players: [{ id: 'p1', name: 'Player 1' }],
     createdAt: '2024-01-01',
-    format: FORMATS.GROUPS_TO_BRACKET,
+    format: Format.GROUPS_TO_BRACKET,
     groupStage: {
       groups: [],
       settings: { groupCount: 2, qualifiers: [1, 1], consolation: false },
@@ -45,13 +45,13 @@ function makeGroupsToBracketTournament(id: string, name: string): GroupsToBracke
 describe('Tournament type guards', () => {
   it('correctly identifies SingleElimTournament format', () => {
     const tournament = makeSingleElimTournament('t1', 'Test');
-    expect(tournament.format).toBe(FORMATS.SINGLE_ELIM);
+    expect(tournament.format).toBe(Format.SINGLE_ELIM);
     expect(tournament.bracket).toBeDefined();
   });
 
   it('correctly identifies GroupsToBracketTournament format', () => {
     const tournament = makeGroupsToBracketTournament('t1', 'Test');
-    expect(tournament.format).toBe(FORMATS.GROUPS_TO_BRACKET);
+    expect(tournament.format).toBe(Format.GROUPS_TO_BRACKET);
     expect(tournament.groupStage).toBeDefined();
   });
 

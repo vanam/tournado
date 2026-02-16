@@ -1,8 +1,8 @@
 import { getSetTotals, isWalkoverScore } from './scoreUtils';
-import { SCORE_MODES } from '../types';
+import { ScoreMode } from '../types';
 import { createMatchIdGenerator } from './matchIdGenerator';
 import { createMatch } from './matchFactory';
-import type { Player, Match, Round, RoundRobinSchedule, StandingsRow, ScoreMode, RoundRobinTiebreakDetails } from '../types';
+import type { Player, Match, Round, RoundRobinSchedule, StandingsRow, RoundRobinTiebreakDetails } from '../types';
 
 interface ScheduleOptions {
   idPrefix?: string | undefined;
@@ -93,7 +93,7 @@ function updatePlayerStats(match: Match, stats: Record<string, StandingsRow>, sc
   p2.setsWon += p2Sets;
   p2.setsLost += p1Sets;
 
-  if (scoringMode === SCORE_MODES.POINTS) {
+  if (scoringMode === ScoreMode.POINTS) {
     const validScores = Array.isArray(match.scores)
       ? match.scores.filter((s) => Array.isArray(s))
       : [];
@@ -131,7 +131,7 @@ interface MatchDetail {
 function computeMatchPoints(match: Match, scoringMode: ScoreMode): [number, number] {
   let p1Points = 0;
   let p2Points = 0;
-  if (scoringMode === SCORE_MODES.POINTS) {
+  if (scoringMode === ScoreMode.POINTS) {
     const validScores = Array.isArray(match.scores)
       ? match.scores.filter((s) => Array.isArray(s))
       : [];
@@ -376,7 +376,7 @@ function resolveTies(standings: StandingsRow[], matchDetails: Record<string, Mat
 }
 
 export function computeStandings(schedule: RoundRobinSchedule, players: Player[], options: StandingsOptions = {}): StandingsRow[] {
-  const { scoringMode = SCORE_MODES.POINTS, maxSets } = options;
+  const { scoringMode = ScoreMode.POINTS, maxSets } = options;
   const stats: Record<string, StandingsRow> = {};
   for (const p of players) {
     stats[p.id] = {
@@ -401,7 +401,7 @@ export function computeStandings(schedule: RoundRobinSchedule, players: Player[]
   }
 
   const matchDetails = buildMatchDetailsLookup(schedule, scoringMode, maxSets);
-  const pointsDiffApplicable = scoringMode === SCORE_MODES.POINTS;
+  const pointsDiffApplicable = scoringMode === ScoreMode.POINTS;
   let standings = Object.values(stats);
   standings = sortStandings(standings);
   standings = resolveTies(standings, matchDetails, pointsDiffApplicable);

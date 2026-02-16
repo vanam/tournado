@@ -6,7 +6,7 @@ import {
   getGroupAdvancers,
   isGroupStageComplete,
 } from './groupStageUtils';
-import { SCORE_MODES } from '../types';
+import { ScoreMode } from '../types';
 import type { Player, SetScore } from '../types';
 
 function makePlayers(list: number[]): Player[] {
@@ -137,7 +137,7 @@ describe('getGroupAdvancers', () => {
     }
 
     const { luckyCandidates, luckyLosers } = getGroupAdvancers(groupStage, players, {
-      scoringMode: SCORE_MODES.POINTS,
+      scoringMode: ScoreMode.POINTS,
     });
 
     expect(luckyLosers).toHaveLength(1);

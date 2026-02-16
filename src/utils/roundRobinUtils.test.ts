@@ -4,7 +4,7 @@ import {
   computeStandings,
   isScheduleComplete,
 } from './roundRobinUtils';
-import { SCORE_MODES } from '../types';
+import { ScoreMode } from '../types';
 import type { Player, Match } from '../types';
 
 function makePlayers(n: number): Player[] {
@@ -279,7 +279,7 @@ describe('computeStandings', () => {
     match.winnerId = match.player1Id;
     match.scores = [[11, 3], [111, 0], [111, 0]];
 
-    const standings = computeStandings(schedule, players, { scoringMode: SCORE_MODES.POINTS });
+    const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.POINTS });
     const winner = standings.find((s) => s.playerId === match.player1Id)!;
     const loser = standings.find((s) => s.playerId === match.player2Id)!;
 
@@ -514,7 +514,7 @@ describe('tiebreaker logic', () => {
     match.winnerId = match.player1Id;
     match.scores = [[11, 5], [11, 3]];
 
-    const standings = computeStandings(schedule, players, { scoringMode: SCORE_MODES.POINTS });
+    const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.POINTS });
     const winner = standings.find((s) => s.playerId === match.player1Id)!;
 
     expect(winner.tiebreakDetails!.pointsDiffApplicable).toBe(true);
@@ -528,7 +528,7 @@ describe('tiebreaker logic', () => {
     match.winnerId = match.player1Id;
     match.scores = [[11, 5], [11, 3]];
 
-    const standings = computeStandings(schedule, players, { scoringMode: SCORE_MODES.SETS });
+    const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.SETS });
     const winner = standings.find((s) => s.playerId === match.player1Id)!;
 
     expect(winner.tiebreakDetails!.pointsDiffApplicable).toBe(false);
@@ -818,7 +818,7 @@ describe('tiebreaker logic', () => {
       match.winnerId = match.player1Id;
       match.scores = [[11, 5], [11, 3]];
 
-      const standings = computeStandings(schedule, players, { scoringMode: SCORE_MODES.POINTS });
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.POINTS });
       const winner = standings.find(s => s.playerId === match.player1Id)!;
       const loser = standings.find(s => s.playerId === match.player2Id)!;
 
@@ -833,7 +833,7 @@ describe('tiebreaker logic', () => {
       match.winnerId = match.player1Id;
       match.scores = [[11, 5], [11, 3]];
 
-      const standings = computeStandings(schedule, players, { scoringMode: SCORE_MODES.POINTS });
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.POINTS });
       const winner = standings.find(s => s.playerId === match.player1Id)!;
       const loser = standings.find(s => s.playerId === match.player2Id)!;
 
@@ -848,7 +848,7 @@ describe('tiebreaker logic', () => {
       match.winnerId = match.player1Id;
       match.scores = [[11, 5], [11, 3]];
 
-      const standings = computeStandings(schedule, players, { scoringMode: SCORE_MODES.SETS });
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.SETS });
       const winner = standings.find(s => s.playerId === match.player1Id)!;
 
       expect(winner.tiebreakDetails!.pointsDiffApplicable).toBe(false);
@@ -861,7 +861,7 @@ describe('tiebreaker logic', () => {
       match.winnerId = match.player1Id;
       match.scores = [[11, 5], [111, 0], [111, 0]];
 
-      const standings = computeStandings(schedule, players, { scoringMode: SCORE_MODES.POINTS });
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.POINTS });
       const winner = standings.find(s => s.playerId === match.player1Id)!;
 
       expect(winner.tiebreakDetails!.pointsDiff).toBe(6);

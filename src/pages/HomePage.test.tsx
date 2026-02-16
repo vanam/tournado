@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
 import { HomePage } from './HomePage';
-import { FORMATS } from '../types';
+import { Format } from '../types';
 import type { Tournament } from '../types';
 
 const mockTournaments: Tournament[] = [
@@ -11,7 +11,7 @@ const mockTournaments: Tournament[] = [
     name: 'Tournament 1',
     players: [],
     createdAt: '2024-01-01',
-    format: FORMATS.SINGLE_ELIM,
+    format: Format.SINGLE_ELIM,
     bracket: { rounds: [], thirdPlaceMatch: null },
   },
   {
@@ -19,7 +19,7 @@ const mockTournaments: Tournament[] = [
     name: 'Tournament 2',
     players: [],
     createdAt: '2024-01-02',
-    format: FORMATS.SINGLE_ELIM,
+    format: Format.SINGLE_ELIM,
     bracket: { rounds: [], thirdPlaceMatch: null },
   },
 ];

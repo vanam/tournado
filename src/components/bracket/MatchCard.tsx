@@ -1,8 +1,8 @@
 import type { ReactElement, KeyboardEvent } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { formatSetPointEntries, getSetTotals, hasWalkover } from '../../utils/scoreUtils';
-import { SCORE_MODES } from '../../types';
-import type { Match, Player, ScoreMode } from '../../types';
+import { ScoreMode } from '../../types';
+import type { Match, Player } from '../../types';
 
 interface MatchCardProps {
   match: Match;
@@ -104,7 +104,7 @@ export const MatchCard = ({
   canEdit,
   onClick,
   wildCardIds,
-  scoringMode = SCORE_MODES.SETS,
+  scoringMode = ScoreMode.SETS,
   maxSets,
   roundIndex,
   groupPlacementByPlayerId,
@@ -117,7 +117,7 @@ export const MatchCard = ({
   const isWildCard2 = p2 && wildCardIds?.has(p2.id);
   const isBye = !match.player1Id || !match.player2Id;
   const isPlayable = match.player1Id && match.player2Id && canEdit;
-  const showPoints = scoringMode === SCORE_MODES.POINTS;
+  const showPoints = scoringMode === ScoreMode.POINTS;
 
   const { p1Sets, p2Sets } = getSetTotals(match.scores, { scoringMode, maxSets });
   const isWalkover = match.walkover || hasWalkover(match.scores);

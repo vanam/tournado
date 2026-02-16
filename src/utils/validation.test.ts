@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isValidTournament, validateTournaments } from './validation';
-import { FORMATS, SCORE_MODES } from '../types';
+import { Format, ScoreMode } from '../types';
 import type { Tournament, Player, Match, Bracket, RoundRobinSchedule, DoubleElim, GroupStage } from '../types';
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
@@ -81,7 +81,7 @@ function makeSingleElimTournament(overrides: Partial<Tournament> = {}): Tourname
     name: 'Test Tournament',
     players: [makePlayer()],
     createdAt: '2024-01-01T00:00:00Z',
-    format: FORMATS.SINGLE_ELIM,
+    format: Format.SINGLE_ELIM,
     bracket: makeBracket(),
     ...overrides,
   } as Tournament;
@@ -93,7 +93,7 @@ function makeDoubleElimTournament(overrides: Partial<Tournament> = {}): Tourname
     name: 'Test Tournament',
     players: [makePlayer()],
     createdAt: '2024-01-01T00:00:00Z',
-    format: FORMATS.DOUBLE_ELIM,
+    format: Format.DOUBLE_ELIM,
     doubleElim: makeDoubleElim(),
     ...overrides,
   } as Tournament;
@@ -105,7 +105,7 @@ function makeRoundRobinTournament(overrides: Partial<Tournament> = {}): Tourname
     name: 'Test Tournament',
     players: [makePlayer()],
     createdAt: '2024-01-01T00:00:00Z',
-    format: FORMATS.ROUND_ROBIN,
+    format: Format.ROUND_ROBIN,
     schedule: makeRoundRobinSchedule(),
     ...overrides,
   } as Tournament;
@@ -117,7 +117,7 @@ function makeGroupsToBracketTournament(overrides: Partial<Tournament> = {}): Tou
     name: 'Test Tournament',
     players: [makePlayer()],
     createdAt: '2024-01-01T00:00:00Z',
-    format: FORMATS.GROUPS_TO_BRACKET,
+    format: Format.GROUPS_TO_BRACKET,
     groupStage: makeGroupStage(),
     ...overrides,
   } as Tournament;
@@ -145,27 +145,27 @@ describe('isValidTournament', () => {
     });
 
     it('returns false for missing id', () => {
-      const t = { name: 'Test', players: [], createdAt: '2024-01-01', format: FORMATS.SINGLE_ELIM, bracket: makeBracket() };
+      const t = { name: 'Test', players: [], createdAt: '2024-01-01', format: Format.SINGLE_ELIM, bracket: makeBracket() };
       expect(isValidTournament(t)).toBe(false);
     });
 
     it('returns false for missing name', () => {
-      const t = { id: 't1', players: [], createdAt: '2024-01-01', format: FORMATS.SINGLE_ELIM, bracket: makeBracket() };
+      const t = { id: 't1', players: [], createdAt: '2024-01-01', format: Format.SINGLE_ELIM, bracket: makeBracket() };
       expect(isValidTournament(t)).toBe(false);
     });
 
     it('returns false for missing players', () => {
-      const t = { id: 't1', name: 'Test', createdAt: '2024-01-01', format: FORMATS.SINGLE_ELIM, bracket: makeBracket() };
+      const t = { id: 't1', name: 'Test', createdAt: '2024-01-01', format: Format.SINGLE_ELIM, bracket: makeBracket() };
       expect(isValidTournament(t)).toBe(false);
     });
 
     it('returns false for invalid players', () => {
-      const t = { id: 't1', name: 'Test', players: [{ id: 123 }], createdAt: '2024-01-01', format: FORMATS.SINGLE_ELIM, bracket: makeBracket() };
+      const t = { id: 't1', name: 'Test', players: [{ id: 123 }], createdAt: '2024-01-01', format: Format.SINGLE_ELIM, bracket: makeBracket() };
       expect(isValidTournament(t)).toBe(false);
     });
 
     it('returns false for missing createdAt', () => {
-      const t = { id: 't1', name: 'Test', players: [], format: FORMATS.SINGLE_ELIM, bracket: makeBracket() };
+      const t = { id: 't1', name: 'Test', players: [], format: Format.SINGLE_ELIM, bracket: makeBracket() };
       expect(isValidTournament(t)).toBe(false);
     });
 
@@ -186,7 +186,7 @@ describe('isValidTournament', () => {
     });
 
     it('returns false for missing bracket', () => {
-      const t = { id: 't1', name: 'Test', players: [], createdAt: '2024-01-01', format: FORMATS.SINGLE_ELIM };
+      const t = { id: 't1', name: 'Test', players: [], createdAt: '2024-01-01', format: Format.SINGLE_ELIM };
       expect(isValidTournament(t)).toBe(false);
     });
 
@@ -209,7 +209,7 @@ describe('isValidTournament', () => {
     });
 
     it('returns false for missing doubleElim', () => {
-      const t = { id: 't1', name: 'Test', players: [], createdAt: '2024-01-01', format: FORMATS.DOUBLE_ELIM };
+      const t = { id: 't1', name: 'Test', players: [], createdAt: '2024-01-01', format: Format.DOUBLE_ELIM };
       expect(isValidTournament(t)).toBe(false);
     });
 
@@ -225,7 +225,7 @@ describe('isValidTournament', () => {
     });
 
     it('returns false for missing schedule', () => {
-      const t = { id: 't1', name: 'Test', players: [], createdAt: '2024-01-01', format: FORMATS.ROUND_ROBIN };
+      const t = { id: 't1', name: 'Test', players: [], createdAt: '2024-01-01', format: Format.ROUND_ROBIN };
       expect(isValidTournament(t)).toBe(false);
     });
 
@@ -241,7 +241,7 @@ describe('isValidTournament', () => {
     });
 
     it('returns false for missing groupStage', () => {
-      const t = { id: 't1', name: 'Test', players: [], createdAt: '2024-01-01', format: FORMATS.GROUPS_TO_BRACKET };
+      const t = { id: 't1', name: 'Test', players: [], createdAt: '2024-01-01', format: Format.GROUPS_TO_BRACKET };
       expect(isValidTournament(t)).toBe(false);
     });
 
@@ -273,12 +273,12 @@ describe('isValidTournament', () => {
     });
 
     it('accepts optional scoringMode', () => {
-      const t = makeSingleElimTournament({ scoringMode: SCORE_MODES.SETS });
+      const t = makeSingleElimTournament({ scoringMode: ScoreMode.SETS });
       expect(isValidTournament(t)).toBe(true);
     });
 
     it('rejects invalid scoringMode', () => {
-      const t = makeSingleElimTournament({ scoringMode: 'INVALID' as unknown as typeof SCORE_MODES.SETS });
+      const t = makeSingleElimTournament({ scoringMode: 'INVALID' as unknown as typeof ScoreMode.SETS });
       expect(isValidTournament(t)).toBe(false);
     });
 

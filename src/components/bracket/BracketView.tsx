@@ -10,13 +10,13 @@ import { buildBracketResults } from '../../utils/resultsUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
-import { SCORE_MODES, FORMATS } from '../../types';
+import { ScoreMode, Format } from '../../types';
 import type { Match, SetScore, SingleElimTournament } from '../../types';
 
 type BracketTab = 'playoff' | 'results';
 
 export const BracketView = (): ReactElement | null => {
-  const { tournament, updateTournament } = useTypedTournament<SingleElimTournament>(FORMATS.SINGLE_ELIM);
+  const { tournament, updateTournament } = useTypedTournament<SingleElimTournament>(Format.SINGLE_ELIM);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [tab, setTab] = useState<BracketTab>('playoff');
   const { t } = useTranslation();
@@ -24,7 +24,7 @@ export const BracketView = (): ReactElement | null => {
   if (!tournament) return null;
 
   const { bracket, players } = tournament;
-  const scoringMode = tournament.scoringMode ?? SCORE_MODES.SETS;
+  const scoringMode = tournament.scoringMode ?? ScoreMode.SETS;
   const maxSets = tournament.maxSets ?? DEFAULT_MAX_SETS;
   const winner = getBracketWinner(bracket);
   const thirdPlaceMatch = bracket.thirdPlaceMatch;

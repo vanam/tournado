@@ -1,8 +1,8 @@
 import { useMemo, Fragment, useState, type ReactElement } from 'react';
-import type { Group, GroupAdvancerEntry, ScoreMode, StandingsRow } from '../../types';
+import {type Group, type GroupAdvancerEntry, type StandingsRow, type GroupStageCriteriaKey, type CriteriaRow } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 import { indexToGroupLabel } from '../../utils/groupStageUtils';
-import { SCORE_MODES } from '../../types';
+import { ScoreMode } from '../../types';
 
 type TranslationFn = (key: string, params?: Record<string, string | number>) => string;
 
@@ -21,26 +21,10 @@ function formatSignedNumber(value: number): string {
   return value > 0 ? `+${formatted}` : formatted;
 }
 
-type CriteriaKey =
-  | 'setsWonPerMatch'
-  | 'setDiffPerMatch'
-  | 'pointsDiffPerMatch'
-  | 'opponentAvgRank'
-  | 'relativeRank'
-  | 'fairPlay'
-  | 'lottery';
-
-interface CriteriaRow {
-  key: CriteriaKey;
-  label: string;
-  value: string;
-  help: string;
-}
-
-function buildCriteriaRows(player: GroupAdvancerEntry, t: TranslationFn, showBalls: boolean): CriteriaRow[] {
+function buildCriteriaRows(player: GroupAdvancerEntry, t: TranslationFn, showBalls: boolean): CriteriaRow<GroupStageCriteriaKey>[] {
   const details = player.tiebreakDetails;
   const applied = Array.isArray(player.tiebreakApplied)
-    ? player.tiebreakApplied.filter((key): key is CriteriaKey =>
+    ? player.tiebreakApplied.filter((key): key is GroupStageCriteriaKey =>
         key === 'setsWonPerMatch' ||
         key === 'setDiffPerMatch' ||
         key === 'pointsDiffPerMatch' ||
@@ -50,7 +34,7 @@ function buildCriteriaRows(player: GroupAdvancerEntry, t: TranslationFn, showBal
         key === 'lottery'
       )
     : [];
-  const labelMap: Record<CriteriaKey, string> = {
+  const labelMap: Record<GroupStageCriteriaKey, string> = {
     setsWonPerMatch: t('groupStage.luckyCriteriaSetsWon'),
     setDiffPerMatch: t('groupStage.luckyCriteriaSetDiff'),
     pointsDiffPerMatch: t('groupStage.luckyCriteriaPointsDiff'),
@@ -59,7 +43,7 @@ function buildCriteriaRows(player: GroupAdvancerEntry, t: TranslationFn, showBal
     fairPlay: t('groupStage.luckyCriteriaFairPlay'),
     lottery: t('groupStage.luckyCriteriaLottery'),
   };
-  const helpMap: Record<CriteriaKey, string> = {
+  const helpMap: Record<GroupStageCriteriaKey, string> = {
     setsWonPerMatch: t('groupStage.luckyCriteriaSetsWonHelp'),
     setDiffPerMatch: t('groupStage.luckyCriteriaSetDiffHelp'),
     pointsDiffPerMatch: t('groupStage.luckyCriteriaPointsDiffHelp'),
@@ -131,7 +115,7 @@ export const GroupAdvancersPanel = ({
   luckyCandidates = [],
   groups,
   bracketTargetSize,
-  scoringMode = SCORE_MODES.SETS,
+  scoringMode = ScoreMode.SETS,
 }: GroupAdvancersPanelProps): ReactElement | null => {
   const { t } = useTranslation();
   const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
@@ -145,7 +129,7 @@ export const GroupAdvancersPanel = ({
   }, [groups, t]);
 
   const luckyIdSet = useMemo(() => new Set(luckyLosers.map((player) => player.id)), [luckyLosers]);
-  const showBalls = scoringMode === SCORE_MODES.POINTS;
+  const showBalls = scoringMode === ScoreMode.POINTS;
 
   const hasLucky = luckyLosers.length > 0;
   const hasLuckyCandidates = luckyCandidates.length > 0;

@@ -7,8 +7,8 @@ import {
   hasWalkover,
   isWalkoverScore,
 } from '../../utils/scoreUtils';
-import { SCORE_MODES } from '../../types';
-import type { Match, Player, ScoreMode, SetScore } from '../../types';
+import { ScoreMode } from '../../types';
+import type { Match, Player, SetScore } from '../../types';
 
 interface SetResultEntry {
   text: string;
@@ -27,13 +27,13 @@ export const RRMatchCard = ({
   match,
   players,
   onEdit,
-  scoringMode = SCORE_MODES.SETS,
+  scoringMode = ScoreMode.SETS,
   maxSets,
 }: RRMatchCardProps): ReactElement => {
   const { t } = useTranslation();
   const p1 = players.find((p) => p.id === match.player1Id);
   const p2 = players.find((p) => p.id === match.player2Id);
-  const showPoints = scoringMode === SCORE_MODES.POINTS;
+  const showPoints = scoringMode === ScoreMode.POINTS;
 
   const { p1Sets, p2Sets } = getSetTotals(match.scores, { scoringMode, maxSets });
   const isWalkover = match.walkover || hasWalkover(match.scores);

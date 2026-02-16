@@ -1,5 +1,4 @@
-import type { Tournament } from '../types';
-import type { TournamentStorageAdapter } from './storageAdapter';
+import type { Tournament, TournamentStorageAdapter } from '../types';
 
 export function createMemoryStorageAdapter(initialData: Tournament[] = []): TournamentStorageAdapter {
   let tournaments: Tournament[] = [...initialData];

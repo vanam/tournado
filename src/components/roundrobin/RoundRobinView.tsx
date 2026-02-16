@@ -11,14 +11,14 @@ import { buildRoundRobinResults } from '../../utils/resultsUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
-import { SCORE_MODES, FORMATS } from '../../types';
+import { ScoreMode, Format } from '../../types';
 import type { Match, RoundRobinTournament, SetScore } from '../../types';
 import { RoundSchedule } from './RoundSchedule';
 
 type RoundRobinTab = 'standings' | 'matrix' | 'schedule' | 'results';
 
 export const RoundRobinView = (): ReactElement | null => {
-  const { tournament, updateTournament } = useTypedTournament<RoundRobinTournament>(FORMATS.ROUND_ROBIN);
+  const { tournament, updateTournament } = useTypedTournament<RoundRobinTournament>(Format.ROUND_ROBIN);
   const [tab, setTab] = useState<RoundRobinTab>('standings');
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const { t } = useTranslation();
@@ -26,7 +26,7 @@ export const RoundRobinView = (): ReactElement | null => {
   if (!tournament) return null;
 
   const { schedule, players } = tournament;
-  const scoringMode = tournament.scoringMode ?? SCORE_MODES.SETS;
+  const scoringMode = tournament.scoringMode ?? ScoreMode.SETS;
   const maxSets = tournament.maxSets ?? DEFAULT_MAX_SETS;
   const standings = computeStandings(schedule, players, { scoringMode, maxSets });
   const complete = isScheduleComplete(schedule);

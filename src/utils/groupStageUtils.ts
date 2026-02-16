@@ -1,5 +1,4 @@
 import type {
-  BracketType,
   Group,
   GroupAdvancerEntry,
   GroupAdvancersResult,
@@ -8,7 +7,6 @@ import type {
   GroupStagePlayoffs,
   NormalizedStats,
   Player, RoundRobinSchedule,
-  ScoreMode,
   StandingsRow,
   TiebreakDetails,
 } from '../types';
@@ -16,7 +14,7 @@ import {computeStandings, generateSchedule, isScheduleComplete} from './roundRob
 import {generateBracket, nextPowerOf2} from './bracketUtils';
 import {generateDoubleElim} from './doubleElimUtils';
 import {hasWalkover} from './scoreUtils';
-import {BRACKET_TYPES, SCORE_MODES} from '../types';
+import {BracketType, ScoreMode} from '../types';
 
 const GROUP_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -109,7 +107,7 @@ export function createGroupStage(
       groupCount,
       qualifiers,
       consolation: !!settings.consolation,
-      bracketType: settings.bracketType ?? BRACKET_TYPES.SINGLE_ELIM,
+      bracketType: settings.bracketType ?? BracketType.SINGLE_ELIM,
     },
   };
 }
@@ -386,7 +384,7 @@ export function getGroupAdvancers(
   const qualifiers = normalizeQualifiers(groupStage.settings.qualifiers, groupStage.groups.length);
   let main: GroupAdvancerEntry[] = [];
   const nonQualifiers: GroupAdvancerEntry[] = [];
-  const showBalls = options.scoringMode === SCORE_MODES.POINTS;
+  const showBalls = options.scoringMode === ScoreMode.POINTS;
 
   for (const [groupIndex, group] of groupStage.groups.entries()) {
     const take = Math.min(qualifiers[groupIndex] ?? 0, group.playerIds.length);
@@ -438,21 +436,21 @@ export function buildGroupStagePlayoffs(
   options: GetAdvancersOptions = {}
 ): GroupStagePlayoffs {
   const { mainWithLucky, consolation } = getGroupAdvancers(groupStage, players, options);
-  const bracketType = groupStage.settings.bracketType ?? BRACKET_TYPES.SINGLE_ELIM;
+  const bracketType = groupStage.settings.bracketType ?? BracketType.SINGLE_ELIM;
 
-  const mainBracket = bracketType === BRACKET_TYPES.SINGLE_ELIM && mainWithLucky.length >= 2
+  const mainBracket = bracketType === BracketType.SINGLE_ELIM && mainWithLucky.length >= 2
     ? generateBracket(mainWithLucky)
     : null;
-  const mainDoubleElim = bracketType === BRACKET_TYPES.DOUBLE_ELIM && mainWithLucky.length >= 2
+  const mainDoubleElim = bracketType === BracketType.DOUBLE_ELIM && mainWithLucky.length >= 2
     ? generateDoubleElim(mainWithLucky)
     : null;
 
-  const consolationBracket = bracketType === BRACKET_TYPES.SINGLE_ELIM
+  const consolationBracket = bracketType === BracketType.SINGLE_ELIM
     && groupStage.settings.consolation
     && consolation.length >= 2
     ? generateBracket(consolation)
     : null;
-  const consolationDoubleElim = bracketType === BRACKET_TYPES.DOUBLE_ELIM
+  const consolationDoubleElim = bracketType === BracketType.DOUBLE_ELIM
     && groupStage.settings.consolation
     && consolation.length >= 2
     ? generateDoubleElim(consolation)

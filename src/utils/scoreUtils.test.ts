@@ -7,7 +7,7 @@ import {
   hasWalkover,
   isWalkoverScore,
 } from './scoreUtils';
-import { SCORE_MODES } from '../types';
+import { ScoreMode } from '../types';
 import type { SetScore } from '../types';
 
 describe('walkover helpers', () => {
@@ -36,13 +36,13 @@ describe('walkover helpers', () => {
 describe('getSetTotals with walkover sentinel', () => {
   it('counts walkover sets for player 1', () => {
     const scores: SetScore[] = [[11, 3], [111, 0], [111, 0]];
-    const result = getSetTotals(scores, { scoringMode: SCORE_MODES.POINTS });
+    const result = getSetTotals(scores, { scoringMode: ScoreMode.POINTS });
     expect(result).toEqual({ p1Sets: 3, p2Sets: 0 });
   });
 
   it('counts walkover sets for player 2 via -111', () => {
     const scores: SetScore[] = [[11, 9], [-111, 0], [-111, 0]];
-    const result = getSetTotals(scores, { scoringMode: SCORE_MODES.POINTS });
+    const result = getSetTotals(scores, { scoringMode: ScoreMode.POINTS });
     expect(result).toEqual({ p1Sets: 1, p2Sets: 2 });
   });
 });

@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 import { RRMatchCard } from './RrMatchCard';
 import { useTranslation } from '../../i18n/useTranslation';
-import { SCORE_MODES } from '../../types';
-import type { Match, Player, RoundRobinSchedule, ScoreMode } from '../../types';
+import { ScoreMode } from '../../types';
+import type { Match, Player, RoundRobinSchedule } from '../../types';
 
 interface RoundScheduleProps {
   schedule: RoundRobinSchedule;
@@ -16,7 +16,7 @@ export const RoundSchedule = ({
   schedule,
   players,
   onEditMatch,
-  scoringMode = SCORE_MODES.SETS,
+  scoringMode = ScoreMode.SETS,
   maxSets,
 }: RoundScheduleProps): ReactElement => {
   const { t } = useTranslation();

@@ -10,14 +10,14 @@ import {generateSchedule} from '../utils/roundRobinUtils';
 import {createGroupStage, indexToGroupLabel} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
 import {PlayerInput} from '../components/PlayerInput';
-import {BRACKET_TYPES, FORMATS, SCORE_MODES} from '../types';
-import type {BracketType, Format, Player, ScoreMode, Tournament} from '../types';
+import {BracketType, Format, ScoreMode} from '../types';
+import type {Player, Tournament} from '../types';
 
 const FORMAT_KEYS: Record<Format, string> = {
-  [FORMATS.SINGLE_ELIM]: 'format.singleElim',
-  [FORMATS.ROUND_ROBIN]: 'format.roundRobin',
-  [FORMATS.GROUPS_TO_BRACKET]: 'format.groupsToBracket',
-  [FORMATS.DOUBLE_ELIM]: 'format.doubleElim',
+  [Format.SINGLE_ELIM]: 'format.singleElim',
+  [Format.ROUND_ROBIN]: 'format.roundRobin',
+  [Format.GROUPS_TO_BRACKET]: 'format.groupsToBracket',
+  [Format.DOUBLE_ELIM]: 'format.doubleElim',
 };
 
 export const CreateTournamentPage = (): ReactElement => {
@@ -27,13 +27,13 @@ export const CreateTournamentPage = (): ReactElement => {
   usePageTitle(t('create.title'));
 
   const [name, setName] = useState('');
-  const [format, setFormat] = useState<Format>(FORMATS.SINGLE_ELIM);
+  const [format, setFormat] = useState<Format>(Format.SINGLE_ELIM);
   const [players, setPlayers] = useState<Player[]>([]);
   const [groupCount, setGroupCount] = useState(2);
   const [qualifiers, setQualifiers] = useState<number[]>([2, 2]);
   const [consolation, setConsolation] = useState(false);
-  const [bracketType, setBracketType] = useState<BracketType>(BRACKET_TYPES.SINGLE_ELIM);
-  const [scoringMode, setScoringMode] = useState<ScoreMode>(SCORE_MODES.SETS);
+  const [bracketType, setBracketType] = useState<BracketType>(BracketType.SINGLE_ELIM);
+  const [scoringMode, setScoringMode] = useState<ScoreMode>(ScoreMode.SETS);
   const [maxSets, setMaxSets] = useState(DEFAULT_MAX_SETS);
   const [groupStageMaxSets, setGroupStageMaxSets] = useState(DEFAULT_MAX_SETS);
   const [bracketMaxSets, setBracketMaxSets] = useState(DEFAULT_MAX_SETS);
@@ -72,7 +72,7 @@ export const CreateTournamentPage = (): ReactElement => {
       setError(t('create.errorPlayers', { minPlayers: MIN_PLAYERS }));
       return;
     }
-    if (format === FORMATS.GROUPS_TO_BRACKET && groupCount > players.length) {
+    if (format === Format.GROUPS_TO_BRACKET && groupCount > players.length) {
       setError(t('create.errorGroupsTooMany'));
       return;
     }
@@ -93,31 +93,31 @@ export const CreateTournamentPage = (): ReactElement => {
     let tournament: Tournament;
 
     switch (format) {
-      case FORMATS.SINGLE_ELIM: {
+      case Format.SINGLE_ELIM: {
         tournament = {
           ...base,
-          format: FORMATS.SINGLE_ELIM,
+          format: Format.SINGLE_ELIM,
           bracket: generateBracket(players),
         };
         break;
       }
-      case FORMATS.ROUND_ROBIN: {
+      case Format.ROUND_ROBIN: {
         tournament = {
           ...base,
-          format: FORMATS.ROUND_ROBIN,
+          format: Format.ROUND_ROBIN,
           schedule: generateSchedule(players),
         };
         break;
       }
-      case FORMATS.DOUBLE_ELIM: {
+      case Format.DOUBLE_ELIM: {
         tournament = {
           ...base,
-          format: FORMATS.DOUBLE_ELIM,
+          format: Format.DOUBLE_ELIM,
           doubleElim: generateDoubleElim(players),
         };
         break;
       }
-      case FORMATS.GROUPS_TO_BRACKET: {
+      case Format.GROUPS_TO_BRACKET: {
         const groupStage = createGroupStage(players, {
           groupCount,
           qualifiers,
@@ -126,7 +126,7 @@ export const CreateTournamentPage = (): ReactElement => {
         });
         tournament = {
           ...base,
-          format: FORMATS.GROUPS_TO_BRACKET,
+          format: Format.GROUPS_TO_BRACKET,
           groupStage,
           groupStagePlayoffs: null,
         };
@@ -169,7 +169,7 @@ export const CreateTournamentPage = (): ReactElement => {
             {t('create.formatLabel')}
           </label>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-            {Object.values(FORMATS).map((f) => (
+            {Object.values(Format).map((f) => (
               <label
                 key={f}
                 className={`flex items-center justify-center flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
@@ -197,7 +197,7 @@ export const CreateTournamentPage = (): ReactElement => {
             {t('create.scoringLabel')}
           </label>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-            {Object.values(SCORE_MODES).map((mode) => (
+            {Object.values(ScoreMode).map((mode) => (
               <label
                 key={mode}
                 className={`flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
@@ -214,13 +214,13 @@ export const CreateTournamentPage = (): ReactElement => {
                   onChange={() => { setScoringMode(mode); }}
                   className="sr-only"
                 />
-                {t(mode === SCORE_MODES.SETS ? 'create.scoringSets' : 'create.scoringPoints')}
+                {t(mode === ScoreMode.SETS ? 'create.scoringSets' : 'create.scoringPoints')}
               </label>
             ))}
           </div>
         </div>
 
-        {format !== FORMATS.GROUPS_TO_BRACKET && (
+        {format !== Format.GROUPS_TO_BRACKET && (
           <div>
             <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
               {t('create.maxSetsLabel')}
@@ -235,7 +235,7 @@ export const CreateTournamentPage = (): ReactElement => {
           </div>
         )}
 
-        {format === FORMATS.GROUPS_TO_BRACKET && (
+        {format === Format.GROUPS_TO_BRACKET && (
           <div className="space-y-4 border border-[var(--color-border)] rounded-xl p-5 bg-[var(--color-soft)]">
             <div className="text-sm font-semibold text-[var(--color-muted)]">
               {t('create.groupStageTitle')}
@@ -306,7 +306,7 @@ export const CreateTournamentPage = (): ReactElement => {
                 {t('create.bracketTypeLabel')}
               </label>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-                {Object.values(BRACKET_TYPES).map((bt) => (
+                {Object.values(BracketType).map((bt) => (
                   <label
                     key={bt}
                     className={`flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
@@ -323,7 +323,7 @@ export const CreateTournamentPage = (): ReactElement => {
                       onChange={() => { setBracketType(bt); }}
                       className="sr-only"
                     />
-                    {t(bt === BRACKET_TYPES.SINGLE_ELIM ? 'create.bracketTypeSingle' : 'create.bracketTypeDouble')}
+                    {t(bt === BracketType.SINGLE_ELIM ? 'create.bracketTypeSingle' : 'create.bracketTypeDouble')}
                   </label>
                 ))}
               </div>
