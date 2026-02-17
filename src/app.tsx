@@ -1,13 +1,15 @@
-import type { ReactElement } from 'react';
+import { type ReactElement, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { HomePage } from './pages/HomePage';
-import { CreateTournamentPage } from './pages/CreateTournamentPage';
-import { TournamentPage } from './pages/TournamentPage';
-import { FaqPage } from './pages/FaqPage';
-import { CreditsPage } from './pages/CreditsPage';
-import { NotFoundPage } from './pages/NotFoundPage';
+import { PageLoader } from './components/PageLoader';
+
+const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
+const CreateTournamentPage = lazy(() => import('./pages/CreateTournamentPage').then(m => ({ default: m.CreateTournamentPage })));
+const TournamentPage = lazy(() => import('./pages/TournamentPage').then(m => ({ default: m.TournamentPage })));
+const FaqPage = lazy(() => import('./pages/FaqPage').then(m => ({ default: m.FaqPage })));
+const CreditsPage = lazy(() => import('./pages/CreditsPage').then(m => ({ default: m.CreditsPage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 export const App = (): ReactElement => {
   return (
@@ -16,32 +18,44 @@ export const App = (): ReactElement => {
         <Route element={<Layout />}>
           <Route path="/" element={
             <ErrorBoundary>
-              <HomePage />
+              <Suspense fallback={<PageLoader />}>
+                <HomePage />
+              </Suspense>
             </ErrorBoundary>
           } />
           <Route path="/create" element={
             <ErrorBoundary>
-              <CreateTournamentPage />
+              <Suspense fallback={<PageLoader />}>
+                <CreateTournamentPage />
+              </Suspense>
             </ErrorBoundary>
           } />
           <Route path="/tournament/:id" element={
             <ErrorBoundary>
-              <TournamentPage />
+              <Suspense fallback={<PageLoader />}>
+                <TournamentPage />
+              </Suspense>
             </ErrorBoundary>
           } />
           <Route path="/faq" element={
             <ErrorBoundary>
-              <FaqPage />
+              <Suspense fallback={<PageLoader />}>
+                <FaqPage />
+              </Suspense>
             </ErrorBoundary>
           } />
           <Route path="/credits" element={
             <ErrorBoundary>
-              <CreditsPage />
+              <Suspense fallback={<PageLoader />}>
+                <CreditsPage />
+              </Suspense>
             </ErrorBoundary>
           } />
           <Route path="*" element={
             <ErrorBoundary>
-              <NotFoundPage />
+              <Suspense fallback={<PageLoader />}>
+                <NotFoundPage />
+              </Suspense>
             </ErrorBoundary>
           } />
         </Route>
