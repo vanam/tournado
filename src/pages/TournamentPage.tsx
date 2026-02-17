@@ -10,13 +10,6 @@ import { RoundRobinView } from '../components/roundrobin/RoundRobinView';
 import { PlayerList } from '../components/PlayerList';
 import { GroupStageView } from '../components/groupstage/GroupStageView';
 
-const FORMAT_KEYS: Record<Format, string> = {
-  [Format.SINGLE_ELIM]: 'format.singleElim',
-  [Format.ROUND_ROBIN]: 'format.roundRobin',
-  [Format.GROUPS_TO_BRACKET]: 'format.groupsToBracket',
-  [Format.DOUBLE_ELIM]: 'format.doubleElim',
-};
-
 const TournamentContent = (): ReactElement => {
   const { tournament, isLoading } = useTournament();
   const { t } = useTranslation();
@@ -55,7 +48,7 @@ const TournamentContent = (): ReactElement => {
           {tournament.name}
         </h1>
         <p className="text-sm text-[var(--color-muted)]">
-          {t(FORMAT_KEYS[tournament.format])} &middot;{' '}
+          {t(`format.${tournament.format}`)} &middot;{' '}
           {t('tournament.players', { count: tournament.players.length })}
         </p>
       </div>

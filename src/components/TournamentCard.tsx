@@ -1,17 +1,9 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
-import { Format } from '../types';
 import type { Tournament } from '../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-
-const FORMAT_KEYS: Record<Format, string> = {
-  [Format.SINGLE_ELIM]: 'format.singleElim',
-  [Format.ROUND_ROBIN]: 'format.roundRobin',
-  [Format.GROUPS_TO_BRACKET]: 'format.groupsToBracket',
-  [Format.DOUBLE_ELIM]: 'format.doubleElim',
-};
 
 interface TournamentCardProps {
   tournament: Tournament;
@@ -60,7 +52,7 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
           </Button>
         </div>
         <CardDescription className="text-sm text-[var(--color-muted)] mt-1">
-          {t(FORMAT_KEYS[tournament.format])} &middot;{' '}
+          {t(`format.${tournament.format}`)} &middot;{' '}
           {t('tournament.players', { count: tournament.players.length })}
         </CardDescription>
       </CardHeader>

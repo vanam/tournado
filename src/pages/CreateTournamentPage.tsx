@@ -36,13 +36,6 @@ export type TournamentFormValues = {
   useElo: boolean;
 };
 
-const FORMAT_KEYS: Record<Format, string> = {
-  [Format.SINGLE_ELIM]: 'format.singleElim',
-  [Format.ROUND_ROBIN]: 'format.roundRobin',
-  [Format.GROUPS_TO_BRACKET]: 'format.groupsToBracket',
-  [Format.DOUBLE_ELIM]: 'format.doubleElim',
-};
-
 export const CreateTournamentPage = (): ReactElement => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -247,7 +240,7 @@ export const CreateTournamentPage = (): ReactElement => {
                   className="sr-only"
                   {...register('format')}
                 />
-                {t(FORMAT_KEYS[f])}
+                {t(`format.${f}`)}
               </label>
             ))}
           </div>

@@ -111,10 +111,10 @@ export const en: TranslationMap = {
   'tournament.nameEmpty': 'Name cannot be empty',
   'tournament.nameDuplicate': 'Name already exists',
 
-  'format.singleElim': 'Single Elimination',
-  'format.doubleElim': 'Double Elimination',
-  'format.roundRobin': 'Round Robin',
-  'format.groupsToBracket': 'Groups + Playoffs',
+  'format.SINGLE_ELIM': 'Single elimination',
+  'format.DOUBLE_ELIM': 'Double elimination',
+  'format.ROUND_ROBIN': 'Round robin',
+  'format.GROUPS_TO_BRACKET': 'Groups + playoff',
 
   'doubleElim.winnersBracket': 'Winners Playoff',
   'doubleElim.losersBracket': 'Losers Playoff',
@@ -321,10 +321,10 @@ export const cs: TranslationMap = {
   'tournament.nameEmpty': 'Jméno nemůže být prázdné',
   'tournament.nameDuplicate': 'Jméno již existuje',
 
-  'format.singleElim': 'Systém na jednu porážku',
-  'format.doubleElim': 'Systém na dvě porážky',
-  'format.roundRobin': 'Každý s každým',
-  'format.groupsToBracket': 'Skupiny + Playoff',
+  'format.SINGLE_ELIM': 'Systém na jednu porážku',
+  'format.DOUBLE_ELIM': 'Systém na dvě porážky',
+  'format.ROUND_ROBIN': 'Každý s každým',
+  'format.GROUPS_TO_BRACKET': 'Skupiny + Playoff',
 
   'doubleElim.winnersBracket': 'Playoff vítězů',
   'doubleElim.losersBracket': 'Playoff poražených',
@@ -529,10 +529,10 @@ export const de: TranslationMap = {
   'tournament.nameEmpty': 'Name darf nicht leer sein',
   'tournament.nameDuplicate': 'Name existiert bereits',
 
-  'format.singleElim': 'K.O.-System',
-  'format.doubleElim': 'Doppeltes K.O.-System',
-  'format.roundRobin': 'Jeder gegen Jeden',
-  'format.groupsToBracket': 'Gruppen + Playoff',
+  'format.SINGLE_ELIM': 'K.O.-System',
+  'format.DOUBLE_ELIM': 'Doppeltes K.O.-System',
+  'format.ROUND_ROBIN': 'Jeder gegen Jeden',
+  'format.GROUPS_TO_BRACKET': 'Gruppen + Playoff',
 
   'doubleElim.winnersBracket': 'Gewinner-Playoff',
   'doubleElim.losersBracket': 'Verlierer-Playoff',
@@ -737,10 +737,10 @@ export const es: TranslationMap = {
   'tournament.nameEmpty': 'El nombre no puede estar vacío',
   'tournament.nameDuplicate': 'El nombre ya existe',
 
-  'format.singleElim': 'Eliminación Simple',
-  'format.doubleElim': 'Doble Eliminación',
-  'format.roundRobin': 'Todos contra Todos',
-  'format.groupsToBracket': 'Grupos + Playoff',
+  'format.SINGLE_ELIM': 'Eliminación Simple',
+  'format.DOUBLE_ELIM': 'Doble Eliminación',
+  'format.ROUND_ROBIN': 'Todos contra Todos',
+  'format.GROUPS_TO_BRACKET': 'Grupos + Playoff',
 
   'doubleElim.winnersBracket': 'Playoff de Ganadores',
   'doubleElim.losersBracket': 'Playoff de Perdedores',
