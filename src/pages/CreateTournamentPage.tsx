@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import type {ChangeEvent, ReactElement} from 'react';
 import {useForm, useFieldArray, useWatch} from 'react-hook-form';
 import {useNavigate} from 'react-router-dom';
@@ -19,7 +20,7 @@ import { Label } from '@/components/ui/Label';
 
 type QualifierField = { value: number };
 
-type TournamentFormValues = {
+export type TournamentFormValues = {
   name: string;
   format: Format;
   scoringMode: ScoreMode;
@@ -30,7 +31,9 @@ type TournamentFormValues = {
   consolation: boolean;
   bracketType: BracketType;
   qualifiers: QualifierField[];
-  players: Player[];
+  playerName: string;
+  playerElo: number;
+  useElo: boolean;
 };
 
 const FORMAT_KEYS: Record<Format, string> = {
@@ -52,6 +55,9 @@ export const CreateTournamentPage = (): ReactElement => {
     handleSubmit,
     setValue,
     setError,
+    trigger,
+    getValues,
+    resetField,
     formState: { errors },
   } = useForm<TournamentFormValues>({
     defaultValues: {
@@ -65,9 +71,13 @@ export const CreateTournamentPage = (): ReactElement => {
       consolation: false,
       bracketType: BracketType.SINGLE_ELIM,
       qualifiers: [{ value: 2 }, { value: 2 }],
-      players: [],
+      playerName: '',
+      playerElo: 1000,
+      useElo: false,
     },
   });
+
+  const [players, setPlayers] = useState<Player[]>([]);
 
   const {
     fields: qualifierFields,
@@ -75,12 +85,30 @@ export const CreateTournamentPage = (): ReactElement => {
     remove: removeQualifiers,
   } = useFieldArray({ control, name: 'qualifiers' });
 
-  const { replace: replacePlayers } = useFieldArray({ control, name: 'players' });
-
-  const players = useWatch({ control, name: 'players' });
   const format = useWatch({ control, name: 'format' });
   const scoringMode = useWatch({ control, name: 'scoringMode' });
   const bracketType = useWatch({ control, name: 'bracketType' });
+  const useElo = useWatch({ control, name: 'useElo' });
+
+  async function handleAddPlayer(): Promise<void> {
+    const valid = await trigger('playerName');
+    if (!valid) return;
+    const name = getValues('playerName').trim();
+    if (!name) return;
+    const eloValue = getValues('playerElo');
+    const useEloValue = getValues('useElo');
+    setPlayers([
+      ...players,
+      {
+        id: crypto.randomUUID(),
+        name,
+        seed: players.length + 1,
+        elo: useEloValue && Number.isFinite(eloValue) ? eloValue : undefined,
+      },
+    ]);
+    resetField('playerName');
+    resetField('playerElo');
+  }
 
   function normalizeMaxSets(value: string): number {
     const parsed = Number.parseInt(value, 10);
@@ -104,11 +132,11 @@ export const CreateTournamentPage = (): ReactElement => {
   }
 
   const onSubmit = handleSubmit((data) => {
-    if (data.players.length < MIN_PLAYERS) {
+    if (players.length < MIN_PLAYERS) {
       setError('root', { message: t('create.errorPlayers', { minPlayers: MIN_PLAYERS }) });
       return;
     }
-    if (data.format === Format.GROUPS_TO_BRACKET && data.groupCount > data.players.length) {
+    if (data.format === Format.GROUPS_TO_BRACKET && data.groupCount > players.length) {
       setError('root', { message: t('create.errorGroupsTooMany') });
       return;
     }
@@ -122,7 +150,7 @@ export const CreateTournamentPage = (): ReactElement => {
       maxSets: data.maxSets,
       groupStageMaxSets: data.groupStageMaxSets,
       bracketMaxSets: data.bracketMaxSets,
-      players: data.players.map((p) => ({ ...p })),
+      players: players.map((p) => ({ ...p })),
       createdAt: new Date().toISOString(),
       completedAt: null,
       winnerId: null,
@@ -135,7 +163,7 @@ export const CreateTournamentPage = (): ReactElement => {
         tournament = {
           ...base,
           format: Format.SINGLE_ELIM,
-          bracket: generateBracket(data.players),
+          bracket: generateBracket(players),
         };
         break;
       }
@@ -143,7 +171,7 @@ export const CreateTournamentPage = (): ReactElement => {
         tournament = {
           ...base,
           format: Format.ROUND_ROBIN,
-          schedule: generateSchedule(data.players),
+          schedule: generateSchedule(players),
         };
         break;
       }
@@ -151,12 +179,12 @@ export const CreateTournamentPage = (): ReactElement => {
         tournament = {
           ...base,
           format: Format.DOUBLE_ELIM,
-          doubleElim: generateDoubleElim(data.players),
+          doubleElim: generateDoubleElim(players),
         };
         break;
       }
       case Format.GROUPS_TO_BRACKET: {
-        const groupStage = createGroupStage(data.players, {
+        const groupStage = createGroupStage(players, {
           groupCount: data.groupCount,
           qualifiers,
           consolation: data.consolation,
@@ -371,7 +399,15 @@ export const CreateTournamentPage = (): ReactElement => {
           </div>
         )}
 
-        <PlayerInput players={players} setPlayers={replacePlayers} />
+        <PlayerInput
+          players={players}
+          setPlayers={setPlayers}
+          register={register}
+          errors={errors}
+          setValue={setValue}
+          useElo={useElo}
+          onAddPlayer={() => { void handleAddPlayer(); }}
+        />
 
         {errors.root && <p className="text-[var(--color-accent)] text-sm">{errors.root.message}</p>}
 

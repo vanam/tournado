@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import type { ChangeEvent, KeyboardEvent, ReactElement, SyntheticEvent } from 'react';
+import type { KeyboardEvent, ReactElement } from 'react';
+import type { FieldErrors, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { useTranslation } from '../i18n/useTranslation';
 import type { Player } from '../types';
+import type { TournamentFormValues } from '../pages/CreateTournamentPage';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/Label';
@@ -11,37 +12,15 @@ import {FieldGroupLabel} from "@/components/ui/FieldGroupLabel";
 interface PlayerInputProps {
   players: Player[];
   setPlayers: (players: Player[]) => void;
+  register: UseFormRegister<TournamentFormValues>;
+  errors: FieldErrors<TournamentFormValues>;
+  setValue: UseFormSetValue<TournamentFormValues>;
+  useElo: boolean;
+  onAddPlayer: () => void;
 }
 
-export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactElement => {
-  const [name, setName] = useState('');
-  const [elo, setElo] = useState('1000');
-  const [useElo, setUseElo] = useState(false);
-  const [error, setError] = useState('');
+export const PlayerInput = ({ players, setPlayers, register, errors, setValue, useElo, onAddPlayer }: PlayerInputProps): ReactElement => {
   const { t } = useTranslation();
-
-  function addPlayer(e: SyntheticEvent): void {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    if (players.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) {
-      setError(t('players.errorUnique'));
-      return;
-    }
-    const parsedElo = useElo ? Number.parseInt(elo, 10) : undefined;
-    setPlayers([
-      ...players,
-      {
-        id: crypto.randomUUID(),
-        name: trimmed,
-        seed: players.length + 1,
-        elo: useElo && Number.isFinite(parsedElo) ? parsedElo : undefined,
-      },
-    ]);
-    setName('');
-    setElo('1000');
-    setError('');
-  }
 
   function removePlayer(id: string): void {
     const updated = players
@@ -133,23 +112,28 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
             id="player-name"
             type="text"
             aria-label={t('players.placeholder')}
-            value={name}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => {
-              setName(e.target.value);
-              setError('');
-            }}
             onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                addPlayer(e);
+                onAddPlayer();
               }
             }}
             placeholder={t('players.placeholder')}
             className="min-w-0 sm:flex-1"
+            {...register('playerName', {
+              validate: (v) => {
+                const trimmed = v.trim();
+                if (!trimmed) return true;
+                return (
+                  !players.some((p) => p.name.toLowerCase() === trimmed.toLowerCase()) ||
+                  t('players.errorUnique')
+                );
+              },
+            })}
           />
           <Button
             type="button"
-            onClick={addPlayer}
+            onClick={() => { onAddPlayer(); }}
           >
             {t('players.add')}
           </Button>
@@ -158,7 +142,7 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
           <Checkbox
             id="use-elo"
             checked={useElo}
-            onCheckedChange={(checked) => { setUseElo(checked === true); }}
+            onCheckedChange={(checked) => { setValue('useElo', checked === true); }}
           />
           <Label htmlFor="use-elo" className="text-sm text-[var(--color-text)]">
             {t('players.useElo')}
@@ -168,24 +152,20 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
             type="number"
             min="0"
             aria-label={t('players.eloPlaceholder')}
-            value={elo}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => {
-              setElo(e.target.value);
-              setError('');
-            }}
             onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                addPlayer(e);
+                onAddPlayer();
               }
             }}
             placeholder={t('players.eloPlaceholder')}
             disabled={!useElo}
             className="w-24"
+            {...register('playerElo', { valueAsNumber: true })}
           />
         </div>
       </div>
-      {error && <p className="text-[var(--color-accent)] text-sm mb-2">{error}</p>}
+      {errors.playerName && <p className="text-[var(--color-accent)] text-sm mb-2">{errors.playerName.message}</p>}
       <ul className="space-y-1">
         {players.map((player, index) => (
           <li
