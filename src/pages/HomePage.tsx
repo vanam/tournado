@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { persistence } from '../services/persistence';
 import { useTranslation } from '../i18n/useTranslation';
@@ -15,6 +15,12 @@ export const HomePage = (): ReactElement => {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const { t } = useTranslation();
 
+  useEffect(() => {
+    return persistence.subscribe(() => {
+      setTournaments(persistence.loadAll());
+    });
+  }, []);
+
   usePageTitle(t('home.title'));
 
   function getTournamentName(id: string): string {
@@ -29,7 +35,6 @@ export const HomePage = (): ReactElement => {
   function handleConfirmDelete(): void {
     if (!deleteTargetId) return;
     persistence.delete(deleteTargetId);
-    setTournaments(persistence.loadAll());
     setDeleteTargetId(null);
   }
 
@@ -39,7 +44,6 @@ export const HomePage = (): ReactElement => {
 
   function handleDeleteAll(): void {
     persistence.deleteAll();
-    setTournaments([]);
     setShowDeleteAll(false);
   }
 

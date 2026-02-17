@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
+import { createContext, useContext, useCallback, useSyncExternalStore, useMemo, type ReactElement, type ReactNode } from 'react';
 import type { Tournament, GroupsToBracketTournament } from '../types';
 import { persistence } from '../services/persistence';
 import { Format } from '../types';
@@ -17,46 +17,22 @@ interface TournamentProviderProps {
 }
 
 export const TournamentProvider = ({ tournamentId, children }: TournamentProviderProps): ReactElement => {
-  const [tournament, setTournament] = useState<Tournament | null>(() => persistence.load(tournamentId));
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const currentId = tournament?.id;
-    void Promise.resolve().then(() => {
-      const loaded = persistence.load(tournamentId);
-      if (loaded?.id !== currentId) {
-        setTournament(loaded);
-        setIsLoading(false);
-      }
-    });
-  }, [tournamentId, tournament?.id]);
-
-  useEffect(() => {
-    function handleStorage(event: StorageEvent): void {
-      if (event.storageArea !== localStorage) return;
-      if (event.key && event.key !== 'tournado') return;
-      void Promise.resolve().then(() => {
-        setTournament(persistence.load(tournamentId));
-      });
-    }
-    window.addEventListener('storage', handleStorage);
-    return (): void => { window.removeEventListener('storage', handleStorage); };
-  }, [tournamentId]);
+  const tournament = useSyncExternalStore(
+    persistence.subscribe,
+    useCallback(() => persistence.load(tournamentId), [tournamentId])
+  );
 
   const updateTournament = useCallback((updater: (prev: Tournament) => Tournament) => {
-    setTournament((prev) => {
-      if (!prev) return prev;
-      const updated = updater(prev);
-      persistence.save(updated);
-      return updated;
-    });
-  }, []);
+    const current = persistence.load(tournamentId);
+    if (!current) return;
+    persistence.save(updater(current));
+  }, [tournamentId]);
 
   const contextValue = useMemo(() => ({
     tournament,
     updateTournament,
-    isLoading,
-  }), [tournament, updateTournament, isLoading]);
+    isLoading: false,
+  }), [tournament, updateTournament]);
 
   return (
     <TournamentContext.Provider value={contextValue}>
