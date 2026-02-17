@@ -13,6 +13,7 @@ import {PlayerInput} from '../components/PlayerInput';
 import {BracketType, Format, ScoreMode} from '../types';
 import type {Player, Tournament} from '../types';
 import { Button } from '@/components/ui/Button';
+import { FieldGroupLabel } from '@/components/ui/FieldGroupLabel';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 
@@ -152,10 +153,11 @@ export const CreateTournamentPage = (): ReactElement => {
 
       <form onSubmit={handleSubmit} className="space-y-7">
         <div>
-          <Label className="block text-sm font-medium text-[var(--color-text)] mb-1">
+          <Label htmlFor="tournament-name" className="block text-sm font-medium text-[var(--color-text)] mb-1">
             {t('create.nameLabel')}
           </Label>
           <Input
+            id="tournament-name"
             type="text"
             value={name}
             onChange={(e) => {
@@ -167,9 +169,9 @@ export const CreateTournamentPage = (): ReactElement => {
         </div>
 
         <div>
-          <Label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+          <FieldGroupLabel>
             {t('create.formatLabel')}
-          </Label>
+          </FieldGroupLabel>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
             {Object.values(Format).map((f) => (
               <label
@@ -195,9 +197,9 @@ export const CreateTournamentPage = (): ReactElement => {
         </div>
 
         <div>
-          <Label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+          <FieldGroupLabel>
             {t('create.scoringLabel')}
-          </Label>
+          </FieldGroupLabel>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
             {Object.values(ScoreMode).map((mode) => (
               <label
@@ -224,10 +226,11 @@ export const CreateTournamentPage = (): ReactElement => {
 
         {format !== Format.GROUPS_TO_BRACKET && (
           <div>
-            <Label className="block text-sm font-medium text-[var(--color-text)] mb-1">
+            <Label htmlFor="max-sets" className="block text-sm font-medium text-[var(--color-text)] mb-1">
               {t('create.maxSetsLabel')}
             </Label>
             <Input
+              id="max-sets"
               type="number"
               min="1"
               value={maxSets}
@@ -246,6 +249,7 @@ export const CreateTournamentPage = (): ReactElement => {
               <Label className="text-xs text-[var(--color-muted)]">
                 {t('create.maxSetsGroupLabel')}
                 <Input
+                  id="group-stage-max-sets"
                   type="number"
                   min="1"
                   value={groupStageMaxSets}
@@ -256,6 +260,7 @@ export const CreateTournamentPage = (): ReactElement => {
               <Label className="text-xs text-[var(--color-muted)]">
                 {t('create.maxSetsBracketLabel')}
                 <Input
+                  id="bracket-max-sets"
                   type="number"
                   min="1"
                   value={bracketMaxSets}
@@ -265,10 +270,11 @@ export const CreateTournamentPage = (): ReactElement => {
               </Label>
             </div>
             <div>
-              <Label className="block text-sm font-medium text-[var(--color-text)] mb-1">
+              <Label htmlFor="group-count" className="block text-sm font-medium text-[var(--color-text)] mb-1">
                 {t('create.groupCountLabel')}
               </Label>
               <Input
+                id="group-count"
                 type="number"
                 min="1"
                 value={groupCount}
@@ -277,14 +283,15 @@ export const CreateTournamentPage = (): ReactElement => {
               />
             </div>
             <div>
-              <Label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+              <FieldGroupLabel>
                 {t('create.qualifiersLabel')}
-              </Label>
+              </FieldGroupLabel>
               <div className="grid grid-cols-2 gap-2">
                 {Array.from({ length: groupCount }, (_, i) => (
                   <Label key={i} className="text-xs text-[var(--color-muted)]">
                     {t('create.groupLabel', { label: indexToGroupLabel(i) })}
                     <Input
+                      id={`qualifier-group-${i}`}
                       type="number"
                       min="0"
                       value={qualifiers[i] ?? 0}
@@ -297,6 +304,8 @@ export const CreateTournamentPage = (): ReactElement => {
             </div>
             <Label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
               <input
+                id="consolation"
+                name="consolation"
                 type="checkbox"
                 checked={consolation}
                 onChange={(e) => { setConsolation(e.target.checked); }}
@@ -304,9 +313,9 @@ export const CreateTournamentPage = (): ReactElement => {
               {t('create.consolationLabel')}
             </Label>
             <div>
-              <Label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+              <FieldGroupLabel>
                 {t('create.bracketTypeLabel')}
-              </Label>
+              </FieldGroupLabel>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
                 {Object.values(BracketType).map((bt) => (
                   <label

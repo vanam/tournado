@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/Label';
 import { Checkbox } from '@/components/ui/Checkbox';
+import {FieldGroupLabel} from "@/components/ui/FieldGroupLabel";
 
 interface PlayerInputProps {
   players: Player[];
@@ -101,9 +102,9 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <Label className="block text-sm font-medium text-[var(--color-text)]">
+        <FieldGroupLabel>
           {t('players.title', { count: players.length })}
-        </Label>
+        </FieldGroupLabel>
         {players.length > 1 && (
           <div className="flex items-center gap-3">
             <Button
@@ -129,7 +130,9 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
       <div className="mb-3 space-y-2">
         <div className="grid grid-cols-[1fr_auto] gap-2 sm:flex sm:gap-2">
           <Input
+            id="player-name"
             type="text"
+            aria-label={t('players.placeholder')}
             value={name}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
               setName(e.target.value);
@@ -152,16 +155,19 @@ export const PlayerInput = ({ players, setPlayers }: PlayerInputProps): ReactEle
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-            <Checkbox
-              checked={useElo}
-              onCheckedChange={(checked) => { setUseElo(checked === true); }}
-            />
+          <Checkbox
+            id="use-elo"
+            checked={useElo}
+            onCheckedChange={(checked) => { setUseElo(checked === true); }}
+          />
+          <Label htmlFor="use-elo" className="text-sm text-[var(--color-text)]">
             {t('players.useElo')}
           </Label>
           <Input
+            id="elo-rating"
             type="number"
             min="0"
+            aria-label={t('players.eloPlaceholder')}
             value={elo}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
               setElo(e.target.value);

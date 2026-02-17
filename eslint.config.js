@@ -84,6 +84,12 @@ export default defineConfig([
       ],
       'react/jsx-no-useless-fragment': 'error',
       'react/self-closing-comp': 'error',
+      'jsx-a11y/label-has-associated-control': ['error', {
+        labelComponents: ['Label'],
+        controlComponents: ['Input', 'Checkbox'],
+        assert: 'either',
+        depth: 3,
+      }],
       'unicorn/filename-case': ['error', {'case': 'camelCase'}],
       'unicorn/no-null': 'off',
       'unicorn/prefer-global-this': 'off',

@@ -54,7 +54,7 @@ export const HomePage = (): ReactElement => {
           {tournaments.length > 1 && (
             <Button
               onClick={() => { setShowDeleteAll(true); }}
-              variant="ghost"
+              variant="outline"
               className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] px-3 py-2 text-sm rounded-lg border border-[var(--color-accent-border)] hover:border-[var(--color-accent)] transition-colors"
             >
               {t('home.deleteAll')}

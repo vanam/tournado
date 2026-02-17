@@ -280,6 +280,7 @@ export const ScoreModal = ({
                   <div className="flex items-center gap-2">
                     <Input
                       type="number"
+                      aria-label={`${p1?.name ?? ''} ${isSetOnly ? t('score.setsResult') : t('score.set', { n: i + 1 })}`}
                       min={isSetOnly ? 0 : undefined}
                       max={isSetOnly ? maxSets : MAX_POINTS}
                       value={score[0]}
@@ -308,6 +309,7 @@ export const ScoreModal = ({
                   <div className="flex items-center gap-2">
                     <Input
                       type="number"
+                      aria-label={`${p2?.name ?? ''} ${isSetOnly ? t('score.setsResult') : t('score.set', { n: i + 1 })}`}
                       min={isSetOnly ? 0 : undefined}
                       max={isSetOnly ? maxSets : MAX_POINTS}
                       value={score[1]}

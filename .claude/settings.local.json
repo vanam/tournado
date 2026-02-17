@@ -17,7 +17,9 @@
       "Bash(wc:*)",
       "Bash(node:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(npx vite build)"
+      "Bash(npx vite build)",
+      "Bash(xargs:*)",
+      "Bash(curl:*)"
     ]
   }
 }

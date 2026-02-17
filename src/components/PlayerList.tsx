@@ -66,6 +66,8 @@ export const PlayerList = (): ReactElement => {
               <div className="flex items-center gap-1">
                 <input
                   type="text"
+                  id={`edit-player-${player.id}`}
+                  aria-label={t('tournament.editName')}
                   value={editValue}
                   onChange={(e) => {
                     setEditValue(e.target.value);
