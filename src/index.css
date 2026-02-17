@@ -85,10 +85,12 @@
 button, a, [role="button"], input, select, label {
   transition: all 150ms ease;
 }
-*:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  border-radius: 4px;
+@layer base {
+  *:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 table tbody tr {
   transition: background-color 150ms ease;

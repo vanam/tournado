@@ -21,15 +21,15 @@ export const LanguageSwitcher = (): ReactElement => {
       <Select value={language} onValueChange={handleChange}>
         <SelectTrigger
           aria-label="Language"
-          className="appearance-none rounded border border-[var(--color-primary)] bg-[var(--color-primary-dark)] py-1 pl-8 pr-7 h-auto text-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+          className="appearance-none rounded-md border border-(--color-primary) bg-(--color-primary-dark) hover:bg-(--color-primary) py-1 pl-8 pr-1 h-auto text-(--color-surface) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2 transition-colors [&>svg]:ml-1"
         >
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="en">EN</SelectItem>
-          <SelectItem value="cs">CS</SelectItem>
-          <SelectItem value="de">DE</SelectItem>
-          <SelectItem value="es">ES</SelectItem>
+        <SelectContent className="bg-(--color-surface) border-(--color-primary) min-w-16 rounded-md">
+          <SelectItem value="en" className="focus:bg-(--color-primary) focus:text-white">EN</SelectItem>
+          <SelectItem value="cs" className="focus:bg-(--color-primary) focus:text-white">CS</SelectItem>
+          <SelectItem value="de" className="focus:bg-(--color-primary) focus:text-white">DE</SelectItem>
+          <SelectItem value="es" className="focus:bg-(--color-primary) focus:text-white">ES</SelectItem>
         </SelectContent>
       </Select>
     </div>
