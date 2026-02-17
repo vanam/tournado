@@ -1,5 +1,5 @@
-import type {ReactElement} from 'react';
-import {useState} from 'react';
+import type {ChangeEvent, ReactElement} from 'react';
+import {useForm, useFieldArray, useWatch} from 'react-hook-form';
 import {useNavigate} from 'react-router-dom';
 import {DEFAULT_MAX_SETS, MIN_PLAYERS} from '../constants';
 import {useTranslation} from '../i18n/useTranslation';
@@ -17,6 +17,22 @@ import { FieldGroupLabel } from '@/components/ui/FieldGroupLabel';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 
+type QualifierField = { value: number };
+
+type TournamentFormValues = {
+  name: string;
+  format: Format;
+  scoringMode: ScoreMode;
+  maxSets: number;
+  groupStageMaxSets: number;
+  bracketMaxSets: number;
+  groupCount: number;
+  consolation: boolean;
+  bracketType: BracketType;
+  qualifiers: QualifierField[];
+  players: Player[];
+};
+
 const FORMAT_KEYS: Record<Format, string> = {
   [Format.SINGLE_ELIM]: 'format.singleElim',
   [Format.ROUND_ROBIN]: 'format.roundRobin',
@@ -30,18 +46,41 @@ export const CreateTournamentPage = (): ReactElement => {
 
   usePageTitle(t('create.title'));
 
-  const [name, setName] = useState('');
-  const [format, setFormat] = useState<Format>(Format.SINGLE_ELIM);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [groupCount, setGroupCount] = useState(2);
-  const [qualifiers, setQualifiers] = useState<number[]>([2, 2]);
-  const [consolation, setConsolation] = useState(false);
-  const [bracketType, setBracketType] = useState<BracketType>(BracketType.SINGLE_ELIM);
-  const [scoringMode, setScoringMode] = useState<ScoreMode>(ScoreMode.SETS);
-  const [maxSets, setMaxSets] = useState(DEFAULT_MAX_SETS);
-  const [groupStageMaxSets, setGroupStageMaxSets] = useState(DEFAULT_MAX_SETS);
-  const [bracketMaxSets, setBracketMaxSets] = useState(DEFAULT_MAX_SETS);
-  const [error, setError] = useState('');
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    setError,
+    formState: { errors },
+  } = useForm<TournamentFormValues>({
+    defaultValues: {
+      name: '',
+      format: Format.SINGLE_ELIM,
+      scoringMode: ScoreMode.SETS,
+      maxSets: DEFAULT_MAX_SETS,
+      groupStageMaxSets: DEFAULT_MAX_SETS,
+      bracketMaxSets: DEFAULT_MAX_SETS,
+      groupCount: 2,
+      consolation: false,
+      bracketType: BracketType.SINGLE_ELIM,
+      qualifiers: [{ value: 2 }, { value: 2 }],
+      players: [],
+    },
+  });
+
+  const {
+    fields: qualifierFields,
+    append: appendQualifier,
+    remove: removeQualifiers,
+  } = useFieldArray({ control, name: 'qualifiers' });
+
+  const { replace: replacePlayers } = useFieldArray({ control, name: 'players' });
+
+  const players = useWatch({ control, name: 'players' });
+  const format = useWatch({ control, name: 'format' });
+  const scoringMode = useWatch({ control, name: 'scoringMode' });
+  const bracketType = useWatch({ control, name: 'bracketType' });
 
   function normalizeMaxSets(value: string): number {
     const parsed = Number.parseInt(value, 10);
@@ -51,44 +90,39 @@ export const CreateTournamentPage = (): ReactElement => {
 
   function handleGroupCountChange(value: string): void {
     const count = Math.max(1, Number.parseInt(value, 10) || 1);
-    setGroupCount(count);
-    setQualifiers((prev) => {
-      const next = [...prev];
-      if (count > next.length) {
-        while (next.length < count) next.push(2);
-      }
-      return next.slice(0, count);
-    });
+    setValue('groupCount', count);
+    if (count > qualifierFields.length) {
+      const toAdd = count - qualifierFields.length;
+      for (let i = 0; i < toAdd; i++) appendQualifier({ value: 2 });
+    } else if (count < qualifierFields.length) {
+      const indicesToRemove = Array.from(
+        { length: qualifierFields.length - count },
+        (_, i) => count + i,
+      );
+      removeQualifiers(indicesToRemove);
+    }
   }
 
-  function handleQualifierChange(index: number, value: string): void {
-    const parsed = Math.max(0, Number.parseInt(value, 10) || 0);
-    setQualifiers((prev) => prev.map((q, i) => (i === index ? parsed : q)));
-  }
+  const onSubmit = handleSubmit((data) => {
+    if (data.players.length < MIN_PLAYERS) {
+      setError('root', { message: t('create.errorPlayers', { minPlayers: MIN_PLAYERS }) });
+      return;
+    }
+    if (data.format === Format.GROUPS_TO_BRACKET && data.groupCount > data.players.length) {
+      setError('root', { message: t('create.errorGroupsTooMany') });
+      return;
+    }
 
-  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>): void {
-    e.preventDefault();
-    if (!name.trim()) {
-      setError(t('create.errorName'));
-      return;
-    }
-    if (players.length < MIN_PLAYERS) {
-      setError(t('create.errorPlayers', { minPlayers: MIN_PLAYERS }));
-      return;
-    }
-    if (format === Format.GROUPS_TO_BRACKET && groupCount > players.length) {
-      setError(t('create.errorGroupsTooMany'));
-      return;
-    }
+    const qualifiers = data.qualifiers.map((q) => q.value);
 
     const base = {
       id: crypto.randomUUID(),
-      name: name.trim(),
-      scoringMode,
-      maxSets,
-      groupStageMaxSets,
-      bracketMaxSets,
-      players: players.map((p) => ({ ...p })),
+      name: data.name.trim(),
+      scoringMode: data.scoringMode,
+      maxSets: data.maxSets,
+      groupStageMaxSets: data.groupStageMaxSets,
+      bracketMaxSets: data.bracketMaxSets,
+      players: data.players.map((p) => ({ ...p })),
       createdAt: new Date().toISOString(),
       completedAt: null,
       winnerId: null,
@@ -96,12 +130,12 @@ export const CreateTournamentPage = (): ReactElement => {
 
     let tournament: Tournament;
 
-    switch (format) {
+    switch (data.format) {
       case Format.SINGLE_ELIM: {
         tournament = {
           ...base,
           format: Format.SINGLE_ELIM,
-          bracket: generateBracket(players),
+          bracket: generateBracket(data.players),
         };
         break;
       }
@@ -109,7 +143,7 @@ export const CreateTournamentPage = (): ReactElement => {
         tournament = {
           ...base,
           format: Format.ROUND_ROBIN,
-          schedule: generateSchedule(players),
+          schedule: generateSchedule(data.players),
         };
         break;
       }
@@ -117,16 +151,16 @@ export const CreateTournamentPage = (): ReactElement => {
         tournament = {
           ...base,
           format: Format.DOUBLE_ELIM,
-          doubleElim: generateDoubleElim(players),
+          doubleElim: generateDoubleElim(data.players),
         };
         break;
       }
       case Format.GROUPS_TO_BRACKET: {
-        const groupStage = createGroupStage(players, {
-          groupCount,
+        const groupStage = createGroupStage(data.players, {
+          groupCount: data.groupCount,
           qualifiers,
-          consolation,
-          bracketType,
+          consolation: data.consolation,
+          bracketType: data.bracketType,
         });
         tournament = {
           ...base,
@@ -137,13 +171,13 @@ export const CreateTournamentPage = (): ReactElement => {
         break;
       }
       default: {
-        throw new Error(`Unsupported format: ${String(format)}`);
+        throw new Error(`Unsupported format: ${String(data.format)}`);
       }
     }
 
     persistence.save(tournament);
     void navigate(`/tournament/${tournament.id}`);
-  }
+  });
 
   return (
     <div className="max-w-lg mx-auto">
@@ -151,7 +185,7 @@ export const CreateTournamentPage = (): ReactElement => {
         {t('create.title')}
       </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-7">
+      <form onSubmit={(e) => { void onSubmit(e); }} className="space-y-7">
         <div>
           <Label htmlFor="tournament-name" className="block text-sm font-medium text-[var(--color-text)] mb-1">
             {t('create.nameLabel')}
@@ -159,13 +193,10 @@ export const CreateTournamentPage = (): ReactElement => {
           <Input
             id="tournament-name"
             type="text"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setError('');
-            }}
             placeholder={t('create.namePlaceholder')}
+            {...register('name', { required: t('create.errorName') })}
           />
+          {errors.name && <p className="text-[var(--color-accent)] text-sm mt-1">{errors.name.message}</p>}
         </div>
 
         <div>
@@ -184,11 +215,9 @@ export const CreateTournamentPage = (): ReactElement => {
               >
                 <input
                   type="radio"
-                  name="format"
                   value={f}
-                  checked={format === f}
-                  onChange={() => { setFormat(f); }}
                   className="sr-only"
+                  {...register('format')}
                 />
                 {t(FORMAT_KEYS[f])}
               </label>
@@ -212,11 +241,9 @@ export const CreateTournamentPage = (): ReactElement => {
               >
                 <input
                   type="radio"
-                  name="scoring"
                   value={mode}
-                  checked={scoringMode === mode}
-                  onChange={() => { setScoringMode(mode); }}
                   className="sr-only"
+                  {...register('scoringMode')}
                 />
                 {t(mode === ScoreMode.SETS ? 'create.scoringSets' : 'create.scoringPoints')}
               </label>
@@ -233,9 +260,11 @@ export const CreateTournamentPage = (): ReactElement => {
               id="max-sets"
               type="number"
               min="1"
-              value={maxSets}
-              onChange={(e) => { setMaxSets(normalizeMaxSets(e.target.value)); }}
               className="w-24"
+              {...register('maxSets', {
+                valueAsNumber: true,
+                onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('maxSets', normalizeMaxSets(e.target.value)); },
+              })}
             />
           </div>
         )}
@@ -252,9 +281,11 @@ export const CreateTournamentPage = (): ReactElement => {
                   id="group-stage-max-sets"
                   type="number"
                   min="1"
-                  value={groupStageMaxSets}
-                  onChange={(e) => { setGroupStageMaxSets(normalizeMaxSets(e.target.value)); }}
                   className="mt-1 w-24 h-8 px-2 py-1"
+                  {...register('groupStageMaxSets', {
+                    valueAsNumber: true,
+                    onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('groupStageMaxSets', normalizeMaxSets(e.target.value)); },
+                  })}
                 />
               </Label>
               <Label className="text-xs text-[var(--color-muted)]">
@@ -263,9 +294,11 @@ export const CreateTournamentPage = (): ReactElement => {
                   id="bracket-max-sets"
                   type="number"
                   min="1"
-                  value={bracketMaxSets}
-                  onChange={(e) => { setBracketMaxSets(normalizeMaxSets(e.target.value)); }}
                   className="mt-1 w-24 h-8 px-2 py-1"
+                  {...register('bracketMaxSets', {
+                    valueAsNumber: true,
+                    onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('bracketMaxSets', normalizeMaxSets(e.target.value)); },
+                  })}
                 />
               </Label>
             </div>
@@ -277,9 +310,11 @@ export const CreateTournamentPage = (): ReactElement => {
                 id="group-count"
                 type="number"
                 min="1"
-                value={groupCount}
-                onChange={(e) => { handleGroupCountChange(e.target.value); }}
                 className="w-24"
+                {...register('groupCount', {
+                  valueAsNumber: true,
+                  onChange: (e: ChangeEvent<HTMLInputElement>) => { handleGroupCountChange(e.target.value); },
+                })}
               />
             </div>
             <div>
@@ -287,16 +322,14 @@ export const CreateTournamentPage = (): ReactElement => {
                 {t('create.qualifiersLabel')}
               </FieldGroupLabel>
               <div className="grid grid-cols-2 gap-2">
-                {Array.from({ length: groupCount }, (_, i) => (
-                  <Label key={i} className="text-xs text-[var(--color-muted)]">
+                {qualifierFields.map((field, i) => (
+                  <Label key={field.id} className="text-xs text-[var(--color-muted)]">
                     {t('create.groupLabel', { label: indexToGroupLabel(i) })}
                     <Input
-                      id={`qualifier-group-${i}`}
                       type="number"
                       min="0"
-                      value={qualifiers[i] ?? 0}
-                      onChange={(e) => { handleQualifierChange(i, e.target.value); }}
                       className="mt-1 w-full h-8 px-2 py-1"
+                      {...register(`qualifiers.${i}.value`, { valueAsNumber: true })}
                     />
                   </Label>
                 ))}
@@ -305,10 +338,8 @@ export const CreateTournamentPage = (): ReactElement => {
             <Label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
               <input
                 id="consolation"
-                name="consolation"
                 type="checkbox"
-                checked={consolation}
-                onChange={(e) => { setConsolation(e.target.checked); }}
+                {...register('consolation')}
               />
               {t('create.consolationLabel')}
             </Label>
@@ -328,11 +359,9 @@ export const CreateTournamentPage = (): ReactElement => {
                   >
                     <input
                       type="radio"
-                      name="bracketType"
                       value={bt}
-                      checked={bracketType === bt}
-                      onChange={() => { setBracketType(bt); }}
                       className="sr-only"
+                      {...register('bracketType')}
                     />
                     {t(bt === BracketType.SINGLE_ELIM ? 'create.bracketTypeSingle' : 'create.bracketTypeDouble')}
                   </label>
@@ -342,9 +371,9 @@ export const CreateTournamentPage = (): ReactElement => {
           </div>
         )}
 
-        <PlayerInput players={players} setPlayers={setPlayers} />
+        <PlayerInput players={players} setPlayers={replacePlayers} />
 
-        {error && <p className="text-[var(--color-accent)] text-sm">{error}</p>}
+        {errors.root && <p className="text-[var(--color-accent)] text-sm">{errors.root.message}</p>}
 
         <Button
           type="submit"
