@@ -1094,7 +1094,7 @@ describe('unresolved ties', () => {
       const standings = computeStandings(schedule, players);
 
       expect(standings.every(s => s.points === 1)).toBe(true);
-      const lastPlayer = standings[standings.length - 1]!;
+      const lastPlayer = standings.at(-1)!;
       expect(lastPlayer.tiebreakDetails!.tiebreakApplied.length).toBeGreaterThan(0);
       expect(lastPlayer.tiebreakDetails!.tiebreakApplied).toEqual(standings[0]!.tiebreakDetails!.tiebreakApplied);
     });
