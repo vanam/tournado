@@ -3,7 +3,7 @@ import type { ChangeEvent, ReactElement } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import { ConfirmModal } from './ConfirmModal';
 import { CustomDialog } from './CustomDialog';
-import { DialogContent } from '@/components/ui/Dialog';
+import { DialogContent, DialogTitle } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -225,8 +225,8 @@ export const ScoreModal = ({
         />
       )}
       <CustomDialog open={true} onOpenChange={(open) => { if (!open) onClose(); }} onPrimaryAction={handleSave} primaryActionDisabled={!winner}>
-        <DialogContent className="max-w-md">
-          <h3 className="text-lg font-bold mb-5 pb-3 border-b border-[var(--color-border-soft)]">{t('score.title')}</h3>
+        <DialogContent className="max-w-md" aria-describedby={undefined}>
+          <DialogTitle className="text-lg font-bold mb-5 pb-3 border-b border-[var(--color-border-soft)]">{t('score.title')}</DialogTitle>
           <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-4">
             <div className="text-right font-medium text-xs sm:text-sm min-w-0 truncate">
               {p1 ? (
