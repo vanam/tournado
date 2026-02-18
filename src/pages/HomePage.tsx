@@ -57,10 +57,9 @@ export const HomePage = (): ReactElement => {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {tournaments.length > 1 && (
-            <Button
+<Button
               onClick={() => { setShowDeleteAll(true); }}
-              variant="outline"
-              className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] px-3 py-2 text-sm rounded-lg border border-[var(--color-accent-border)] hover:border-[var(--color-accent)] transition-colors"
+              variant="secondary-outlined"
             >
               {t('home.deleteAll')}
             </Button>

@@ -292,7 +292,7 @@ export const ScoreModal = ({
                       <Button
                         type="button"
                         size="sm"
-                        variant={score[0] === MAX_POINTS && score[1] === 0 ? "default" : "outline"}
+                        variant={score[0] === MAX_POINTS && score[1] === 0 ? "primary" : "primary-outlined"}
                         onClick={() =>
                           { applySetWalkover(i, 0, !(score[0] === MAX_POINTS && score[1] === 0)); }
                         }
@@ -321,7 +321,7 @@ export const ScoreModal = ({
                       <Button
                         type="button"
                         size="sm"
-                        variant={score[1] === MAX_POINTS && score[0] === 0 ? "default" : "outline"}
+                        variant={score[1] === MAX_POINTS && score[0] === 0 ? "primary" : "primary-outlined"}
                         onClick={() =>
                           { applySetWalkover(i, 1, !(score[1] === MAX_POINTS && score[0] === 0)); }
                         }

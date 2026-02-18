@@ -8,12 +8,12 @@
   --page-bg-image: url("../public/assets/table-tennis-dimensions.svg");
 
   /* ── Core palette (light) ── */
-  --color-primary: #3B82F6;
-  --color-primary-dark: #1E40AF;
-  --color-accent: #F59E0B;
-  --color-surface: #FFFFFF;
+  --color-primary: #689FBD;
+  --color-primary-dark: #255E7D;
+  --color-accent: #A7804E;
+  --color-surface: #FDFDFD;
   --color-card: #FFFFFF;
-  --color-text: #1E293B;
+  --color-text: #111111;
   --color-muted: rgba(30, 41, 59, 0.65);
   --color-subtle: rgba(30, 41, 59, 0.5);
   --color-faint: rgba(30, 41, 59, 0.4);

@@ -40,7 +40,7 @@ const TournamentContent = (): ReactElement => {
           <Button asChild>
             <Link to="/create">{t('home.newTournament')}</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="primary-outlined" asChild>
             <Link to="/">{t('tournament.backHome')}</Link>
           </Button>
         </div>
@@ -94,7 +94,7 @@ export const TournamentPage = (): ReactElement => {
           <Button asChild>
             <Link to="/create">{t('home.newTournament')}</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="primary-outlined" asChild>
             <Link to="/">{t('tournament.backHome')}</Link>
           </Button>
         </div>

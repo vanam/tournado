@@ -5,15 +5,18 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[var(--color-primary)] border border-[var(--color-border)] text-[var(--color-surface)] hover:bg-[var(--color-primary-dark)] hover:border-[var(--color-primary)] hover:shadow-sm",
-        accent: "bg-[var(--color-accent)] text-[var(--color-surface)] hover:bg-[var(--color-primary-dark)]",
+        primary:
+          "bg-[var(--color-primary)] border border-[var(--color-primary)] text-[var(--color-surface)] hover:bg-[var(--color-primary-dark)] hover:border-[var(--color-primary-dark)]",
+        secondary:
+          "bg-[var(--color-accent)] border border-[var(--color-accent)] text-[var(--color-surface)] hover:brightness-90",
+        "primary-outlined":
+          "border border-[var(--color-primary)] bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-surface)] font-normal",
+        "secondary-outlined":
+          "border border-[var(--color-accent)] bg-transparent text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-[var(--color-surface)] font-normal",
+        link: "text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] underline-offset-4 hover:underline",
+        ghost: "font-normal text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-[var(--color-primary)] font-normal",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "font-normal text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]",
-        link: "text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -23,7 +26,7 @@ export const buttonVariants = cva(
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "primary",
       size: "default",
     },
   }
