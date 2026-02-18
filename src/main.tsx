@@ -18,7 +18,20 @@ if (!rootElement) {
   throw new Error('Root element "#root" not found')
 }
 
-createRoot(rootElement).render(
+createRoot(rootElement, {
+  onCaughtError: (error, errorInfo) => {
+    console.error('Error caught by boundary:', error);
+    if (errorInfo.componentStack) {
+      console.error('Component stack:', errorInfo.componentStack);
+    }
+  },
+  onUncaughtError: (error, errorInfo) => {
+    console.error('Uncaught error:', error);
+    if (errorInfo.componentStack) {
+      console.error('Component stack:', errorInfo.componentStack);
+    }
+  },
+}).render(
   <StrictMode>
     <LanguageProvider>
       <App />
