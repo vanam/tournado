@@ -9,6 +9,7 @@ import { DoubleElimView } from '../components/doubleelim/DoubleElimView';
 import { RoundRobinView } from '../components/roundrobin/RoundRobinView';
 import { PlayerList } from '../components/PlayerList';
 import { GroupStageView } from '../components/groupstage/GroupStageView';
+import { Button } from '@/components/ui/Button';
 
 const TournamentContent = (): ReactElement => {
   const { tournament, isLoading } = useTournament();
@@ -26,11 +27,22 @@ const TournamentContent = (): ReactElement => {
 
   if (!tournament) {
     return (
-      <div className="text-center py-12">
-        <p className="text-[var(--color-muted)] mb-4">{t('tournament.notFound')}</p>
-        <Link to="/" className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]">
-          {t('tournament.backHome')}
-        </Link>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+        <span className="text-5xl mb-4">🏟️</span>
+        <h2 className="text-xl font-semibold text-[var(--color-text)] mb-2">
+          {t('tournament.notFoundTitle')}
+        </h2>
+        <p className="text-[var(--color-muted)] mb-6 max-w-md">
+          {t('tournament.notFoundDesc')}
+        </p>
+        <div className="flex gap-3 flex-wrap justify-center">
+          <Button asChild>
+            <Link to="/create">{t('home.newTournament')}</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/">{t('tournament.backHome')}</Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -65,14 +77,26 @@ const TournamentContent = (): ReactElement => {
 
 export const TournamentPage = (): ReactElement => {
   const { id } = useParams<{ id: string }>();
+  const { t } = useTranslation();
 
   if (!id) {
     return (
-      <div className="text-center py-12">
-        <p className="text-[var(--color-muted)]">No tournament ID provided</p>
-        <Link to="/" className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]">
-          Back to Home
-        </Link>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+        <span className="text-5xl mb-4">❓</span>
+        <h2 className="text-xl font-semibold text-[var(--color-text)] mb-2">
+          {t('tournament.notFoundTitle')}
+        </h2>
+        <p className="text-[var(--color-muted)] mb-6 max-w-md">
+          {t('tournament.noIdDesc')}
+        </p>
+        <div className="flex gap-3 flex-wrap justify-center">
+          <Button asChild>
+            <Link to="/create">{t('home.newTournament')}</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/">{t('tournament.backHome')}</Link>
+          </Button>
+        </div>
       </div>
     );
   }

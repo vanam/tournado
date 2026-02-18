@@ -45,6 +45,8 @@ export const en: TranslationMap = {
 
   'tournament.notFound': 'Tournament not found.',
   'tournament.notFoundTitle': 'Tournament not found',
+  'tournament.notFoundDesc': 'This tournament may have been deleted or the link is incorrect.',
+  'tournament.noIdDesc': 'No tournament ID was provided in the URL.',
   'tournament.backHome': 'Back to home',
   'tournament.back': '\u2190 Back',
   'tournament.players': {
@@ -253,6 +255,8 @@ export const cs: TranslationMap = {
 
   'tournament.notFound': 'Turnaj nenalezen.',
   'tournament.notFoundTitle': 'Turnaj nenalezen',
+  'tournament.notFoundDesc': 'Tento turnaj mohl být smazán nebo je odkaz nesprávný.',
+  'tournament.noIdDesc': 'V adrese chybí ID turnaje.',
   'tournament.backHome': 'Zpět na úvod',
   'tournament.back': '\u2190 Zpět',
   'tournament.players': {
@@ -463,6 +467,8 @@ export const de: TranslationMap = {
 
   'tournament.notFound': 'Turnier nicht gefunden.',
   'tournament.notFoundTitle': 'Turnier nicht gefunden',
+  'tournament.notFoundDesc': 'Dieses Turnier wurde möglicherweise gelöscht oder der Link ist falsch.',
+  'tournament.noIdDesc': 'Keine Turnier-ID in der URL angegeben.',
   'tournament.backHome': 'Zurück zur Startseite',
   'tournament.back': '\u2190 Zurück',
   'tournament.players': {
@@ -671,6 +677,8 @@ export const es: TranslationMap = {
 
   'tournament.notFound': 'Torneo no encontrado.',
   'tournament.notFoundTitle': 'Torneo no encontrado',
+  'tournament.notFoundDesc': 'Este torneo puede haber sido eliminado o el enlace es incorrecto.',
+  'tournament.noIdDesc': 'No se proporcionó ID de torneo en la URL.',
   'tournament.backHome': 'Volver al inicio',
   'tournament.back': '\u2190 Volver',
   'tournament.players': {
