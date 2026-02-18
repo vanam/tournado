@@ -25,7 +25,7 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
 
   return (
     <Card
-      className={`group cursor-pointer hover:shadow-lg hover:border-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200${tournament.winnerId ? ' border-l-4 border-l-[var(--color-accent)]' : ''}`}
+      className={`group cursor-pointer hover:shadow-lg hover:border-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200${tournament.winnerId ? ' brightness-95' : ''}`}
       role="button"
       tabIndex={0}
       onClick={handleCardActivate}
@@ -67,7 +67,7 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
           {t('card.created', { date: new Date(tournament.createdAt).toLocaleDateString() })}
         </p>
         {winner && (
-          <p className="text-xs text-[var(--color-accent)] font-medium mt-2">
+          <p className="text-xs text-[var(--color-subtle)] font-medium mt-2">
             {t('card.winner', {
               name: winner.name,
             })}

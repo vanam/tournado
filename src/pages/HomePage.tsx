@@ -11,14 +11,28 @@ import type { Tournament } from '../types';
 import { Button } from '@/components/ui/Button';
 
 export const HomePage = (): ReactElement => {
-  const [tournaments, setTournaments] = useState<Tournament[]>(() => persistence.loadAll());
+  const [tournaments, setTournaments] = useState<Tournament[]>(() =>
+    persistence.loadAll().toSorted((a, b) => {
+      const aFinished = !!a.winnerId;
+      const bFinished = !!b.winnerId;
+      if (aFinished !== bFinished) return aFinished ? 1 : -1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    })
+  );
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const { t } = useTranslation();
 
   useEffect(() => {
     return persistence.subscribe(() => {
-      setTournaments(persistence.loadAll());
+      setTournaments(
+        persistence.loadAll().toSorted((a, b) => {
+          const aFinished = !!a.winnerId;
+          const bFinished = !!b.winnerId;
+          if (aFinished !== bFinished) return aFinished ? 1 : -1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        })
+      );
     });
   }, []);
 
