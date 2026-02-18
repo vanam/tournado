@@ -134,7 +134,7 @@ function buildFirstLosersRound(winnersRounds: Bracket["rounds"]): {
 
     // Add dummy matches for missing pairs to keep the bracket structure consistent
     firstRound.push({
-      id: '' as unknown as string,
+      id: '',
       player1Id: null,
       player2Id: null,
       winnersSources: [],
