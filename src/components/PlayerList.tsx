@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { Check, X } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { useTournament } from '../context/tournamentContext';
 import type { Player } from '../types';
@@ -77,7 +78,7 @@ export const PlayerList = (): ReactElement => {
                     if (e.key === 'Enter') saveEdit(player.id);
                     if (e.key === 'Escape') cancelEdit();
                   }}
-                  className={`border rounded px-2 py-1 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] ${
+                  className={`border rounded px-2 py-1 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-card)] ${
                     error ? 'border-[var(--color-accent-border)]' : 'border-[var(--color-border)]'
                   }`}
                 />
@@ -86,14 +87,14 @@ export const PlayerList = (): ReactElement => {
                   className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] text-sm px-1"
                   title={t('tournament.saveName')}
                 >
-                  &#10003;
+                  <Check className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={cancelEdit}
                   className="text-[var(--color-faint)] hover:text-[var(--color-muted)] text-sm px-1"
                   title={t('tournament.cancelEdit')}
                 >
-                  &#10005;
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (

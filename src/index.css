@@ -1,58 +1,123 @@
 @import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
 
 :root {
   --page-bg-image: url("../public/assets/table-tennis-dimensions.svg");
-  --color-primary: #689FBD;
-  --color-primary-dark: #255E7D;
-  --color-accent: #A7804E;
-  --color-surface: #FDFDFD;
-  --color-text: #255E7D;
-  --color-muted: rgba(37, 94, 125, 0.7);
-  --color-subtle: rgba(37, 94, 125, 0.5);
-  --color-faint: rgba(37, 94, 125, 0.4);
-  --color-faintest: rgba(37, 94, 125, 0.25);
-  --color-border-soft: rgba(37, 94, 125, 0.15);
-  --color-border: rgba(37, 94, 125, 0.25);
-  --color-border-strong: rgba(37, 94, 125, 0.35);
-  --color-soft: rgba(104, 159, 189, 0.12);
-  --color-accent-soft: rgba(167, 128, 78, 0.18);
-  --color-accent-soft-strong: rgba(167, 128, 78, 0.3);
-  --color-accent-border: rgba(167, 128, 78, 0.45);
-  --color-overlay: rgba(37, 94, 125, 0.5);
-  --color-podium-gold: rgba(255, 215, 0, 0.18);
-  --color-podium-silver: rgba(192, 192, 192, 0.18);
-  --color-podium-bronze: rgba(205, 127, 50, 0.18);
 
-  /* shadcn/ui variables mapped to Tournado colors */
-  --background: 0 0% 100%;          /* white */
-  --foreground: 202 61% 31%;        /* --color-primary-dark in HSL */
+  /* ── Core palette (light) ── */
+  --color-primary: #3B82F6;
+  --color-primary-dark: #1E40AF;
+  --color-accent: #F59E0B;
+  --color-surface: #FFFFFF;
+  --color-card: #FFFFFF;
+  --color-text: #1E293B;
+  --color-muted: rgba(30, 41, 59, 0.65);
+  --color-subtle: rgba(30, 41, 59, 0.5);
+  --color-faint: rgba(30, 41, 59, 0.4);
+  --color-faintest: rgba(30, 41, 59, 0.2);
+  --color-border-soft: rgba(30, 64, 175, 0.1);
+  --color-border: rgba(30, 64, 175, 0.18);
+  --color-border-strong: rgba(30, 64, 175, 0.3);
+  --color-soft: rgba(59, 130, 246, 0.08);
+  --color-accent-soft: rgba(245, 158, 11, 0.12);
+  --color-accent-soft-strong: rgba(245, 158, 11, 0.25);
+  --color-accent-border: rgba(245, 158, 11, 0.4);
+  --color-overlay: rgba(15, 23, 42, 0.5);
+  --color-podium-gold: rgba(250, 204, 21, 0.15);
+  --color-podium-silver: rgba(148, 163, 184, 0.18);
+  --color-podium-bronze: rgba(217, 119, 6, 0.15);
 
-  --primary: 199 44% 58%;           /* --color-primary in HSL */
-  --primary-foreground: 0 0% 99%;   /* --color-surface */
+  /* ── shadcn/ui HSL mappings (light) ── */
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
 
-  --accent: 33 38% 55%;             /* --color-accent in HSL */
-  --accent-foreground: 0 0% 99%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
 
-  --muted: 202 61% 31% / 0.7;       /* --color-muted */
-  --muted-foreground: 202 61% 31% / 0.5;
+  --accent: 38 92% 50%;
+  --accent-foreground: 0 0% 100%;
 
-  --border: 202 61% 31% / 0.25;     /* --color-border */
-  --input: 202 61% 31% / 0.25;
-  --ring: 199 44% 58%;              /* --color-primary */
+  --muted: 222 47% 11% / 0.65;
+  --muted-foreground: 222 47% 11% / 0.5;
 
-  --radius: 0.75rem;                /* 12px (matches current rounded-xl) */
+  --border: 224 76% 40% / 0.18;
+  --input: 224 76% 40% / 0.18;
+  --ring: 217 91% 60%;
 
-  --card: 0 0% 99%;                 /* --color-surface */
-  --card-foreground: 202 61% 31%;
+  --radius: 0.75rem;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 202 61% 31%;
+  --popover-foreground: 222 47% 11%;
 
-  --secondary: 199 44% 58% / 0.12;  /* --color-soft */
-  --secondary-foreground: 202 61% 31%;
+  --secondary: 217 91% 60% / 0.08;
+  --secondary-foreground: 222 47% 11%;
 
   --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 99%;
+  --destructive-foreground: 0 0% 100%;
+}
+
+.dark {
+  --color-primary: #60A5FA;
+  --color-primary-dark: #93C5FD;
+  --color-accent: #FBBF24;
+  --color-surface: #0F172A;
+  --color-card: #1E293B;
+  --color-text: #F1F5F9;
+  --color-muted: rgba(148, 163, 184, 0.8);
+  --color-subtle: rgba(148, 163, 184, 0.6);
+  --color-faint: rgba(148, 163, 184, 0.45);
+  --color-faintest: rgba(148, 163, 184, 0.25);
+  --color-border-soft: rgba(148, 163, 184, 0.1);
+  --color-border: rgba(148, 163, 184, 0.18);
+  --color-border-strong: rgba(148, 163, 184, 0.3);
+  --color-soft: rgba(96, 165, 250, 0.1);
+  --color-accent-soft: rgba(251, 191, 36, 0.12);
+  --color-accent-soft-strong: rgba(251, 191, 36, 0.25);
+  --color-accent-border: rgba(251, 191, 36, 0.4);
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-podium-gold: rgba(250, 204, 21, 0.12);
+  --color-podium-silver: rgba(148, 163, 184, 0.12);
+  --color-podium-bronze: rgba(217, 119, 6, 0.12);
+
+  /* ── shadcn/ui HSL mappings (dark) ── */
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+
+  --primary: 213 94% 68%;
+  --primary-foreground: 222 47% 11%;
+
+  --accent: 45 93% 58%;
+  --accent-foreground: 222 47% 11%;
+
+  --muted: 215 20% 65% / 0.8;
+  --muted-foreground: 215 20% 65% / 0.6;
+
+  --border: 215 20% 65% / 0.18;
+  --input: 215 20% 65% / 0.18;
+  --ring: 213 94% 68%;
+
+  --card: 217 33% 17%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 217 33% 17%;
+  --popover-foreground: 210 40% 98%;
+
+  --secondary: 213 94% 68% / 0.1;
+  --secondary-foreground: 210 40% 98%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+}
+
+/* ── Base styles ── */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .app-background {
@@ -75,6 +140,11 @@
     pointer-events: none;
     z-index: 0;
   }
+
+  .dark .app-background::before {
+    opacity: 0.02;
+    filter: grayscale(100%) invert(1);
+  }
 }
 
 .app-background > * {
@@ -82,9 +152,11 @@
   z-index: 1;
 }
 
+/* ── Global interaction transitions ── */
 button, a, [role="button"], input, select, label {
   transition: all 150ms ease;
 }
+
 @layer base {
   *:focus-visible {
     outline: 2px solid var(--color-primary);
@@ -92,10 +164,12 @@ button, a, [role="button"], input, select, label {
     border-radius: 4px;
   }
 }
+
 table tbody tr {
   transition: background-color 150ms ease;
 }
 
+/* ── Custom scrollbars ── */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;

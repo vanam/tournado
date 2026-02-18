@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Plus, Trophy } from 'lucide-react';
 import { persistence } from '../services/persistence';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -67,9 +68,9 @@ export const HomePage = (): ReactElement => {
           <Button asChild>
             <Link
               to="/create"
-              className="bg-[var(--color-primary)] text-[var(--color-surface)] px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] transition-colors"
+              className="bg-[var(--color-primary)] text-[var(--color-surface)] px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] transition-colors inline-flex items-center gap-2"
             >
-              {t('home.newTournament')}
+              <Plus className="h-4 w-4" /> {t('home.newTournament')}
             </Link>
           </Button>
         </div>
@@ -77,14 +78,16 @@ export const HomePage = (): ReactElement => {
 
       {tournaments.length === 0 ? (
         <div className="text-center py-16 text-[var(--color-subtle)]">
-          <p className="text-4xl mb-4">&#127955;</p>
+          <div className="flex justify-center mb-4">
+            <Trophy className="h-16 w-16 text-[var(--color-faint)]" />
+          </div>
           <p className="text-lg font-medium mb-3">{t('home.noTournaments')}</p>
           <Button asChild>
             <Link
               to="/create"
-              className="inline-block bg-[var(--color-primary)] text-[var(--color-surface)] px-6 py-3 rounded-lg text-sm font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] transition-colors"
+              className="inline-flex items-center gap-2 bg-[var(--color-primary)] text-[var(--color-surface)] px-6 py-3 rounded-lg text-sm font-medium shadow-sm hover:shadow-md hover:bg-[var(--color-primary-dark)] transition-colors"
             >
-              {t('home.noTournamentsDesc')}
+              <Plus className="h-4 w-4" /> {t('home.noTournamentsDesc')}
             </Link>
           </Button>
         </div>

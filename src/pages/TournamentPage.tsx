@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { SearchX, CircleHelp } from 'lucide-react';
 import { Format } from '../types';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -28,7 +29,7 @@ const TournamentContent = (): ReactElement => {
   if (!tournament) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
-        <span className="text-5xl mb-4">🏟️</span>
+        <SearchX className="h-12 w-12 text-[var(--color-muted)] mb-4" />
         <h2 className="text-xl font-semibold text-[var(--color-text)] mb-2">
           {t('tournament.notFoundTitle')}
         </h2>
@@ -82,7 +83,7 @@ export const TournamentPage = (): ReactElement => {
   if (!id) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
-        <span className="text-5xl mb-4">❓</span>
+        <CircleHelp className="h-12 w-12 text-[var(--color-muted)] mb-4" />
         <h2 className="text-xl font-semibold text-[var(--color-text)] mb-2">
           {t('tournament.notFoundTitle')}
         </h2>

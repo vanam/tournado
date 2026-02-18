@@ -45,7 +45,7 @@ export const GroupCard = ({
   ];
 
   return (
-    <div className="border border-[var(--color-border)] rounded-xl p-4">
+    <div className="border border-[var(--color-border)] rounded-xl p-4 bg-[var(--color-card)]">
       <div className="text-sm font-semibold text-[var(--color-muted)] mb-4">
         {t('groupStage.groupTitle', { label: indexToGroupLabel(groupIndex) })}
       </div>

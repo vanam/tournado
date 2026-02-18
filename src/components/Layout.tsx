@@ -3,6 +3,7 @@ import { Link, Outlet } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePwaUpdate } from '../hooks/usePwaUpdate';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { ThemeToggle } from './ThemeToggle';
 import { ToastContainer } from './Toast';
 
 export const Layout = (): ReactElement => {
@@ -13,7 +14,7 @@ export const Layout = (): ReactElement => {
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)] app-background flex flex-col">
-      <nav className="bg-[var(--color-primary-dark)] text-[var(--color-surface)] shadow-lg">
+      <nav className="bg-[var(--color-primary-dark)] text-[var(--color-surface)] shadow-lg border-b border-[var(--color-primary)]/20">
         <div className="max-w-6xl mx-auto px-4 py-2 sm:py-3 flex items-center gap-4">
           <Link to="/" className="text-xl font-bold hover:text-[var(--color-primary)] transition-colors flex-1 flex items-center gap-3 min-w-0 truncate">
             <img
@@ -24,7 +25,10 @@ export const Layout = (): ReactElement => {
             />
             {t('nav.title')}
           </Link>
-          <LanguageSwitcher />
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
         </div>
       </nav>
       <main className="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">

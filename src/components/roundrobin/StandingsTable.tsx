@@ -3,6 +3,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { ScoreMode } from '../../types';
 import type { StandingsRow, RoundRobinTiebreakDetails, RoundRobinCriteriaKey, CriteriaRow } from '../../types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
+import { Badge } from '@/components/ui/Badge';
 
 interface StandingsTableProps {
   standings: StandingsRow[];
@@ -121,9 +122,7 @@ const PlayerNameCell = ({ name, isWildCard, elo, t }: PlayerNameCellProps): Reac
     <span className="inline-flex items-center gap-2">
       <span>{name}</span>
       {isWildCard && (
-        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-          {t('groupStage.wildCardBadge')}
-        </span>
+        <Badge variant="accent" className="text-[10px] px-1.5 py-0.5">{t('groupStage.wildCardBadge')}</Badge>
       )}
       {elo != null && (
         <span className="text-xs font-normal text-[var(--color-muted)]">

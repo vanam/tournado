@@ -1,9 +1,11 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import type { Tournament } from '../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 
 interface TournamentCardProps {
   tournament: Tournament;
@@ -23,7 +25,7 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
 
   return (
     <Card
-      className="group cursor-pointer hover:shadow-lg hover:border-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200"
+      className={`group cursor-pointer hover:shadow-lg hover:border-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200${tournament.winnerId ? ' border-l-4 border-l-[var(--color-accent)]' : ''}`}
       role="button"
       tabIndex={0}
       onClick={handleCardActivate}
@@ -46,15 +48,19 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
               event.stopPropagation();
               onDelete(tournament.id);
             }}
+            aria-label={t('card.delete')}
             className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 h-auto px-2 py-1"
           >
-            {t('card.delete')}
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
         <CardDescription className="text-sm text-[var(--color-muted)] mt-1">
           {t(`format.${tournament.format}`)} &middot;{' '}
           {t('tournament.players', { count: tournament.players.length })}
         </CardDescription>
+        <Badge variant="secondary" className="mt-2 w-fit">
+          {t(`format.${tournament.format}`)}
+        </Badge>
       </CardHeader>
       <CardContent className="p-5 pt-0">
         <p className="text-xs text-[var(--color-subtle)]">

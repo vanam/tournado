@@ -1,5 +1,6 @@
 import type { KeyboardEvent, ReactElement } from 'react';
 import type { FieldErrors, UseFormRegister, UseFormSetValue } from 'react-hook-form';
+import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import type { Player } from '../types';
 import type { TournamentFormValues } from '../pages/CreateTournamentPage';
@@ -189,7 +190,7 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
               disabled={index === 0}
               className="h-auto px-1.5 py-0.5 text-[var(--color-faint)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)]"
             >
-              &uarr;
+              <ChevronUp className="h-3.5 w-3.5" />
             </Button>
             <Button
               type="button"
@@ -199,7 +200,7 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
               disabled={index === players.length - 1}
               className="h-auto px-1.5 py-0.5 text-[var(--color-faint)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)]"
             >
-              &darr;
+              <ChevronDown className="h-3.5 w-3.5" />
             </Button>
             <Button
               type="button"
@@ -208,7 +209,7 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
               onClick={() => { removePlayer(player.id); }}
               className="h-auto px-1.5 py-0.5 text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] hover:bg-[var(--color-accent-soft)]"
             >
-              &times;
+              <X className="h-3.5 w-3.5" />
             </Button>
           </li>
         ))}

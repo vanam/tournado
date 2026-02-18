@@ -48,7 +48,7 @@ export const RRMatchCard = ({
   return (
     <div
       onClick={() => { onEdit(match); }}
-      className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] rounded-lg px-3 py-2.5 cursor-pointer hover:border-[var(--color-primary)] hover:shadow-md hover:-translate-y-px transition-all duration-150 text-sm"
+      className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-card)] rounded-lg px-3 py-2.5 cursor-pointer hover:border-[var(--color-primary)] hover:shadow-md hover:-translate-y-px transition-all duration-150 text-sm"
       role="button"
       tabIndex={0}
       aria-label={t('bracket.editMatch')}

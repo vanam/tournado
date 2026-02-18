@@ -31,7 +31,7 @@ const TabsTrigger = React.forwardRef<
       "border-b-2 border-transparent -mb-px transition-all",
       "disabled:pointer-events-none disabled:opacity-40",
       "data-[state=active]:border-[var(--color-primary)] data-[state=active]:text-[var(--color-primary)]",
-      "data-[state=inactive]:text-[var(--color-muted)] hover:text-[var(--color-text)]",
+      "data-[state=inactive]:text-[var(--color-muted)] data-[state=inactive]:hover:bg-[var(--color-soft)] data-[state=inactive]:hover:rounded-sm hover:text-[var(--color-text)]",
       className
     )}
     {...props}

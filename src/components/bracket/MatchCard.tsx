@@ -3,6 +3,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { formatSetPointEntries, getSetTotals, hasWalkover } from '../../utils/scoreUtils';
 import { ScoreMode } from '../../types';
 import type { Match, Player } from '../../types';
+import { Badge } from '@/components/ui/Badge';
 
 interface MatchCardProps {
   match: Match;
@@ -43,9 +44,7 @@ const PlayerInfo = ({
       )}
       {player.name}
       {isWildCard && (
-        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-          {t('groupStage.wildCardBadge')}
-        </span>
+        <Badge variant="accent" className="ml-2 text-[10px] px-1.5 py-0.5">{t('groupStage.wildCardBadge')}</Badge>
       )}
       {player.elo != null && (
         <span className="ml-2 font-normal text-[10px] text-[var(--color-muted)]">
@@ -133,7 +132,7 @@ export const MatchCard = ({
   return (
     <div
       onClick={isPlayable ? onClick : undefined}
-      className={`border rounded-lg text-xs w-48 overflow-hidden bg-[var(--color-surface)] transition-all duration-150 ${
+      className={`border rounded-lg text-xs w-52 overflow-hidden bg-[var(--color-card)] transition-all duration-150 ${
         isPlayable
           ? 'cursor-pointer hover:border-[var(--color-primary)] hover:shadow-md hover:-translate-y-px'
           : ''
@@ -151,7 +150,7 @@ export const MatchCard = ({
     >
       <div
         className={`flex items-center justify-between px-2 py-1.5 border-b border-[var(--color-border-soft)] ${
-          match.winnerId === match.player1Id ? 'bg-[var(--color-soft)] font-semibold border-l-2 border-l-[var(--color-primary)]' : ''
+          match.winnerId === match.player1Id ? 'bg-[var(--color-soft)] font-semibold border-l-3 border-l-[var(--color-primary)]' : ''
         }`}
       >
         <span className="truncate flex-1">
@@ -176,7 +175,7 @@ export const MatchCard = ({
       </div>
       <div
         className={`flex items-center justify-between px-2 py-1.5 ${
-          match.winnerId === match.player2Id ? 'bg-[var(--color-soft)] font-semibold border-l-2 border-l-[var(--color-primary)]' : ''
+          match.winnerId === match.player2Id ? 'bg-[var(--color-soft)] font-semibold border-l-3 border-l-[var(--color-primary)]' : ''
         }`}
       >
         <span className="truncate flex-1">

@@ -19,7 +19,12 @@
       "Bash(npx shadcn@latest add:*)",
       "Bash(npx vite build)",
       "Bash(xargs:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(python scripts/search.py:*)",
+      "Bash(npm test:*)"
     ]
+  },
+  "enabledPlugins": {
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true
   }
 }
