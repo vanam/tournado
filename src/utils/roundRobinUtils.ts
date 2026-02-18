@@ -282,7 +282,13 @@ function getAppliedCriteria(a: RoundRobinTiebreakDetails, b: RoundRobinTiebreakD
   return applied;
 }
 
-function resolveGroupTie(group: StandingsRow[], matchDetails: Record<string, MatchDetail>, pointsDiffApplicable: boolean): StandingsRow[] {
+function resolveTieGroup(
+  group: StandingsRow[],
+  matchDetails: Record<string, MatchDetail>,
+  pointsDiffApplicable: boolean
+): StandingsRow[] {
+  if (group.length === 0) return group;
+
   const tiedIds = group.map((p) => p.playerId);
   for (const row of group) {
     row.tiebreakDetails = buildTiebreakDetails(row, tiedIds, matchDetails, pointsDiffApplicable);
@@ -295,57 +301,36 @@ function resolveGroupTie(group: StandingsRow[], matchDetails: Record<string, Mat
     return compareByTiebreakers(aDetail, bDetail);
   });
 
-  for (let i = 0; i < sorted.length; i++) {
-    const current = sorted[i];
-    const next = sorted[i + 1];
-    if (!current?.tiebreakDetails) continue;
-    current.tiebreakDetails.tiebreakApplied = next?.tiebreakDetails && current.points === next.points
-      ? getAppliedCriteria(current.tiebreakDetails, next.tiebreakDetails)
-      : [];
+  let start = 0;
+  while (start < sorted.length) {
+    let end = start + 1;
+    while (end < sorted.length && sorted[end]?.points === sorted[start]?.points) {
+      end++;
+    }
+
+    const subgroupSize = end - start;
+    if (subgroupSize > 1) {
+      const first = sorted[start];
+      const last = sorted[end - 1];
+      if (first?.tiebreakDetails && last?.tiebreakDetails) {
+        const applied = getAppliedCriteria(first.tiebreakDetails, last.tiebreakDetails);
+        for (let k = start; k < end; k++) {
+          const row = sorted[k];
+          if (row?.tiebreakDetails) {
+            row.tiebreakDetails.tiebreakApplied = applied;
+          }
+        }
+      }
+    } else {
+      const single = sorted[start];
+      if (single?.tiebreakDetails) {
+        single.tiebreakDetails.tiebreakApplied = [];
+      }
+    }
+    start = end;
   }
 
   return sorted;
-}
-
-function resolveTwoPlayerTie(
-  standings: StandingsRow[],
-  i: number,
-  matchDetails: Record<string, MatchDetail>,
-  pointsDiffApplicable: boolean
-): void {
-  const a = standings[i];
-  const b = standings[i + 1];
-  if (!a || !b) return;
-  const tiedIds = [a.playerId, b.playerId];
-  a.tiebreakDetails = buildTiebreakDetails(a, tiedIds, matchDetails, pointsDiffApplicable);
-  b.tiebreakDetails = buildTiebreakDetails(b, tiedIds, matchDetails, pointsDiffApplicable);
-  const cmp = compareByTiebreakers(a.tiebreakDetails, b.tiebreakDetails);
-  if (cmp > 0) {
-    standings[i] = b;
-    standings[i + 1] = a;
-  }
-  const firstDetail = standings[i]?.tiebreakDetails;
-  const secondDetail = standings[i + 1]?.tiebreakDetails;
-  if (firstDetail && secondDetail) {
-    const applied = getAppliedCriteria(firstDetail, secondDetail);
-    firstDetail.tiebreakApplied = applied;
-    secondDetail.tiebreakApplied = applied;
-  }
-}
-
-function resolveSinglePlayer(standings: StandingsRow[], i: number, pointsDiffApplicable: boolean): void {
-  const row = standings[i];
-  if (!row) return;
-  row.tiebreakDetails = {
-    headToHead: 0,
-    headToHeadSetDiff: 0,
-    headToHeadSetsWon: 0,
-    setDiff: row.setsWon - row.setsLost,
-    setsWon: row.setsWon,
-    pointsDiff: row.pointsWon - row.pointsLost,
-    pointsDiffApplicable,
-    tiebreakApplied: [],
-  };
 }
 
 function resolveTies(standings: StandingsRow[], matchDetails: Record<string, MatchDetail>, pointsDiffApplicable: boolean): StandingsRow[] {
@@ -357,18 +342,11 @@ function resolveTies(standings: StandingsRow[], matchDetails: Record<string, Mat
     while (j < standings.length && standings[j]?.points === standingI.points) {
       j++;
     }
-    const groupSize = j - i;
 
-    if (groupSize === 2) {
-      resolveTwoPlayerTie(standings, i, matchDetails, pointsDiffApplicable);
-    } else if (groupSize >= 3) {
-      const group = standings.slice(i, j);
-      const sortedGroup = resolveGroupTie(group, matchDetails, pointsDiffApplicable);
-      for (const [k, entry] of sortedGroup.entries()) {
-        standings[i + k] = entry;
-      }
-    } else {
-      resolveSinglePlayer(standings, i, pointsDiffApplicable);
+    const group = standings.slice(i, j);
+    const sortedGroup = resolveTieGroup(group, matchDetails, pointsDiffApplicable);
+    for (const [k, entry] of sortedGroup.entries()) {
+      standings[i + k] = entry;
     }
     i = j;
   }

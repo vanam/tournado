@@ -572,19 +572,34 @@ describe('tiebreaker logic', () => {
     expect(p2.tiebreakDetails!.tiebreakApplied).toEqual(['headToHead']);
   });
 
-  it('sets tiebreakApplied to empty array for non-tied players', () => {
-    const players = makePlayers(4);
-    const schedule = generateSchedule(players);
-    for (const round of schedule.rounds) {
-      for (const match of round.matches) {
-        match.winnerId = match.player1Id;
-        match.scores = [[11, 5], [11, 5]];
-      }
-    }
+it('sets tiebreakApplied to empty array for non-tied players', () => {
+      const players = makePlayers(4);
+      const schedule = generateSchedule(players);
 
-    const standings = computeStandings(schedule, players);
-    expect(standings[3]!.tiebreakDetails!.tiebreakApplied).toEqual([]);
-  });
+      const setResult = (id1: string, id2: string, winnerId: string): void => {
+        const match = findMatch(schedule, id1, id2)!;
+        match.winnerId = winnerId;
+        match.scores = [[11, 5], [11, 5]];
+      };
+
+      setResult('p1', 'p2', 'p1');
+      setResult('p1', 'p3', 'p1');
+      setResult('p1', 'p4', 'p1');
+      setResult('p2', 'p3', 'p2');
+      setResult('p2', 'p4', 'p2');
+      setResult('p3', 'p4', 'p3');
+
+      const standings = computeStandings(schedule, players);
+
+      expect(standings[0]!.points).toBe(3);
+      expect(standings[1]!.points).toBe(2);
+      expect(standings[2]!.points).toBe(1);
+      expect(standings[3]!.points).toBe(0);
+
+      for (const s of standings) {
+        expect(s.tiebreakDetails!.tiebreakApplied).toEqual([]);
+      }
+    });
 
   it('records multiple tiebreakApplied criteria when needed', () => {
     const players = makePlayers(3);
@@ -989,7 +1004,7 @@ describe('tiebreaker logic', () => {
     });
   });
 
-  describe('unresolved ties', () => {
+describe('unresolved ties', () => {
     it('leaves players tied when all criteria are equal', () => {
       const players = makePlayers(3);
       const schedule = generateSchedule(players);
@@ -1010,6 +1025,176 @@ describe('tiebreaker logic', () => {
 
       expect(standings.every(s => s.points === 1)).toBe(true);
       expect(standings.every(s => s.tiebreakDetails!.headToHead === 1)).toBe(true);
+    });
+  });
+
+  describe('tiebreakApplied for all players in tie group', () => {
+    it('sets tiebreakApplied for all 4 players with no matches (all tied at 0 points)', () => {
+      const players = makePlayers(4);
+      const schedule = generateSchedule(players);
+
+      const standings = computeStandings(schedule, players);
+
+      expect(standings.every(s => s.points === 0)).toBe(true);
+      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied.length > 0)).toBe(true);
+      const firstApplied = standings[0]!.tiebreakDetails!.tiebreakApplied;
+      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied === firstApplied)).toBe(true);
+    });
+
+    it('sets tiebreakApplied for all 5 players with no matches (all tied at 0 points)', () => {
+      const players = makePlayers(5);
+      const schedule = generateSchedule(players);
+
+      const standings = computeStandings(schedule, players);
+
+      expect(standings.every(s => s.points === 0)).toBe(true);
+      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied.length > 0)).toBe(true);
+      const firstApplied = standings[0]!.tiebreakDetails!.tiebreakApplied;
+      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied === firstApplied)).toBe(true);
+    });
+
+    it('sets tiebreakApplied for all players in 3-way tie with equal criteria', () => {
+      const players = makePlayers(3);
+      const schedule = generateSchedule(players);
+
+      const m12 = findMatch(schedule, 'p1', 'p2')!;
+      m12.winnerId = 'p1';
+      m12.scores = [[11, 5], [11, 5]];
+
+      const m23 = findMatch(schedule, 'p2', 'p3')!;
+      m23.winnerId = 'p2';
+      m23.scores = [[11, 5], [11, 5]];
+
+      const m13 = findMatch(schedule, 'p1', 'p3')!;
+      m13.winnerId = 'p3';
+      m13.scores = [[11, 5], [11, 5]];
+
+      const standings = computeStandings(schedule, players);
+
+      expect(standings.every(s => s.points === 1)).toBe(true);
+      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied.length > 0)).toBe(true);
+      const firstApplied = standings[0]!.tiebreakDetails!.tiebreakApplied;
+      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied === firstApplied)).toBe(true);
+    });
+
+    it('sets tiebreakApplied for last player in 3-way tie', () => {
+      const players = makePlayers(3);
+      const schedule = generateSchedule(players);
+
+      const setResult = (id1: string, id2: string, winnerId: string, sets: [number, number][]): void => {
+        const match = findMatch(schedule, id1, id2)!;
+        match.winnerId = winnerId;
+        match.scores = sets;
+      };
+
+      setResult('p1', 'p2', 'p1', [[11, 5], [11, 5]]);
+      setResult('p1', 'p3', 'p3', [[5, 11], [5, 11]]);
+      setResult('p2', 'p3', 'p2', [[11, 5], [11, 5]]);
+
+      const standings = computeStandings(schedule, players);
+
+      expect(standings.every(s => s.points === 1)).toBe(true);
+      const lastPlayer = standings[standings.length - 1]!;
+      expect(lastPlayer.tiebreakDetails!.tiebreakApplied.length).toBeGreaterThan(0);
+      expect(lastPlayer.tiebreakDetails!.tiebreakApplied).toEqual(standings[0]!.tiebreakDetails!.tiebreakApplied);
+    });
+
+    it('handles mixed tied groups correctly', () => {
+      const players = makePlayers(4);
+      const schedule = generateSchedule(players);
+
+      const m12 = findMatch(schedule, 'p1', 'p2')!;
+      m12.winnerId = 'p1';
+      m12.scores = [[11, 5]];
+
+      const m13 = findMatch(schedule, 'p1', 'p3')!;
+      m13.winnerId = 'p1';
+      m13.scores = [[11, 5]];
+
+      const m14 = findMatch(schedule, 'p1', 'p4')!;
+      m14.winnerId = 'p1';
+      m14.scores = [[11, 5]];
+
+      const m23 = findMatch(schedule, 'p2', 'p3')!;
+      m23.winnerId = 'p2';
+      m23.scores = [[11, 5]];
+
+      const m24 = findMatch(schedule, 'p2', 'p4')!;
+      m24.winnerId = 'p4';
+      m24.scores = [[11, 5]];
+
+      const m34 = findMatch(schedule, 'p3', 'p4')!;
+      m34.winnerId = 'p4';
+      m34.scores = [[11, 5]];
+
+      const standings = computeStandings(schedule, players);
+
+      expect(standings[0]!.playerId).toBe('p1');
+      expect(standings[0]!.points).toBe(3);
+      expect(standings[0]!.tiebreakDetails!.tiebreakApplied).toEqual([]);
+
+      expect(standings[1]!.playerId).toBe('p4');
+      expect(standings[1]!.points).toBe(2);
+      expect(standings[1]!.tiebreakDetails!.tiebreakApplied).toEqual([]);
+
+      expect(standings[2]!.playerId).toBe('p2');
+      expect(standings[2]!.points).toBe(1);
+      expect(standings[2]!.tiebreakDetails!.tiebreakApplied).toEqual([]);
+
+      expect(standings[3]!.playerId).toBe('p3');
+      expect(standings[3]!.points).toBe(0);
+      expect(standings[3]!.tiebreakDetails!.tiebreakApplied).toEqual([]);
+    });
+
+    it('sets tiebreakApplied for all players in 2-player tie', () => {
+      const players = makePlayers(4);
+      const schedule = generateSchedule(players);
+
+      const m12 = findMatch(schedule, 'p1', 'p2')!;
+      m12.winnerId = 'p2';
+      m12.scores = [[11, 5]];
+
+      const m13 = findMatch(schedule, 'p1', 'p3')!;
+      m13.winnerId = 'p1';
+      m13.scores = [[11, 5]];
+
+      const m14 = findMatch(schedule, 'p1', 'p4')!;
+      m14.winnerId = 'p1';
+      m14.scores = [[11, 5]];
+
+      const m23 = findMatch(schedule, 'p2', 'p3')!;
+      m23.winnerId = 'p3';
+      m23.scores = [[11, 5]];
+
+      const m24 = findMatch(schedule, 'p2', 'p4')!;
+      m24.winnerId = 'p2';
+      m24.scores = [[11, 5]];
+
+      const m34 = findMatch(schedule, 'p3', 'p4')!;
+      m34.winnerId = 'p4';
+      m34.scores = [[11, 5]];
+
+      const standings = computeStandings(schedule, players);
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      const p2 = standings.find(s => s.playerId === 'p2')!;
+
+      expect(p1.points).toBe(2);
+      expect(p2.points).toBe(2);
+      expect(p1.tiebreakDetails!.tiebreakApplied.length).toBeGreaterThan(0);
+      expect(p2.tiebreakDetails!.tiebreakApplied.length).toBeGreaterThan(0);
+      expect(p1.tiebreakDetails!.tiebreakApplied).toEqual(p2.tiebreakDetails!.tiebreakApplied);
+    });
+
+    it('handles 6 players with no matches (all tied)', () => {
+      const players = makePlayers(6);
+      const schedule = generateSchedule(players);
+
+      const standings = computeStandings(schedule, players);
+
+      expect(standings.every(s => s.points === 0)).toBe(true);
+      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied.length > 0)).toBe(true);
+      const firstApplied = standings[0]!.tiebreakDetails!.tiebreakApplied;
+      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied === firstApplied)).toBe(true);
     });
   });
 });
