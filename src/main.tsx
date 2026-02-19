@@ -4,14 +4,17 @@ import './index.css'
 import { App } from './app'
 import { LanguageProvider } from './i18n/languageContext'
 import { validateScriptURL } from './utils/scriptUrlValidation'
+import { initAnalytics } from './utils/analytics'
 
-const ALLOWED_ORIGINS = new Set([window.location.origin])
+const ALLOWED_ORIGINS = new Set([window.location.origin, 'https://www.googletagmanager.com'])
 
 if ('trustedTypes' in window) {
   ;(window.trustedTypes as TrustedTypePolicyFactory).createPolicy('default', {
     createScriptURL: (input: string) => validateScriptURL(input, ALLOWED_ORIGINS),
   })
 }
+
+initAnalytics()
 
 const rootElement = document.querySelector('#root')
 if (!rootElement) {

@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'none';
-      script-src 'self';
+      script-src 'self' https://www.googletagmanager.com;
       style-src 'self';
-      img-src 'self';
+      img-src 'self' https://www.googletagmanager.com;
       font-src 'self';
-      connect-src 'self';
+      connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com;
       object-src 'none';
       base-uri 'none';
       form-action 'self';
@@ -31,6 +31,7 @@
   </head>
   <body>
     <div id="root"></div>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
