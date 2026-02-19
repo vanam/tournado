@@ -21,7 +21,12 @@
       "Bash(xargs:*)",
       "Bash(curl:*)",
       "Bash(python scripts/search.py:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(git -C /c/Users/Martin/Java/tournado-final log --oneline -10 -- src/main.tsx src/types/trustedTypes.d.ts)",
+      "Bash(git -C /c/Users/Martin/Java/tournado-final show c12fb3a --stat)",
+      "Bash(git -C /c/Users/Martin/Java/tournado-final show c12fb3a)"
     ]
   },
   "enabledPlugins": {

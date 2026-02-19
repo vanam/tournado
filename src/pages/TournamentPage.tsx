@@ -1,5 +1,5 @@
-import type { ReactElement } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import {type ReactElement, useEffect} from 'react';
+import {useParams, Link, useLocation} from 'react-router-dom';
 import { SearchX, CircleHelp } from 'lucide-react';
 import { Format } from '../types';
 import { useTranslation } from '../i18n/useTranslation';
@@ -11,10 +11,16 @@ import { RoundRobinView } from '../components/roundrobin/RoundRobinView';
 import { PlayerList } from '../components/PlayerList';
 import { GroupStageView } from '../components/groupstage/GroupStageView';
 import { Button } from '@/components/ui/Button';
+import {useAnalytics} from "@/utils/analytics";
 
 const TournamentContent = (): ReactElement => {
   const { tournament, isLoading } = useTournament();
   const { t } = useTranslation();
+  const location = useLocation();
+  const { tracker } = useAnalytics();
+  useEffect(() => {
+      tracker.trackPageView({})
+  }, [location, tracker]);
 
   usePageTitle(tournament ? tournament.name : t('tournament.notFoundTitle'));
 

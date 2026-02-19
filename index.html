@@ -8,7 +8,7 @@
       style-src 'self' 'unsafe-inline';
       img-src 'self' https://www.googletagmanager.com;
       font-src 'self';
-      connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com;
+      connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://www.googletagmanager.com;
       object-src 'none';
       base-uri 'none';
       form-action 'self';
@@ -31,7 +31,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

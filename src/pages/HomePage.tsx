@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import {Link, useLocation} from 'react-router-dom';
 import { Plus, Trophy } from 'lucide-react';
 import { persistence } from '../services/persistence';
 import { useTranslation } from '../i18n/useTranslation';
@@ -9,8 +9,16 @@ import { TournamentCard } from '../components/TournamentCard';
 import { ConfirmModal } from '../components/ConfirmModal';
 import type { Tournament } from '../types';
 import { Button } from '@/components/ui/Button';
+import {useAnalytics} from "@/utils/analytics";
 
 export const HomePage = (): ReactElement => {
+  const location = useLocation();
+  const { tracker } = useAnalytics();
+
+  useEffect(() => {
+    tracker.trackPageView({});
+  }, [location, tracker]);
+
   const [tournaments, setTournaments] = useState<Tournament[]>(() =>
     persistence.loadAll().toSorted((a, b) => {
       const aFinished = !!a.winnerId;

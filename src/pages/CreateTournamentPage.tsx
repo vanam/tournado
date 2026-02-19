@@ -6,7 +6,7 @@ import {DEFAULT_MAX_SETS, MIN_PLAYERS} from '../constants';
 import {useTranslation} from '../i18n/useTranslation';
 import {usePageTitle} from '../hooks/usePageTitle';
 import {persistence} from '../services/persistence';
-import {trackTournamentCreated} from '../utils/analytics';
+import {useAnalytics} from '../utils/analytics';
 import {generateBracket} from '../utils/bracketUtils';
 import {generateSchedule} from '../utils/roundRobinUtils';
 import {createGroupStage, indexToGroupLabel} from '../utils/groupStageUtils';
@@ -40,6 +40,7 @@ export type TournamentFormValues = {
 export const CreateTournamentPage = (): ReactElement => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { tracker } = useAnalytics();
 
   usePageTitle(t('create.title'));
 
@@ -203,7 +204,8 @@ export const CreateTournamentPage = (): ReactElement => {
       [Format.GROUPS_TO_BRACKET]: data.bracketType,
       [Format.ROUND_ROBIN]: 'none',
     };
-    trackTournamentCreated({
+
+    tracker.trackTournamentCreated({
       tournament_type: data.format,
       scoring_mode: data.scoringMode,
       player_count: players.length,

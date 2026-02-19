@@ -1,10 +1,16 @@
-import type { ReactElement } from 'react';
+import {type ReactElement, useEffect} from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
+import {useLocation} from "react-router-dom";
+import {useAnalytics} from "@/utils/analytics";
 
 export const FaqPage = (): ReactElement => {
   const { t } = useTranslation();
-
+  const location = useLocation();
+  const { tracker } = useAnalytics();
+  useEffect(() => {
+      tracker.trackPageView({})
+  }, [location, tracker]);
   usePageTitle(t('faq.title'));
 
   return (

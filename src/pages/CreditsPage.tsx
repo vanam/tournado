@@ -1,11 +1,18 @@
-import type { ReactElement } from 'react';
+import {type ReactElement, useEffect} from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
+import {useLocation} from "react-router-dom";
+import {useAnalytics} from "@/utils/analytics";
 
 const backgroundImageUrl = 'https://www.dimensions.com/collection/table-tennis-ping-pong';
 
 export const CreditsPage = (): ReactElement => {
   const { t } = useTranslation();
+  const location = useLocation();
+  const { tracker } = useAnalytics();
+  useEffect(() => {
+      tracker.trackPageView({})
+  }, [location, tracker]);
 
   usePageTitle(t('credits.title'));
 
