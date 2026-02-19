@@ -5,7 +5,7 @@
 @import "@fontsource/inter/700.css";
 
 :root {
-  --page-bg-image: url("../public/assets/table-tennis-dimensions.svg");
+  --page-bg-image: url("/assets/table-tennis-dimensions.svg");
 
   /* ── Core palette (light) ── */
   --color-primary: #689FBD;
