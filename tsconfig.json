@@ -6,6 +6,7 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "jsx": "react-jsx",
+    "esModuleInterop": true,
 
     /* Emit & build behavior */
     "noEmit": true,
