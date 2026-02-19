@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'none';
-      script-src 'self';
+      script-src 'self' https://www.googletagmanager.com;
       style-src 'self';
-      img-src 'self';
+      img-src 'self' https://www.googletagmanager.com;
       font-src 'self';
-      connect-src 'self';
+      connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com;
       object-src 'none';
       base-uri 'none';
       form-action 'self';
@@ -25,13 +25,18 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="Tournado" />
     <link rel="manifest" href="/assets/favicon/site.webmanifest" />
-    <meta name="theme-color" content="#689FBD" />
+    <meta name="theme-color" content="#3B82F6" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tournado</title>
-    <script type="module" crossorigin src="/assets/index-OnNC4PTL.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DK7b906Y.css">
+    <script type="module" crossorigin src="/assets/index-BO8dSEhX.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react-vendor-Bgs-6sV-.js">
+    <link rel="modulepreload" crossorigin href="/assets/notifications-t4x-TPvG.js">
+    <link rel="modulepreload" crossorigin href="/assets/radix-ui-CVrMEJrw.js">
+    <link rel="modulepreload" crossorigin href="/assets/icons-DzhwDsxK.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-DoVSpyKK.css">
   </head>
   <body>
     <div id="root"></div>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
   </body>
 </html>
