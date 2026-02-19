@@ -1,0 +1,1 @@
+import{r as s}from"./react-vendor-Bgs-6sV-.js";import{u as n}from"./index-BFCo89aA.js";function u(t){const{t:o}=n();s.useEffect(()=>{const r=o("nav.title");document.title=t?`${t} | ${r}`:r},[t,o])}export{u};
