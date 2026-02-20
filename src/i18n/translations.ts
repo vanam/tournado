@@ -208,6 +208,8 @@ export const en: TranslationMap = {
   'toast.newVersion': 'New version available',
   'toast.reload': 'Reload',
   'toast.dismiss': 'Dismiss',
+
+  'meta.description': 'Create and manage table tennis tournaments. Supports single/double elimination, round robin, and group stages. Free, browser-based, no account needed.',
 };
 
 export const cs: TranslationMap = {
@@ -420,6 +422,8 @@ export const cs: TranslationMap = {
   'toast.newVersion': 'K dispozici je nová verze',
   'toast.reload': 'Obnovit',
   'toast.dismiss': 'Zavřít',
+
+  'meta.description': 'Vytvářejte a řiďte turnaje ve stolním tenise. Podporuje systém na jednu/dvě porážky, každý s každým a skupinové formáty. Zdarma, v prohlížeči, bez účtu.',
 };
 
 export const de: TranslationMap = {
@@ -630,6 +634,8 @@ export const de: TranslationMap = {
   'toast.newVersion': 'Neue Version verfügbar',
   'toast.reload': 'Neu laden',
   'toast.dismiss': 'Schließen',
+
+  'meta.description': 'Erstellen und verwalten Sie Tischtennis-Turniere. Unterstützt K.O.-System, Doppel-K.O., Jeder-gegen-Jeden und Gruppenphase. Kostenlos, browserbasiert, kein Konto nötig.',
 };
 
 export const es: TranslationMap = {
@@ -840,4 +846,6 @@ export const es: TranslationMap = {
   'toast.newVersion': 'Nueva versión disponible',
   'toast.reload': 'Recargar',
   'toast.dismiss': 'Cerrar',
+
+  'meta.description': 'Crea y gestiona torneos de tenis de mesa. Compatible con eliminación simple/doble, todos contra todos y fases de grupos. Gratis, en el navegador, sin cuenta.',
 };
