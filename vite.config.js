@@ -48,6 +48,24 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/www\.googletagmanager\.com\//,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'gtm-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/(www\.google-analytics\.com|region1\.google-analytics\.com|analytics\.google\.com)\//,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'ga-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+        ],
       },
     }),
   ],
