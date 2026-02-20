@@ -39,6 +39,21 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    {
+      name: 'font-preload',
+      transformIndexHtml: {
+        order: 'post',
+        handler(html, ctx) {
+          if (!ctx.bundle) return html;
+          const fontKey = Object.keys(ctx.bundle).find(
+            key => key.includes('inter-latin-wght-normal') && key.endsWith('.woff2')
+          );
+          if (!fontKey) return html;
+          const preload = `    <link rel="preload" as="font" type="font/woff2" crossorigin href="/${fontKey}">\n`;
+          return html.replace('  </head>', preload + '  </head>');
+        }
+      }
+    },
     VitePWA({
       injectRegister: null,
       registerType: 'prompt',
