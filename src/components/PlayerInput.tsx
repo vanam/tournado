@@ -1,6 +1,7 @@
-import type { KeyboardEvent, ReactElement } from 'react';
+import { useState } from 'react';
+import type { DragEvent, KeyboardEvent, ReactElement } from 'react';
 import type { FieldErrors, UseFormRegister, UseFormSetValue } from 'react-hook-form';
-import { ChevronUp, ChevronDown, X } from 'lucide-react';
+import { GripVertical, X } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import type { Player } from '../types';
 import type { TournamentFormValues } from '../pages/CreateTournamentPage';
@@ -9,6 +10,9 @@ import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/Label';
 import { Checkbox } from '@/components/ui/Checkbox';
 import {FieldGroupLabel} from "@/components/ui/FieldGroupLabel";
+import { usePlayerOrder } from '../hooks/usePlayerOrder';
+import { PlayerMoveButtons } from './common/PlayerMoveButtons';
+import { PlayerOrderActions } from './common/PlayerOrderActions';
 
 interface PlayerInputProps {
   players: Player[];
@@ -20,63 +24,52 @@ interface PlayerInputProps {
   onAddPlayer: () => void;
 }
 
+function getItemClass(isDragged: boolean, isOver: boolean): string {
+  if (isDragged) return 'opacity-40 border-[var(--color-border)]';
+  if (isOver) return 'border-[var(--color-primary)] bg-[var(--color-soft)]';
+  return 'border-[var(--color-border)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-soft)]';
+}
+
 export const PlayerInput = ({ players, setPlayers, register, errors, setValue, useElo, onAddPlayer }: PlayerInputProps): ReactElement => {
   const { t } = useTranslation();
+  const { moveUp, moveDown, shufflePlayers, sortPlayersByElo } = usePlayerOrder(players, setPlayers);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  function handleDragStart(index: number): void {
+    setDragIndex(index);
+  }
+
+  function handleDragOver(e: DragEvent<HTMLLIElement>, index: number): void {
+    e.preventDefault();
+    if (overIndex !== index) setOverIndex(index);
+  }
+
+  function handleDrop(toIndex: number): void {
+    if (dragIndex === null || dragIndex === toIndex) {
+      setDragIndex(null);
+      setOverIndex(null);
+      return;
+    }
+    const updated = [...players];
+    const [moved] = updated.splice(dragIndex, 1);
+    if (moved === undefined) { setDragIndex(null); setOverIndex(null); return; }
+    updated.splice(toIndex, 0, moved);
+    setPlayers(updated.map((p, i) => ({ ...p, seed: i + 1 })));
+    setDragIndex(null);
+    setOverIndex(null);
+  }
+
+  function handleDragEnd(): void {
+    setDragIndex(null);
+    setOverIndex(null);
+  }
 
   function removePlayer(id: string): void {
     const updated = players
       .filter((p) => p.id !== id)
       .map((p, i) => ({ ...p, seed: i + 1 }));
     setPlayers(updated);
-  }
-
-  function moveUp(index: number): void {
-    if (index === 0) return;
-    const updated = [...players];
-    const prev = updated[index - 1];
-    const curr = updated[index];
-    if (!prev || !curr) return;
-    updated[index - 1] = curr;
-    updated[index] = prev;
-    setPlayers(updated.map((p, i) => ({ ...p, seed: i + 1 })));
-  }
-
-  function moveDown(index: number): void {
-    if (index === players.length - 1) return;
-    const updated = [...players];
-    const curr = updated[index];
-    const next = updated[index + 1];
-    if (!curr || !next) return;
-    updated[index] = next;
-    updated[index + 1] = curr;
-    setPlayers(updated.map((p, i) => ({ ...p, seed: i + 1 })));
-  }
-
-  function shufflePlayers(): void {
-    const shuffled = [...players];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      // Weak random shuffle is fine here since it's just for tournament seeding and not security-sensitive
-      // eslint-disable-next-line sonarjs/pseudo-random
-      const j = Math.floor(Math.random() * (i + 1));
-      const a = shuffled[i];
-      const b = shuffled[j];
-      if (!a || !b) continue;
-      shuffled[i] = b;
-      shuffled[j] = a;
-    }
-    setPlayers(shuffled.map((p, i) => ({ ...p, seed: i + 1 })));
-  }
-
-  function sortPlayersByElo(): void {
-    const sorted = [...players].toSorted((a, b) => {
-      const aElo = Number(a.elo);
-      const bElo = Number(b.elo);
-      const safeAElo = Number.isFinite(aElo) ? aElo : 0;
-      const safeBElo = Number.isFinite(bElo) ? bElo : 0;
-      if (safeBElo !== safeAElo) return safeBElo - safeAElo;
-      return (a.seed ?? 0) - (b.seed ?? 0);
-    });
-    setPlayers(sorted.map((p, i) => ({ ...p, seed: i + 1 })));
   }
 
   return (
@@ -86,25 +79,11 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
           {t('players.title', { count: players.length })}
         </FieldGroupLabel>
         {players.length > 1 && (
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="link"
-              onClick={sortPlayersByElo}
-              disabled={!useElo}
-              className="text-sm px-0 h-auto"
-            >
-              {t('players.sortByElo')}
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              onClick={shufflePlayers}
-              className="text-sm px-0 h-auto"
-            >
-              {t('players.shuffle')}
-            </Button>
-          </div>
+          <PlayerOrderActions
+            useElo={useElo}
+            onSortByElo={sortPlayersByElo}
+            onShuffle={shufflePlayers}
+          />
         )}
       </div>
       <div className="mb-3 space-y-2">
@@ -171,8 +150,14 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
         {players.map((player, index) => (
           <li
             key={player.id}
-            className="flex items-center gap-2 border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-soft)] transition-colors"
+            draggable
+            onDragStart={() => { handleDragStart(index); }}
+            onDragOver={(e) => { handleDragOver(e, index); }}
+            onDrop={() => { handleDrop(index); }}
+            onDragEnd={handleDragEnd}
+            className={`flex items-center gap-2 border rounded-lg px-3 py-2 transition-colors ${getItemClass(dragIndex === index, overIndex === index)}`}
           >
+            <GripVertical className="h-4 w-4 text-[var(--color-faint)] cursor-grab shrink-0" />
             <span className="text-[var(--color-faint)] text-sm w-6 text-right">
               #{player.seed}
             </span>
@@ -182,26 +167,12 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
                 {t('players.elo', { elo: player.elo })}
               </span>
             )}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => { moveUp(index); }}
-              disabled={index === 0}
-              className="h-auto px-1.5 py-0.5 text-[var(--color-faint)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)]"
-            >
-              <ChevronUp className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => { moveDown(index); }}
-              disabled={index === players.length - 1}
-              className="h-auto px-1.5 py-0.5 text-[var(--color-faint)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)]"
-            >
-              <ChevronDown className="h-3.5 w-3.5" />
-            </Button>
+            <PlayerMoveButtons
+              index={index}
+              total={players.length}
+              onMoveUp={moveUp}
+              onMoveDown={moveDown}
+            />
             <Button
               type="button"
               variant="ghost"

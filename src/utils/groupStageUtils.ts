@@ -47,7 +47,7 @@ function toSeed(value: number | undefined): number {
   return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
 }
 
-interface BaseGroup {
+export interface BaseGroup {
   id: string;
   name: string;
   playerIds: string[];
@@ -89,11 +89,12 @@ interface CreateGroupStageSettings {
 
 export function createGroupStage(
   players: Player[],
-  settings: CreateGroupStageSettings
+  settings: CreateGroupStageSettings,
+  customGroups?: BaseGroup[]
 ): GroupStage {
   const groupCount = Math.max(1, Number.parseInt(settings.groupCount as string, 10) || 1);
-  const qualifiers = normalizeQualifiers(settings.qualifiers, groupCount);
-  const baseGroups = distributePlayersToGroups(players, groupCount);
+  const qualifiers = normalizeQualifiers(settings.qualifiers, customGroups?.length ?? groupCount);
+  const baseGroups = customGroups ?? distributePlayersToGroups(players, groupCount);
 
   const groups: Group[] = baseGroups.map((group, index) => {
     const groupPlayers = players.filter((p) => group.playerIds.includes(p.id));

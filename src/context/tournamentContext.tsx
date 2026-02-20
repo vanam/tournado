@@ -1,47 +1,15 @@
-import { createContext, useContext, useCallback, useSyncExternalStore, useMemo, type ReactElement, type ReactNode } from 'react';
+import { createContext, useContext, useCallback } from 'react';
 import type { Tournament, GroupsToBracketTournament } from '../types';
-import { persistence } from '../services/persistence';
 import { Format } from '../types';
 
-interface TournamentContextValue {
+export interface TournamentContextValue {
   tournament: Tournament | null;
   updateTournament: (updater: (prev: Tournament) => Tournament) => void;
   isLoading: boolean;
 }
 
-const TournamentContext = createContext<TournamentContextValue | null>(null);
+export const TournamentContext = createContext<TournamentContextValue | null>(null);
 
-interface TournamentProviderProps {
-  readonly tournamentId: string;
-  readonly children: ReactNode;
-}
-
-export const TournamentProvider = ({ tournamentId, children }: TournamentProviderProps): ReactElement => {
-  const tournament = useSyncExternalStore(
-    persistence.subscribe,
-    useCallback(() => persistence.load(tournamentId), [tournamentId])
-  );
-
-  const updateTournament = useCallback((updater: (prev: Tournament) => Tournament) => {
-    const current = persistence.load(tournamentId);
-    if (!current) return;
-    persistence.save(updater(current));
-  }, [tournamentId]);
-
-  const contextValue = useMemo(() => ({
-    tournament,
-    updateTournament,
-    isLoading: false,
-  }), [tournament, updateTournament]);
-
-  return (
-    <TournamentContext.Provider value={contextValue}>
-      {children}
-    </TournamentContext.Provider>
-  );
-};
-
-// eslint-disable-next-line react-refresh/only-export-components
 export function useTournament(): TournamentContextValue {
   const context = useContext(TournamentContext);
   if (!context) {
@@ -50,7 +18,6 @@ export function useTournament(): TournamentContextValue {
   return context;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useTypedTournament<T extends Tournament>(
   format: T['format']
 ): { tournament: T | null; updateTournament: (updater: (prev: T) => T) => void; isLoading: boolean } {
@@ -71,7 +38,6 @@ export function useTypedTournament<T extends Tournament>(
   return { tournament: typedTournament, updateTournament: typedUpdateTournament, isLoading };
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useGroupsToBracketTournament(): {
   tournament: GroupsToBracketTournament | null;
   updateTournament: (

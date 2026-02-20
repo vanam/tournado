@@ -120,7 +120,7 @@ describe('TournamentContext hooks', () => {
   });
 
   it('exports TournamentProvider component', async () => {
-    const { TournamentProvider } = await import('./tournamentContext');
+    const { TournamentProvider } = await import('./tournamentProvider');
     expect(typeof TournamentProvider).toBe('function');
   });
 });

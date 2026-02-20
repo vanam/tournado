@@ -10,8 +10,10 @@ import {useAnalytics} from '../utils/analytics';
 import {generateBracket} from '../utils/bracketUtils';
 import {generateSchedule} from '../utils/roundRobinUtils';
 import {createGroupStage, indexToGroupLabel} from '../utils/groupStageUtils';
+import type {BaseGroup} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
 import {PlayerInput} from '../components/PlayerInput';
+import {TournamentPreview} from '../components/TournamentPreviewModal';
 import {BracketType, Format, ScoreMode} from '../types';
 import type {Player, Tournament} from '../types';
 import { Button } from '@/components/ui/Button';
@@ -84,6 +86,23 @@ export const CreateTournamentPage = (): ReactElement => {
   const scoringMode = useWatch({ control, name: 'scoringMode' });
   const bracketType = useWatch({ control, name: 'bracketType' });
   const useElo = useWatch({ control, name: 'useElo' });
+  const groupCount = useWatch({ control, name: 'groupCount' });
+
+  // Custom group assignments stored with their context so they auto-invalidate when inputs change.
+  const [customGroupsState, setCustomGroupsState] = useState<{
+    groups: BaseGroup[];
+    players: Player[];
+    format: Format;
+    groupCount: number;
+  } | null>(null);
+
+  const customGroups =
+    customGroupsState !== null &&
+    customGroupsState.players === players &&
+    customGroupsState.format === format &&
+    customGroupsState.groupCount === groupCount
+      ? customGroupsState.groups
+      : null;
 
   async function handleAddPlayer(): Promise<void> {
     const valid = await trigger('playerName');
@@ -184,7 +203,7 @@ export const CreateTournamentPage = (): ReactElement => {
           qualifiers,
           consolation: data.consolation,
           bracketType: data.bracketType,
-        });
+        }, customGroups ?? undefined);
         tournament = {
           ...base,
           format: Format.GROUPS_TO_BRACKET,
@@ -418,6 +437,22 @@ export const CreateTournamentPage = (): ReactElement => {
         />
 
         {errors.root && <p className="text-[var(--color-accent)] text-sm">{errors.root.message}</p>}
+
+        <TournamentPreview
+          format={format}
+          players={players}
+          groupCount={groupCount}
+          externalGroups={customGroups}
+          onGroupsChange={(groups) => {
+            const orderedIds = groups.flatMap((g) => g.playerIds);
+            const reordered = orderedIds
+              .map((id) => players.find((p) => p.id === id))
+              .filter((p): p is Player => p !== undefined)
+              .map((p, i) => ({ ...p, seed: i + 1 }));
+            setPlayers(reordered);
+            setCustomGroupsState({ groups, players: reordered, format, groupCount });
+          }}
+        />
 
         <Button
           type="submit"
