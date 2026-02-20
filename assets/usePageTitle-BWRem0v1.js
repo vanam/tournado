@@ -1,0 +1,1 @@
+import{r as s}from"./react-vendor-B7IL4Whh.js";import{u as n}from"./index-CNGXs0Yo.js";function u(t){const{t:o}=n();s.useEffect(()=>{const r=o("nav.title");document.title=t?`${t} | ${r}`:r},[t,o])}export{u};
