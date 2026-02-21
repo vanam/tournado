@@ -9,7 +9,7 @@ import {persistence} from '../services/persistence';
 import {useAnalytics} from '../utils/analytics';
 import {generateBracket} from '../utils/bracketUtils';
 import {generateSchedule} from '../utils/roundRobinUtils';
-import {createGroupStage, indexToGroupLabel} from '../utils/groupStageUtils';
+import {createGroupStage, distributePlayersToGroups, indexToGroupLabel} from '../utils/groupStageUtils';
 import type {BaseGroup} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
 import {PlayerInput} from '../components/PlayerInput';
@@ -156,6 +156,22 @@ export const CreateTournamentPage = (): ReactElement => {
     }
 
     const qualifiers = data.qualifiers.map((q) => q.value);
+
+    if (data.format === Format.GROUPS_TO_BRACKET) {
+      const groups = customGroups ?? distributePlayersToGroups(players, data.groupCount);
+      for (const [i, group] of groups.entries()) {
+        const required = qualifiers[i] ?? 0;
+        if (required > 0 && group.playerIds.length < required) {
+          setError('root', {
+            message: t('create.errorGroupTooFewPlayers', {
+              label: indexToGroupLabel(i),
+              count: required,
+            }),
+          });
+          return;
+        }
+      }
+    }
 
     const base = {
       id: crypto.randomUUID(),
@@ -436,8 +452,6 @@ export const CreateTournamentPage = (): ReactElement => {
           onAddPlayer={() => { void handleAddPlayer(); }}
         />
 
-        {errors.root && <p className="text-[var(--color-accent)] text-sm">{errors.root.message}</p>}
-
         <TournamentPreview
           format={format}
           players={players}
@@ -453,6 +467,8 @@ export const CreateTournamentPage = (): ReactElement => {
             setCustomGroupsState({ groups, players: reordered, format, groupCount });
           }}
         />
+
+        {errors.root && <p className="text-[var(--color-accent)] text-sm">{errors.root.message}</p>}
 
         <Button
           type="submit"
