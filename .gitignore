@@ -10,3 +10,5 @@ dev-dist
 *.iml
 
 telemetry-id
+
+.claude
