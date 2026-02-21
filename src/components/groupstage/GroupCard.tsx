@@ -19,6 +19,7 @@ interface GroupCardProps {
   readonly activeTab: GroupTab;
   readonly onTabChange: (tab: GroupTab) => void;
   readonly onEditMatch: (match: { id: string }) => void;
+  readonly onPrint: () => void;
   readonly scoringMode: ScoreMode;
   readonly maxSets: number;
 }
@@ -33,6 +34,7 @@ export const GroupCard = ({
   activeTab,
   onTabChange,
   onEditMatch,
+  onPrint,
   scoringMode,
   maxSets,
 }: GroupCardProps): ReactElement => {
@@ -46,8 +48,33 @@ export const GroupCard = ({
 
   return (
     <div className="border border-[var(--color-border)] rounded-xl p-4 bg-[var(--color-card)]">
-      <div className="text-sm font-semibold text-[var(--color-muted)] mb-4">
-        {t('groupStage.groupTitle', { label: indexToGroupLabel(groupIndex) })}
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-sm font-semibold text-[var(--color-muted)]">
+          {t('groupStage.groupTitle', { label: indexToGroupLabel(groupIndex) })}
+        </div>
+        <button
+          onClick={onPrint}
+          title={t('groupStage.printGroup')}
+          className="p-1 rounded text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)] transition-colors"
+          aria-label={t('groupStage.printGroup')}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
+        </button>
       </div>
       <TabBar tabs={tabs} activeId={activeTab} onChange={onTabChange} />
 
