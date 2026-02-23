@@ -12,7 +12,7 @@ export const ThemeToggle = (): ReactElement => {
       size="icon"
       onClick={toggleTheme}
       aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="text-[var(--color-surface)] hover:text-[var(--color-primary)] hover:bg-white/10"
+      className="text-[var(--color-nav-text)] hover:text-[var(--color-nav-text)] hover:bg-(--color-primary-dark) h-8 w-8"
     >
       {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </Button>

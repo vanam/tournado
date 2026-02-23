@@ -42,14 +42,14 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
             {tournament.name}
           </CardTitle>
           <Button
-            variant="ghost"
+            variant="secondary-ghost"
             size="sm"
             onClick={(event) => {
               event.stopPropagation();
               onDelete(tournament.id);
             }}
             aria-label={t('card.delete')}
-            className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)] text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 h-auto px-2 py-1"
+            className="text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 h-8 w-8 px-2 py-1"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

@@ -14,7 +14,7 @@ export const Layout = (): ReactElement => {
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)] app-background flex flex-col">
-      <nav className="bg-[var(--color-primary-dark)] text-[var(--color-nav-text)] shadow-lg border-b border-[var(--color-primary)]/20">
+      <nav className="bg-[var(--color-primary)] text-[var(--color-nav-text)] shadow-lg border-b border-[var(--color-primary)]/20">
         <div className="max-w-6xl mx-auto px-4 py-2 sm:py-3 flex items-center gap-4">
           <Link to="/" className="text-xl font-bold transition-colors flex-1 flex items-center gap-3 min-w-0 truncate">
             <img

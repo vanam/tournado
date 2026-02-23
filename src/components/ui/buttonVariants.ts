@@ -11,8 +11,12 @@ export const buttonVariants = cva(
           "bg-[var(--color-accent)] border border-[var(--color-accent)] text-[var(--color-surface)] hover:brightness-90",
         "primary-outlined":
           "border border-[var(--color-primary)] bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-surface)] font-normal",
+        "primary-ghost":
+            "bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-surface)] font-normal",
         "secondary-outlined":
           "border border-[var(--color-accent)] bg-transparent text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-[var(--color-surface)] font-normal",
+        "secondary-ghost":
+            "bg-transparent text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-[var(--color-surface)] font-normal",
         link: "text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] underline-offset-4 hover:underline",
         ghost: "font-normal text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]",
         destructive:

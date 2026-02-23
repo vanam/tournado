@@ -368,20 +368,20 @@ export const ScoreModal = ({
           <div className="flex flex-wrap gap-2 justify-end pt-4 mt-2 border-t border-[var(--color-border-soft)]">
             {hasResult && (
               <Button
-                variant="ghost"
+                variant="secondary-ghost"
                 onClick={handleClear}
-                className="text-[var(--color-accent)] hover:text-[var(--color-primary-dark)]"
               >
                 {t('score.clear')}
               </Button>
             )}
             <Button
-              variant="ghost"
+              variant="primary-ghost"
               onClick={onClose}
             >
               {t('score.cancel')}
             </Button>
             <Button
+              variant="primary"
               onClick={handleSave}
               disabled={!winner}
             >

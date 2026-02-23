@@ -32,7 +32,7 @@ export const ConfirmModal = ({
           <DialogDescription>{message}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" onClick={onCancel}>
+          <Button variant="primary-ghost" onClick={onCancel}>
             {cancelLabel}
           </Button>
           <Button variant="secondary" onClick={onConfirm}>

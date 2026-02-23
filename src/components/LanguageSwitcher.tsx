@@ -21,7 +21,7 @@ export const LanguageSwitcher = (): ReactElement => {
       <Select value={language} onValueChange={handleChange}>
         <SelectTrigger
           aria-label="Language"
-          className="appearance-none rounded-md border border-(--color-primary) bg-(--color-primary-dark) hover:bg-(--color-primary) py-1 pl-8 pr-1 h-auto text-(--color-surface) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2 transition-colors [&>svg]:ml-1"
+          className="appearance-none rounded-md border border-(--color-primary-dark) bg-(--color-primary) hover:bg-(--color-primary-dark) py-1 pl-8 pr-1 h-8 text-(--color-nav-text) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2 transition-colors [&>svg]:ml-1"
         >
           <SelectValue />
         </SelectTrigger>
