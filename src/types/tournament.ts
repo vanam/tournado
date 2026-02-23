@@ -71,8 +71,15 @@ export interface GroupsToBracketTournament extends TournamentBase {
   maxSetsBracket?: number;
 }
 
+export interface SwissTournament extends TournamentBase {
+  format: Format.SWISS;
+  schedule: RoundRobinSchedule;
+  totalRounds: number;
+}
+
 export type Tournament =
   | SingleElimTournament
   | DoubleElimTournament
   | RoundRobinTournament
-  | GroupsToBracketTournament;
+  | GroupsToBracketTournament
+  | SwissTournament;

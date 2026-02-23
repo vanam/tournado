@@ -9,6 +9,7 @@ import {persistence} from '../services/persistence';
 import {useAnalytics} from '../utils/analytics';
 import {generateBracket} from '../utils/bracketUtils';
 import {generateSchedule} from '../utils/roundRobinUtils';
+import {generateSwissInitialSchedule, computeTotalRounds} from '../utils/swissUtils';
 import {createGroupStage, distributePlayersToGroups, indexToGroupLabel} from '../utils/groupStageUtils';
 import type {BaseGroup} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
@@ -228,8 +229,14 @@ export const CreateTournamentPage = (): ReactElement => {
         };
         break;
       }
-      default: {
-        throw new Error(`Unsupported format: ${String(data.format)}`);
+      case Format.SWISS: {
+        tournament = {
+          ...base,
+          format: Format.SWISS,
+          schedule: generateSwissInitialSchedule(players),
+          totalRounds: computeTotalRounds(players.length),
+        };
+        break;
       }
     }
 
@@ -238,6 +245,7 @@ export const CreateTournamentPage = (): ReactElement => {
       [Format.DOUBLE_ELIM]: BracketType.DOUBLE_ELIM,
       [Format.GROUPS_TO_BRACKET]: data.bracketType,
       [Format.ROUND_ROBIN]: 'none',
+      [Format.SWISS]: 'none',
     };
 
     tracker.trackTournamentCreated({

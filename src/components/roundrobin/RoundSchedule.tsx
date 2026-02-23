@@ -10,6 +10,8 @@ interface RoundScheduleProps {
   onEditMatch: (match: Match) => void;
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
+  roundLabelKey?: string;
+  byeLabelKey?: string;
 }
 
 export const RoundSchedule = ({
@@ -18,6 +20,8 @@ export const RoundSchedule = ({
   onEditMatch,
   scoringMode = ScoreMode.SETS,
   maxSets,
+  roundLabelKey = 'roundRobin.round',
+  byeLabelKey = 'roundRobin.bye',
 }: RoundScheduleProps): ReactElement => {
   const { t } = useTranslation();
 
@@ -31,10 +35,10 @@ export const RoundSchedule = ({
         return (
           <div key={round.roundNumber}>
             <h3 className="text-sm font-semibold text-[var(--color-muted)] mb-2">
-              {t('roundRobin.round', { n: round.roundNumber })}
+              {t(roundLabelKey, { n: round.roundNumber })}
               {byePlayer && (
                 <span className="text-[var(--color-faint)] font-normal ml-2">
-                  {t('roundRobin.bye', {
+                  {t(byeLabelKey, {
                     name:
                       byePlayer.elo == null
                         ? byePlayer.name

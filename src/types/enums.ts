@@ -3,6 +3,7 @@ export enum Format {
   DOUBLE_ELIM = 'DOUBLE_ELIM',
   ROUND_ROBIN = 'ROUND_ROBIN',
   GROUPS_TO_BRACKET = 'GROUPS_TO_BRACKET',
+  SWISS = 'SWISS',
 }
 
 export enum BracketType {

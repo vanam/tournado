@@ -17,6 +17,22 @@ export interface StandingsRow {
   tiebreakDetails?: RoundRobinTiebreakDetails;
 }
 
+export type SwissCriteriaKey = 'buchholz' | 'sonnebornBerger' | 'headToHead' | 'setRatio' | 'ballRatio';
+
+export interface SwissTiebreakDetails {
+  buchholz: number;
+  sonnebornBerger: number;
+  headToHead: number;
+  setRatio: number;
+  ballRatio: number;
+  tiebreakApplied: SwissCriteriaKey[];
+}
+
+export interface SwissStandingsRow extends Omit<StandingsRow, 'tiebreakDetails'> {
+  buchholz: number;
+  tiebreakDetails?: SwissTiebreakDetails;
+}
+
 export interface RoundRobinTiebreakDetails {
   headToHead: number;
   headToHeadSetDiff: number;

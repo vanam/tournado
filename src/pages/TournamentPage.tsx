@@ -11,6 +11,7 @@ import { DoubleElimView } from '../components/doubleelim/DoubleElimView';
 import { RoundRobinView } from '../components/roundrobin/RoundRobinView';
 import { PlayerList } from '../components/PlayerList';
 import { GroupStageView } from '../components/groupstage/GroupStageView';
+import { SwissView } from '../components/swiss/SwissView';
 import { Button } from '@/components/ui/Button';
 import {useAnalytics} from "@/utils/analytics";
 
@@ -79,6 +80,7 @@ const TournamentContent = (): ReactElement => {
       {tournament.format === Format.ROUND_ROBIN && <RoundRobinView />}
       {tournament.format === Format.DOUBLE_ELIM && <DoubleElimView />}
       {tournament.format === Format.GROUPS_TO_BRACKET && <GroupStageView />}
+      {tournament.format === Format.SWISS && <SwissView />}
     </div>
   );
 }

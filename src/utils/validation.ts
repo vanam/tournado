@@ -215,6 +215,11 @@ export function isValidTournament(value: unknown): value is Tournament {
       if ('maxSetsBracket' in value && !isNullish(value['maxSetsBracket']) && !isNumber(value['maxSetsBracket'])) return false;
       break;
     }
+    case Format.SWISS: {
+      if (!isValidRoundRobinSchedule(value['schedule'])) return false;
+      if (!isNumber(value['totalRounds'])) return false;
+      break;
+    }
   }
 
   return true;
