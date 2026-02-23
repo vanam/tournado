@@ -13,7 +13,7 @@ import {createGroupStage, distributePlayersToGroups, indexToGroupLabel} from '..
 import type {BaseGroup} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
 import {PlayerInput} from '../components/PlayerInput';
-import {TournamentPreview} from '../components/TournamentPreviewModal';
+import {TournamentPreview} from '../components/TournamentPreview';
 import {BracketType, Format, ScoreMode} from '../types';
 import type {Player, Tournament} from '../types';
 import { Button } from '@/components/ui/Button';
