@@ -17,6 +17,7 @@ export function usePwaUpdate(): void {
       immediate: true,
       onNeedRefresh() {
         showToast({
+          id: 'pwa-update',
           message: t('toast.newVersion'),
           action: { label: t('toast.reload'), onClick: (): void => { void updateSW(true); } },
           dismissLabel: t('toast.dismiss'),

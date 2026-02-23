@@ -6,6 +6,7 @@ export interface ToastAction {
 }
 
 export interface ToastOptions {
+  id?: string;
   message: string;
   action?: ToastAction;
   dismissLabel?: string;

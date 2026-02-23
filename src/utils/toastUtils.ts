@@ -7,9 +7,11 @@ export const showToast = (options: ToastOptions): void => {
     onClick: options.action.onClick,
   } : undefined;
 
-  if (options.duration === undefined) {
-    toast(options.message, { action });
-  } else {
-    toast(options.message, { duration: options.duration, action });
-  }
+  const toastOpts = {
+    ...(options.id !== undefined && { id: options.id }),
+    ...(options.duration !== undefined && { duration: options.duration }),
+    ...(action && { action }),
+  };
+
+  toast(options.message, toastOpts);
 };
