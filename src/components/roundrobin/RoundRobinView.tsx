@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { StandingsTable } from './StandingsTable';
 import { ScoreModal } from '../ScoreModal';
 import { ResultsMatrix } from './ResultsMatrix';
@@ -14,6 +15,8 @@ import { useTypedTournament } from '../../context/tournamentContext';
 import { ScoreMode, Format } from '../../types';
 import type { Match, RoundRobinTournament, SetScore } from '../../types';
 import { RoundSchedule } from './RoundSchedule';
+import { GroupPrintView } from '../groupstage/GroupPrintView';
+import type { GroupPrintData } from '../groupstage/GroupPrintView';
 
 type RoundRobinTab = 'standings' | 'matrix' | 'schedule' | 'results';
 
@@ -21,13 +24,34 @@ export const RoundRobinView = (): ReactElement | null => {
   const { tournament, updateTournament } = useTypedTournament<RoundRobinTournament>(Format.ROUND_ROBIN);
   const [tab, setTab] = useState<RoundRobinTab>('standings');
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
+  const [printData, setPrintData] = useState<GroupPrintData | null>(null);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (printData === null) return;
+    const reset = (): void => { setPrintData(null); };
+    window.addEventListener('afterprint', reset, { once: true });
+    window.print();
+    return (): void => { window.removeEventListener('afterprint', reset); };
+  }, [printData]);
+
+  const handlePrint = useCallback((): void => {
+    if (!tournament) return;
+    setPrintData({
+      groupLabel: tournament.name,
+      players: tournament.players,
+      schedule: tournament.schedule,
+      scoringMode: tournament.scoringMode ?? ScoreMode.SETS,
+      maxSets: tournament.maxSets ?? DEFAULT_MAX_SETS,
+    });
+  }, [tournament]);
 
   if (!tournament) return null;
 
   const { schedule, players } = tournament;
   const scoringMode = tournament.scoringMode ?? ScoreMode.SETS;
   const maxSets = tournament.maxSets ?? DEFAULT_MAX_SETS;
+
   const standings = computeStandings(schedule, players, { scoringMode, maxSets });
   const complete = isScheduleComplete(schedule);
 
@@ -89,6 +113,31 @@ export const RoundRobinView = (): ReactElement | null => {
           {tab === 'standings' && <StandingsTable standings={standings} scoringMode={scoringMode} />}
           {tab === 'matrix' && (
             <div className="mt-6">
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={handlePrint}
+                  title={t('roundRobin.print')}
+                  className="p-1 rounded text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)] transition-colors"
+                  aria-label={t('roundRobin.print')}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 6 2 18 2 18 9" />
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                    <rect x="6" y="14" width="12" height="8" />
+                  </svg>
+                </button>
+              </div>
               <ResultsMatrix schedule={schedule} players={players} scoringMode={scoringMode} maxSets={maxSets} />
             </div>
           )}
@@ -110,6 +159,12 @@ export const RoundRobinView = (): ReactElement | null => {
           onClose={() => { setEditingMatch(null); }}
         />
       )}
+      {((): ReactElement | null => {
+        const printRoot = document.querySelector('#print-root');
+        return printData !== null && printRoot !== null
+          ? createPortal(<GroupPrintView {...printData} />, printRoot)
+          : null;
+      })()}
     </div>
   );
 };
