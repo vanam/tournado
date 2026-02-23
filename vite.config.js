@@ -45,12 +45,16 @@ export default defineConfig({
         order: 'post',
         handler(html, ctx) {
           if (!ctx.bundle) return html;
-          const fontKey = Object.keys(ctx.bundle).find(
-            key => key.includes('inter-latin-wght-normal') && key.endsWith('.woff2')
-          );
-          if (!fontKey) return html;
-          const preload = `    <link rel="preload" as="font" type="font/woff2" crossorigin href="/${fontKey}">\n`;
-          return html.replace('  </head>', preload + '  </head>');
+          const keys = Object.keys(ctx.bundle);
+          const fontKeys = [
+            keys.find(key => key.includes('inter-latin-ext-wght-normal') && key.endsWith('.woff2')),
+            keys.find(key => key.includes('inter-latin-wght-normal') && key.endsWith('.woff2')),
+          ].filter(Boolean);
+          if (!fontKeys.length) return html;
+          const preloads = fontKeys
+            .map(k => `    <link rel="preload" as="font" type="font/woff2" crossorigin href="/${k}">`)
+            .join('\n') + '\n';
+          return html.replace('  </head>', preloads + '  </head>');
         }
       }
     },
