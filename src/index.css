@@ -11,111 +11,127 @@
 :root {
   --page-bg-image: url("/assets/table-tennis-dimensions.svg");
 
+  /* ── oklch scale tokens ── */
+  --accent-100: oklch(0.82 0.11 90);
+  --accent-200: oklch(0.77 0.15 90);
+  --accent-300: oklch(0.71 0.17 90);
+  --accent-400: oklch(0.70 0.17 90);
+  --accent-500: oklch(0.64 0.15 90);
+  --accent-600: oklch(0.57 0.13 90);
+
+  --primary-100: oklch(0.82 0.11 240);
+  --primary-200: oklch(0.76 0.15 240);
+  --primary-300: oklch(0.70 0.17 240);
+  --primary-400: oklch(0.70 0.17 240);
+  --primary-500: oklch(0.63 0.15 240);
+  --primary-600: oklch(0.56 0.13 240);
+
   /* ── Core palette (light) ── */
-  --color-primary: #689FBD;
-  --color-primary-dark: #255E7D;
-  --color-accent: #A7804E;
+  --color-primary: var(--primary-500);
+  --color-primary-dark: var(--primary-600);
+  --color-accent: var(--accent-500);
   --color-surface: #FDFDFD;
   --color-card: #FDFDFD;
   --color-nav-text: #FDFDFD;
   --color-text: #111111;
-  --color-muted: rgba(30, 41, 59, 0.65);
-  --color-subtle: rgba(30, 41, 59, 0.5);
-  --color-faint: rgba(30, 41, 59, 0.4);
-  --color-faintest: rgba(30, 41, 59, 0.2);
-  --color-border-soft: rgba(30, 64, 175, 0.1);
-  --color-border: rgba(30, 64, 175, 0.18);
-  --color-border-strong: rgba(30, 64, 175, 0.3);
-  --color-soft: rgba(59, 130, 246, 0.08);
-  --color-accent-soft: rgba(245, 158, 11, 0.12);
-  --color-accent-soft-strong: rgba(245, 158, 11, 0.25);
-  --color-accent-border: rgba(245, 158, 11, 0.4);
-  --color-overlay: rgba(15, 23, 42, 0.5);
+  --color-muted: color-mix(in oklch, var(--color-text) 65%, transparent);
+  --color-subtle: color-mix(in oklch, var(--color-text) 50%, transparent);
+  --color-faint: color-mix(in oklch, var(--color-text) 40%, transparent);
+  --color-faintest: color-mix(in oklch, var(--color-text) 20%, transparent);
+  --color-border-soft: color-mix(in oklch, var(--primary-500) 10%, transparent);
+  --color-border: color-mix(in oklch, var(--primary-500) 18%, transparent);
+  --color-border-strong: color-mix(in oklch, var(--primary-500) 30%, transparent);
+  --color-soft: color-mix(in oklch, var(--primary-500) 8%, transparent);
+  --color-accent-soft: color-mix(in oklch, var(--accent-500) 12%, transparent);
+  --color-accent-soft-strong: color-mix(in oklch, var(--accent-500) 25%, transparent);
+  --color-accent-border: color-mix(in oklch, var(--accent-500) 40%, transparent);
+  --color-overlay: oklch(0.12 0.01 250 / 0.5);
   --color-podium-gold: rgba(250, 204, 21, 0.15);
   --color-podium-silver: rgba(148, 163, 184, 0.18);
   --color-podium-bronze: rgba(217, 119, 6, 0.15);
 
   /* ── shadcn/ui HSL mappings (light) ── */
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
+  --background: 0 0% 99%;
+  --foreground: 0 0% 7%;
 
-  --primary: 217 91% 60%;
+  --primary: 225 55% 42%;
   --primary-foreground: 0 0% 100%;
 
-  --accent: 38 92% 50%;
+  --accent: 38 60% 43%;
   --accent-foreground: 0 0% 100%;
 
-  --muted: 222 47% 11% / 0.65;
-  --muted-foreground: 222 47% 11% / 0.5;
+  --muted: 0 0% 7% / 0.65;
+  --muted-foreground: 0 0% 7% / 0.50;
 
-  --border: 224 76% 40% / 0.18;
-  --input: 224 76% 40% / 0.18;
-  --ring: 217 91% 60%;
+  --border: 225 55% 42% / 0.18;
+  --input: 225 55% 42% / 0.18;
+  --ring: 225 55% 42%;
 
   --radius: 0.75rem;
 
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  --card: 0 0% 99%;
+  --card-foreground: 0 0% 7%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
+  --popover: 0 0% 99%;
+  --popover-foreground: 0 0% 7%;
 
-  --secondary: 217 91% 60% / 0.08;
-  --secondary-foreground: 222 47% 11%;
+  --secondary: 225 55% 42% / 0.08;
+  --secondary-foreground: 0 0% 7%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 }
 
 .dark {
-  --color-primary: #255E7D;
-  --color-primary-dark: #689FBD;
-  --color-accent: #F59E0B;
+  /* ── Core palette (dark) ── */
+  --color-primary: var(--primary-200);
+  --color-primary-dark: var(--primary-300);
+  --color-accent: var(--accent-200);
   --color-surface: #111827;
   --color-card: #1F2937;
   --color-nav-text: #FDFDFD;
   --color-text: #FDFDFD;
-  --color-muted: rgba(209, 213, 219, 0.85);
-  --color-subtle: rgba(209, 213, 219, 0.65);
-  --color-faint: rgba(209, 213, 219, 0.45);
-  --color-faintest: rgba(209, 213, 219, 0.22);
-  --color-border-soft: rgba(75, 85, 99, 0.35);
-  --color-border: rgba(75, 85, 99, 0.6);
-  --color-border-strong: rgba(107, 114, 128, 0.8);
-  --color-soft: rgba(77, 168, 244, 0.12);
-  --color-accent-soft: rgba(245, 158, 11, 0.12);
-  --color-accent-soft-strong: rgba(245, 158, 11, 0.25);
-  --color-accent-border: rgba(245, 158, 11, 0.45);
-  --color-overlay: rgba(0, 0, 0, 0.7);
+  --color-muted: color-mix(in oklch, var(--color-text) 85%, transparent);
+  --color-subtle: color-mix(in oklch, var(--color-text) 65%, transparent);
+  --color-faint: color-mix(in oklch, var(--color-text) 45%, transparent);
+  --color-faintest: color-mix(in oklch, var(--color-text) 22%, transparent);
+  --color-border-soft: oklch(0.55 0.02 240 / 0.35);
+  --color-border: oklch(0.55 0.02 240 / 0.60);
+  --color-border-strong: oklch(0.60 0.02 240 / 0.80);
+  --color-soft: color-mix(in oklch, var(--primary-200) 12%, transparent);
+  --color-accent-soft: color-mix(in oklch, var(--accent-200) 12%, transparent);
+  --color-accent-soft-strong: color-mix(in oklch, var(--accent-200) 25%, transparent);
+  --color-accent-border: color-mix(in oklch, var(--accent-200) 45%, transparent);
+  --color-overlay: oklch(0 0 0 / 0.7);
   --color-podium-gold: rgba(250, 204, 21, 0.15);
   --color-podium-silver: rgba(148, 163, 184, 0.15);
   --color-podium-bronze: rgba(217, 119, 6, 0.15);
 
   /* ── shadcn/ui HSL mappings (dark) ── */
   --background: 221 39% 11%;
-  --foreground: 220 14% 96%;
+  --foreground: 0 0% 99%;
 
-  --primary: 210 89% 62%;
+  --primary: 220 75% 60%;
   --primary-foreground: 221 39% 11%;
 
-  --accent: 38 91% 50%;
+  --accent: 45 80% 63%;
   --accent-foreground: 221 39% 11%;
 
-  --muted: 220 9% 55% / 0.5;
-  --muted-foreground: 220 14% 82%;
+  --muted: 0 0% 99% / 0.50;
+  --muted-foreground: 0 0% 82%;
 
-  --border: 220 9% 40% / 0.55;
-  --input: 220 9% 40% / 0.55;
-  --ring: 210 89% 62%;
+  --border: 220 5% 55% / 0.55;
+  --input: 220 5% 55% / 0.55;
+  --ring: 220 75% 60%;
 
   --card: 220 26% 17%;
-  --card-foreground: 220 14% 96%;
+  --card-foreground: 0 0% 99%;
 
   --popover: 220 26% 17%;
-  --popover-foreground: 220 14% 96%;
+  --popover-foreground: 0 0% 99%;
 
-  --secondary: 210 89% 62% / 0.1;
-  --secondary-foreground: 220 14% 96%;
+  --secondary: 220 75% 60% / 0.10;
+  --secondary-foreground: 0 0% 99%;
 
   --destructive: 0 72% 51%;
   --destructive-foreground: 220 14% 96%;
