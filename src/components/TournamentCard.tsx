@@ -54,13 +54,12 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-        <CardDescription className="text-sm text-[var(--color-muted)] mt-1">
-          {t(`format.${tournament.format}`)} &middot;{' '}
-          {t('tournament.players', { count: tournament.players.length })}
-        </CardDescription>
         <Badge variant="secondary" className="mt-2 w-fit">
           {t(`format.${tournament.format}`)}
         </Badge>
+        <CardDescription className="text-sm text-[var(--color-muted)] mt-1">
+          {t('tournament.players', { count: tournament.players.length })}
+        </CardDescription>
       </CardHeader>
       <CardContent className="p-5 pt-0">
         <p className="text-xs text-[var(--color-subtle)]">
