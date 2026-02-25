@@ -51,6 +51,12 @@ export const Layout = (): ReactElement => {
           </div>
           <div className="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:gap-4 sm:text-left">
             <Link
+              to="/formats"
+              className="text-[var(--color-primary-dark)] hover:text-[var(--color-primary)] transition-colors"
+            >
+              {t('footer.formats')}
+            </Link>
+            <Link
               to="/faq"
               className="text-[var(--color-primary-dark)] hover:text-[var(--color-primary)] transition-colors"
             >

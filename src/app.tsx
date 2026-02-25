@@ -23,6 +23,7 @@ const CreateTournamentPage = lazy(() => import('./pages/CreateTournamentPage').t
 const TournamentPage = lazy(() => import('./pages/TournamentPage').then(m => ({ default: m.TournamentPage })));
 const FaqPage = lazy(() => import('./pages/FaqPage').then(m => ({ default: m.FaqPage })));
 const CreditsPage = lazy(() => import('./pages/CreditsPage').then(m => ({ default: m.CreditsPage })));
+const FormatsPage = lazy(() => import('./pages/FormatsPage').then(m => ({ default: m.FormatsPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 export const App = (): ReactElement => {
@@ -63,6 +64,13 @@ export const App = (): ReactElement => {
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
                   <CreditsPage />
+                </Suspense>
+              </ErrorBoundary>
+            } />
+            <Route path="/formats" element={
+              <ErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <FormatsPage />
                 </Suspense>
               </ErrorBoundary>
             } />
