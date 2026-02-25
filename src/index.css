@@ -17,6 +17,7 @@
 }
 
 :root {
+  color-scheme: light dark only;
   --page-bg-image: url("/assets/table-tennis-dimensions.svg");
 
   /* ── oklch scale tokens ── */
