@@ -275,8 +275,6 @@ export function getBracketWinner(bracket: Bracket): string | null {
     const finalMatch = finalRound[0];
     if (!finalMatch) return null;
     if (finalMatch.winnerId) return finalMatch.winnerId;
-    if (finalMatch.player1Id && !finalMatch.player2Id) return finalMatch.player1Id;
-    if (!finalMatch.player1Id && finalMatch.player2Id) return finalMatch.player2Id;
   }
   return null;
 }

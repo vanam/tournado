@@ -497,9 +497,17 @@ describe('getBracketWinner', () => {
     expect(getBracketWinner(bracket)).toBe(match.player1Id);
   });
 
-  it('returns winner when final has a single player', () => {
+  it('returns winner for 1-player bracket via auto-advanced winnerId', () => {
     const players = makePlayers(1);
     const bracket = generateBracket(players);
     expect(getBracketWinner(bracket)).toBe(players[0]!.id);
+  });
+
+  it('returns null for 3-player bracket before semifinal is played (regression)', () => {
+    const players = makePlayers(3);
+    const bracket = generateBracket(players);
+    // Bye auto-advances one player to the final, but the other semifinal is unplayed.
+    // getBracketWinner must NOT declare a winner prematurely.
+    expect(getBracketWinner(bracket)).toBeNull();
   });
 });
