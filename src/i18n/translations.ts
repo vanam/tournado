@@ -500,7 +500,7 @@ export const cs: TranslationMap = {
 
   'footer.text': '© {{year}} Turnádo',
   'footer.faq': 'FAQ',
-  'footer.credits': 'Credits',
+  'footer.credits': 'Poděkování',
   'faq.title': 'FAQ',
   'faq.dataQuestion': 'Kde jsou uložena data?',
   'faq.dataAnswer': 'Data jsou ukládána lokálně v prohlížeči (localStorage). Neodesílají se na žádný server.',
