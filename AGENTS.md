@@ -1,2 +1,3 @@
 - Do not use system modals for confirmation. Always use custom modal.
 - After each code change run `npm run build` and resolve errors and warnings. Do not disable linter rules.
+- Languages other than english do not use ; as a sentence delimiter. Use , or . instead.

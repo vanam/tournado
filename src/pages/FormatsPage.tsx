@@ -1,5 +1,5 @@
-import { type ReactElement, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { type ReactElement, useEffect } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useAnalytics } from '../utils/analytics';
@@ -12,17 +12,28 @@ import { SwissTab } from './formats/SwissTab';
 
 type FormatTab = 'SINGLE_ELIM' | 'DOUBLE_ELIM' | 'ROUND_ROBIN' | 'GROUPS_TO_BRACKET' | 'SWISS';
 
+const VALID_TABS: readonly FormatTab[] = ['SINGLE_ELIM', 'DOUBLE_ELIM', 'ROUND_ROBIN', 'GROUPS_TO_BRACKET', 'SWISS'];
+const DEFAULT_TAB: FormatTab = 'SINGLE_ELIM';
+
 export const FormatsPage = (): ReactElement => {
   const { t } = useTranslation();
   const location = useLocation();
   const { tracker } = useAnalytics();
-  const [activeTab, setActiveTab] = useState<FormatTab>('SINGLE_ELIM');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     tracker.trackPageView({});
   }, [location, tracker]);
 
   usePageTitle(t('formats.title'));
+
+  const tabParam = searchParams.get('tab') as FormatTab | null;
+  const activeTab: FormatTab =
+    tabParam !== null && (VALID_TABS as readonly string[]).includes(tabParam) ? tabParam : DEFAULT_TAB;
+
+  const handleTabChange = (tab: FormatTab): void => {
+    setSearchParams({ tab }, { replace: true });
+  };
 
   const tabs: { id: FormatTab; label: string }[] = [
     { id: 'SINGLE_ELIM', label: t('format.SINGLE_ELIM') },
@@ -38,7 +49,7 @@ export const FormatsPage = (): ReactElement => {
         {t('formats.title')}
       </h1>
 
-      <TabBar tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
+      <TabBar tabs={tabs} activeId={activeTab} onChange={handleTabChange} />
 
       {activeTab === 'SINGLE_ELIM' && <SingleElimTab />}
       {activeTab === 'DOUBLE_ELIM' && <DoubleElimTab />}
