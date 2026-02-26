@@ -89,7 +89,7 @@ const ScoreInfo = ({
   <span className="ml-2 text-[var(--color-muted)] flex items-center gap-2">
     {showPoints && setPointEntries.length > 0 && <SetPoints entries={setPointEntries} />}
     <span className="text-[var(--color-faintest)]">|</span>
-    <span>{isWalkover ? 'WO' : sets}</span>
+    <span className="font-mono w-2 text-center">{isWalkover ? 'WO' : sets}</span>
   </span>
 );
 
