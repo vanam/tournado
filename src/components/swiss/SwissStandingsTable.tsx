@@ -104,7 +104,7 @@ export const SwissStandingsTable = ({
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const headClass = 'py-2.5 pr-3 text-xs uppercase tracking-wider font-semibold text-[var(--color-muted)]';
-  const colSpan = showPoints ? 8 : 7;
+  const colSpan = showPoints ? 7 : 6;
 
   function handleToggleExpand(playerId: string): void {
     setExpandedId((prev) => (prev === playerId ? null : playerId));
@@ -126,7 +126,6 @@ export const SwissStandingsTable = ({
           >
             {t('swiss.standingsBuchholz')}
           </TableHead>
-          <TableHead className={headClass}>ELO</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -172,9 +171,6 @@ export const SwissStandingsTable = ({
                   <TableCell className="py-2.5 pr-3 tabular-nums">{row.pointsWon}-{row.pointsLost}</TableCell>
                 )}
                 <TableCell className="py-2.5 pr-3 tabular-nums">{row.buchholz}</TableCell>
-                <TableCell className="py-2.5 pr-3 tabular-nums text-[var(--color-faint)]">
-                  {row.elo ?? '—'}
-                </TableCell>
               </TableRow>
               {isExpanded && row.tiebreakDetails && (
                 <TableRow>
