@@ -59,13 +59,7 @@ const TournamentContent = (): ReactElement => {
   return (
     <div>
       <div className="mb-6">
-        <Link
-          to="/"
-          className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
-        >
-          {t('tournament.back')}
-        </Link>
-        <h1 className="text-2xl font-bold text-[var(--color-text)] mt-2">
+        <h1 className="text-2xl font-bold text-[var(--color-text)]">
           {tournament.name}
         </h1>
         <p className="text-sm text-[var(--color-muted)]">
