@@ -259,207 +259,217 @@ export const CreateTournamentPage = (): ReactElement => {
   });
 
   return (
-    <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold text-[var(--color-text)] mb-8">
+    <div>
+      <h1 className="text-2xl font-bold text-[var(--color-text)] mb-6">
         {t('create.title')}
       </h1>
 
       <form onSubmit={(e) => { void onSubmit(e); }} className="space-y-7">
-        <div>
-          <Label htmlFor="tournament-name" className="block text-sm font-medium text-[var(--color-text)] mb-1">
-            {t('create.nameLabel')}
-          </Label>
-          <Input
-            id="tournament-name"
-            type="text"
-            placeholder={t('create.namePlaceholder')}
-            {...register('name', { required: t('create.errorName') })}
-          />
-          {errors.name && <p className="text-[var(--color-accent)] text-sm mt-1">{errors.name.message}</p>}
-        </div>
-
-        <div>
-          <FieldGroupLabel>
-            {t('create.formatLabel')}
-          </FieldGroupLabel>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-            {Object.values(Format).map((f) => (
-              <label
-                key={f}
-                className={`flex items-center justify-center flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                  format === f
-                    ? 'bg-[var(--color-primary)] text-[var(--color-surface)] border-[var(--color-primary)] shadow-sm'
-                    : 'text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]'
-                }`}
-              >
-                <input
-                  type="radio"
-                  value={f}
-                  className="sr-only"
-                  {...register('format')}
-                />
-                {t(`format.${f}`)}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <FieldGroupLabel>
-            {t('create.scoringLabel')}
-          </FieldGroupLabel>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-            {Object.values(ScoreMode).map((mode) => (
-              <label
-                key={mode}
-                className={`flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                  scoringMode === mode
-                    ? 'bg-[var(--color-primary)] text-[var(--color-surface)] border-[var(--color-primary)] shadow-sm'
-                    : 'text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]'
-                }`}
-              >
-                <input
-                  type="radio"
-                  value={mode}
-                  className="sr-only"
-                  {...register('scoringMode')}
-                />
-                {t(mode === ScoreMode.SETS ? 'create.scoringSets' : 'create.scoringPoints')}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {format !== Format.GROUPS_TO_BRACKET && (
-          <div>
-            <Label htmlFor="max-sets" className="block text-sm font-medium text-[var(--color-text)] mb-1">
-              {t('create.maxSetsLabel')}
-            </Label>
-            <Input
-              id="max-sets"
-              type="number"
-              min="1"
-              className="w-24"
-              {...register('maxSets', {
-                valueAsNumber: true,
-                onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('maxSets', normalizeMaxSets(e.target.value)); },
-              })}
-            />
-          </div>
-        )}
-
-        {format === Format.GROUPS_TO_BRACKET && (
-          <div className="space-y-4 border border-[var(--color-border)] rounded-xl p-5 bg-[var(--color-soft)]">
-            <div className="text-sm font-semibold text-[var(--color-muted)]">
-              {t('create.groupStageTitle')}
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <Label className="text-xs text-[var(--color-muted)]">
-                {t('create.maxSetsGroupLabel')}
-                <Input
-                  id="group-stage-max-sets"
-                  type="number"
-                  min="1"
-                  className="mt-1 w-24 h-8 px-2 py-1"
-                  {...register('groupStageMaxSets', {
-                    valueAsNumber: true,
-                    onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('groupStageMaxSets', normalizeMaxSets(e.target.value)); },
-                  })}
-                />
-              </Label>
-              <Label className="text-xs text-[var(--color-muted)]">
-                {t('create.maxSetsBracketLabel')}
-                <Input
-                  id="bracket-max-sets"
-                  type="number"
-                  min="1"
-                  className="mt-1 w-24 h-8 px-2 py-1"
-                  {...register('bracketMaxSets', {
-                    valueAsNumber: true,
-                    onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('bracketMaxSets', normalizeMaxSets(e.target.value)); },
-                  })}
-                />
-              </Label>
-            </div>
+        {/* Two-column layout on large screens */}
+        <div className="grid grid-cols-1 gap-7 lg:grid-cols-2 lg:gap-8 lg:items-start">
+          {/* Left column: tournament settings */}
+          <div className="space-y-7">
             <div>
-              <Label htmlFor="group-count" className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                {t('create.groupCountLabel')}
+              <Label htmlFor="tournament-name" className="block text-sm font-medium text-[var(--color-text)] mb-1">
+                {t('create.nameLabel')}
               </Label>
               <Input
-                id="group-count"
-                type="number"
-                min="1"
-                className="w-24"
-                {...register('groupCount', {
-                  valueAsNumber: true,
-                  onChange: (e: ChangeEvent<HTMLInputElement>) => { handleGroupCountChange(e.target.value); },
-                })}
+                id="tournament-name"
+                type="text"
+                placeholder={t('create.namePlaceholder')}
+                {...register('name', { required: t('create.errorName') })}
               />
+              {errors.name && <p className="text-[var(--color-accent)] text-sm mt-1">{errors.name.message}</p>}
             </div>
+
             <div>
               <FieldGroupLabel>
-                {t('create.qualifiersLabel')}
+                {t('create.formatLabel')}
               </FieldGroupLabel>
-              <div className="grid grid-cols-2 gap-2">
-                {qualifierFields.map((field, i) => (
-                  <Label key={field.id} className="text-xs text-[var(--color-muted)]">
-                    {t('create.groupLabel', { label: indexToGroupLabel(i) })}
-                    <Input
-                      type="number"
-                      min="0"
-                      className="mt-1 w-full h-8 px-2 py-1"
-                      {...register(`qualifiers.${i}.value`, { valueAsNumber: true })}
-                    />
-                  </Label>
-                ))}
-              </div>
-            </div>
-            <Label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-              <input
-                id="consolation"
-                type="checkbox"
-                {...register('consolation')}
-              />
-              {t('create.consolationLabel')}
-            </Label>
-            <div>
-              <FieldGroupLabel>
-                {t('create.bracketTypeLabel')}
-              </FieldGroupLabel>
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-                {Object.values(BracketType).map((bt) => (
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                {Object.values(Format).map((f) => (
                   <label
-                    key={bt}
-                    className={`flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                      bracketType === bt
+                    key={f}
+                    className={`flex items-center justify-center flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                      format === f
                         ? 'bg-[var(--color-primary)] text-[var(--color-surface)] border-[var(--color-primary)] shadow-sm'
                         : 'text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]'
                     }`}
                   >
                     <input
                       type="radio"
-                      value={bt}
+                      value={f}
                       className="sr-only"
-                      {...register('bracketType')}
+                      {...register('format')}
                     />
-                    {t(bt === BracketType.SINGLE_ELIM ? 'create.bracketTypeSingle' : 'create.bracketTypeDouble')}
+                    {t(`format.${f}`)}
                   </label>
                 ))}
               </div>
             </div>
+
+            <div>
+              <FieldGroupLabel>
+                {t('create.scoringLabel')}
+              </FieldGroupLabel>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                {Object.values(ScoreMode).map((mode) => (
+                  <label
+                    key={mode}
+                    className={`flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                      scoringMode === mode
+                        ? 'bg-[var(--color-primary)] text-[var(--color-surface)] border-[var(--color-primary)] shadow-sm'
+                        : 'text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      value={mode}
+                      className="sr-only"
+                      {...register('scoringMode')}
+                    />
+                    {t(mode === ScoreMode.SETS ? 'create.scoringSets' : 'create.scoringPoints')}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {format !== Format.GROUPS_TO_BRACKET && (
+              <div>
+                <Label htmlFor="max-sets" className="block text-sm font-medium text-[var(--color-text)] mb-1">
+                  {t('create.maxSetsLabel')}
+                </Label>
+                <Input
+                  id="max-sets"
+                  type="number"
+                  min="1"
+                  className="w-24"
+                  {...register('maxSets', {
+                    valueAsNumber: true,
+                    onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('maxSets', normalizeMaxSets(e.target.value)); },
+                  })}
+                />
+              </div>
+            )}
+
+            {format === Format.GROUPS_TO_BRACKET && (
+              <div className="space-y-4 border border-[var(--color-border)] rounded-xl p-5 bg-[var(--color-soft)]">
+                <div className="text-sm font-semibold text-[var(--color-muted)]">
+                  {t('create.groupStageTitle')}
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  <Label className="text-xs text-[var(--color-muted)]">
+                    {t('create.maxSetsGroupLabel')}
+                    <Input
+                      id="group-stage-max-sets"
+                      type="number"
+                      min="1"
+                      className="mt-1 w-24 h-8 px-2 py-1"
+                      {...register('groupStageMaxSets', {
+                        valueAsNumber: true,
+                        onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('groupStageMaxSets', normalizeMaxSets(e.target.value)); },
+                      })}
+                    />
+                  </Label>
+                  <Label className="text-xs text-[var(--color-muted)]">
+                    {t('create.maxSetsBracketLabel')}
+                    <Input
+                      id="bracket-max-sets"
+                      type="number"
+                      min="1"
+                      className="mt-1 w-24 h-8 px-2 py-1"
+                      {...register('bracketMaxSets', {
+                        valueAsNumber: true,
+                        onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('bracketMaxSets', normalizeMaxSets(e.target.value)); },
+                      })}
+                    />
+                  </Label>
+                </div>
+                <div>
+                  <Label htmlFor="group-count" className="block text-sm font-medium text-[var(--color-text)] mb-1">
+                    {t('create.groupCountLabel')}
+                  </Label>
+                  <Input
+                    id="group-count"
+                    type="number"
+                    min="1"
+                    className="w-24"
+                    {...register('groupCount', {
+                      valueAsNumber: true,
+                      onChange: (e: ChangeEvent<HTMLInputElement>) => { handleGroupCountChange(e.target.value); },
+                    })}
+                  />
+                </div>
+                <div>
+                  <FieldGroupLabel>
+                    {t('create.qualifiersLabel')}
+                  </FieldGroupLabel>
+                  <div className="grid grid-cols-2 gap-2">
+                    {qualifierFields.map((field, i) => (
+                      <Label key={field.id} className="text-xs text-[var(--color-muted)]">
+                        {t('create.groupLabel', { label: indexToGroupLabel(i) })}
+                        <Input
+                          type="number"
+                          min="0"
+                          className="mt-1 w-full h-8 px-2 py-1"
+                          {...register(`qualifiers.${i}.value`, { valueAsNumber: true })}
+                        />
+                      </Label>
+                    ))}
+                  </div>
+                </div>
+                <Label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+                  <input
+                    id="consolation"
+                    type="checkbox"
+                    {...register('consolation')}
+                  />
+                  {t('create.consolationLabel')}
+                </Label>
+                <div>
+                  <FieldGroupLabel>
+                    {t('create.bracketTypeLabel')}
+                  </FieldGroupLabel>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {Object.values(BracketType).map((bt) => (
+                      <label
+                        key={bt}
+                        className={`flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                          bracketType === bt
+                            ? 'bg-[var(--color-primary)] text-[var(--color-surface)] border-[var(--color-primary)] shadow-sm'
+                            : 'text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          value={bt}
+                          className="sr-only"
+                          {...register('bracketType')}
+                        />
+                        {t(bt === BracketType.SINGLE_ELIM ? 'create.bracketTypeSingle' : 'create.bracketTypeDouble')}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
 
-        <PlayerInput
-          players={players}
-          setPlayers={setPlayers}
-          register={register}
-          errors={errors}
-          setValue={setValue}
-          useElo={useElo}
-          onAddPlayer={() => { void handleAddPlayer(); }}
-        />
+          {/* Right column: player input */}
+          <div>
+            <PlayerInput
+              players={players}
+              setPlayers={setPlayers}
+              register={register}
+              errors={errors}
+              setValue={setValue}
+              useElo={useElo}
+              onAddPlayer={() => { void handleAddPlayer(); }}
+            />
+          </div>
+        </div>
 
+        {/* Full-width: preview + submit */}
         <TournamentPreview
           format={format}
           players={players}
