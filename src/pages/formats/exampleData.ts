@@ -127,15 +127,6 @@ export const DOUBLE_ELIM_GRAND_FINAL_REMATCH: Match = makeMatch(
   [[11, 9], [9, 11], [11, 8], [8, 11], [11, 9]],
 );
 
-// Bob 3-1 Dave (losers bracket R1 loser vs losers bracket final loser)
-export const DOUBLE_ELIM_3RD_PLACE: Match = makeMatch(
-  'de-3p',
-  'de-p2',
-  'de-p4',
-  'de-p2',
-  [[11, 8], [11, 7], [8, 11], [11, 9]],
-);
-
 // ── Round Robin (5 players) ───────────────────────────────────────────────────
 
 export const RR_PLAYERS: Player[] = [

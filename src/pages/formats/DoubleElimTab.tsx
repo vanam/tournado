@@ -9,7 +9,6 @@ import {
   DOUBLE_ELIM_LOSERS_BRACKET,
   DOUBLE_ELIM_GRAND_FINAL,
   DOUBLE_ELIM_GRAND_FINAL_REMATCH,
-  DOUBLE_ELIM_3RD_PLACE,
 } from './exampleData';
 
 export const DoubleElimTab = (): ReactElement => {
@@ -87,19 +86,6 @@ export const DoubleElimTab = (): ReactElement => {
           </div>
           <MatchCard
             match={DOUBLE_ELIM_GRAND_FINAL_REMATCH}
-            players={DOUBLE_ELIM_PLAYERS}
-            canEdit={false}
-            roundIndex={finalsRoundIndex}
-            scoringMode={ScoreMode.POINTS}
-          />
-        </div>
-
-        <div className="space-y-4">
-          <div className="text-sm font-semibold text-[var(--color-muted)]">
-            {t('bracket.thirdPlace')}
-          </div>
-          <MatchCard
-            match={DOUBLE_ELIM_3RD_PLACE}
             players={DOUBLE_ELIM_PLAYERS}
             canEdit={false}
             roundIndex={finalsRoundIndex}
