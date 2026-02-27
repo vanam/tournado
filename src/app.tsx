@@ -25,6 +25,7 @@ const FaqPage = lazy(() => import('./pages/FaqPage').then(m => ({ default: m.Faq
 const CreditsPage = lazy(() => import('./pages/CreditsPage').then(m => ({ default: m.CreditsPage })));
 const FormatsPage = lazy(() => import('./pages/FormatsPage').then(m => ({ default: m.FormatsPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+const TestPage = lazy(() => import('./pages/TestPage').then(m => ({ default: m.TestPage })));
 
 export const App = (): ReactElement => {
   return (
@@ -71,6 +72,13 @@ export const App = (): ReactElement => {
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
                   <FormatsPage />
+                </Suspense>
+              </ErrorBoundary>
+            } />
+            <Route path="/test" element={
+              <ErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <TestPage />
                 </Suspense>
               </ErrorBoundary>
             } />
