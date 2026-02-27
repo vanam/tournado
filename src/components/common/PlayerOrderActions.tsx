@@ -21,7 +21,7 @@ export const PlayerOrderActions = ({
         variant="link"
         onClick={onSortByElo}
         disabled={!useElo}
-        className="text-sm px-0 h-auto"
+        className="text-sm p-0 h-auto mb-1"
       >
         {t('players.sortByElo')}
       </Button>
@@ -29,7 +29,7 @@ export const PlayerOrderActions = ({
         type="button"
         variant="link"
         onClick={onShuffle}
-        className="text-sm px-0 h-auto"
+        className="text-sm p-0 h-auto mb-1"
       >
         {t('players.shuffle')}
       </Button>

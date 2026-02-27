@@ -74,7 +74,7 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between">
         <FieldGroupLabel>
           {t('players.title', { count: players.length })}
         </FieldGroupLabel>
