@@ -32,6 +32,9 @@ jobs:
           name: production-files
           path: ./dist
 
+      - name: Test
+        run: npm run test
+
   deploy:
     name: Deploy
     needs: build
