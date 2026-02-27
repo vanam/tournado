@@ -83,6 +83,31 @@ export const FaqPage = (): ReactElement => {
           {t('faq.dataAnswer')}
         </p>
       </div>
+
+      <div className="mt-6 space-y-3">
+        <h2 className="text-lg font-semibold text-[var(--color-text)]">
+          {t('faq.bugQuestion')}
+        </h2>
+        <p className="text-sm text-[var(--color-muted)]">
+          {t('faq.bugAnswerPre')}{' '}
+          <a
+            href="https://github.com/vanam/tournado/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--color-accent)] hover:underline"
+          >
+            GitHub
+          </a>
+          {' '}{t('faq.bugAnswerOr')}{' '}
+          <span className="select-all">
+            <span>tournado</span>
+            <span aria-hidden="true" className="hidden">nospam</span>
+            <span>@seznam</span>
+            <span aria-hidden="true" className="hidden">nospam</span>
+            <span>.cz</span>
+          </span>
+        </p>
+      </div>
     </div>
   );
 };
