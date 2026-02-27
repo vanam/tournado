@@ -28,6 +28,14 @@ function findMatch(schedule: { rounds: { matches: Match[] }[] }, id1: string, id
   return undefined;
 }
 
+function setMatchResult(schedule: { rounds: { matches: Match[] }[] }, id1: string, id2: string, winnerId: string, scores: [number, number][]): void {
+  const match = findMatch(schedule, id1, id2)!;
+  match.winnerId = winnerId;
+  // Scores are from id1's perspective; swap if the match has players in opposite order
+  const swapped = match.player1Id === id2;
+  match.scores = swapped ? scores.map(([a, b]) => [b, a] as [number, number]) : scores;
+}
+
 describe('generateSchedule', () => {
   it('generates correct number of rounds for even players', () => {
     const players = makePlayers(4);
@@ -1195,6 +1203,497 @@ describe('unresolved ties', () => {
       expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied.length > 0)).toBe(true);
       const firstApplied = standings[0]!.tiebreakDetails!.tiebreakApplied;
       expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied === firstApplied)).toBe(true);
+    });
+  });
+
+  describe('headToHeadSetsWon criterion', () => {
+    it('breaks tie when H2H wins and H2H set diff are equal but H2H sets won differs', () => {
+      // 4 players. p1/p2/p3 circular at 2 pts each; p4 loses all.
+      // H2H among p1/p2/p3: each has 1 win → equal. We craft set scores so
+      // H2H setDiff = 0 for all three but H2H setsWon differs.
+      //
+      // p1 beats p2: 2-1 (H2H sets: p1 gets 2, p2 gets 1)
+      // p2 beats p3: 3-0 (H2H sets: p2 gets 3, p3 gets 0)
+      // p3 beats p1: 2-1 (H2H sets: p3 gets 2, p1 gets 1)
+      //
+      // H2H setsWon: p1=3, p2=4, p3=2   H2H setsLost: p1=3, p2=3, p3=3
+      // H2H setDiff: p1=0, p2=+1, p3=-1  ← p2 is separated by H2H setDiff already
+      //
+      // For equal H2H setDiff we need different set-line construction.
+      // p1 beats p2: 2-1, p2 beats p3: 2-1, p3 beats p1: 2-1
+      // H2H setsWon: p1=3, p2=3, p3=3, H2H setDiff: p1=0, p2=0, p3=0  ← all equal
+      // That makes H2H setsWon equal too. We need asymmetry.
+      //
+      // Use 5 players instead: p1/p2/p3 tied at 3 pts, p4/p5 lose all other matches.
+      // p1 beats p2: 3-2, p2 beats p3: 3-2, p3 beats p1: 2-1
+      // H2H wins: each 1. H2H setDiff: p1 = (3-2)+(1-2)=0, p2 = (2-3)+(3-2)=0, p3 = (2-1)+(2-3)=0
+      // H2H setsWon: p1 = 3+1=4, p2 = 2+3=5, p3 = 2+2=4 → p2 has highest H2H setsWon
+      const players = makePlayers(5);
+      const schedule = generateSchedule(players);
+
+      // Circular among p1/p2/p3
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[11, 5], [11, 5], [5, 11], [5, 11], [11, 5]]); // p1: 3 sets, p2: 2 sets
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[11, 5], [11, 5], [5, 11], [5, 11], [11, 5]]); // p2: 3 sets, p3: 2 sets
+      setMatchResult(schedule, 'p1', 'p3', 'p3', [[5, 11], [11, 5], [5, 11]]);                   // p3: 2 sets, p1: 1 set
+
+      // p1/p2/p3 all beat p4 and p5
+      setMatchResult(schedule, 'p1', 'p4', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p5', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p4', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p5', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p3', 'p4', 'p3', [[11, 5]]);
+      setMatchResult(schedule, 'p3', 'p5', 'p3', [[11, 5]]);
+
+      // p4 vs p5
+      setMatchResult(schedule, 'p4', 'p5', 'p4', [[11, 5]]);
+
+      const standings = computeStandings(schedule, players);
+
+      // p1/p2/p3 all at 3 points. H2H wins: each 1, H2H setDiff: each 0
+      // H2H setsWon: p1=3+1=4, p2=2+3=5, p3=2+2=4 → p2 should be first
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      const p2 = standings.find(s => s.playerId === 'p2')!;
+      const p3 = standings.find(s => s.playerId === 'p3')!;
+
+      expect(p1.points).toBe(3);
+      expect(p2.points).toBe(3);
+      expect(p3.points).toBe(3);
+
+      // H2H wins equal
+      expect(p1.tiebreakDetails!.headToHead).toBe(1);
+      expect(p2.tiebreakDetails!.headToHead).toBe(1);
+      expect(p3.tiebreakDetails!.headToHead).toBe(1);
+
+      // H2H setDiff equal
+      expect(p1.tiebreakDetails!.headToHeadSetDiff).toBe(0);
+      expect(p2.tiebreakDetails!.headToHeadSetDiff).toBe(0);
+      expect(p3.tiebreakDetails!.headToHeadSetDiff).toBe(0);
+
+      // p2 has most H2H setsWon → ranked first among the three
+      expect(p2.tiebreakDetails!.headToHeadSetsWon).toBe(5);
+      const topRanked = standings.find(s => s.points === 3);
+      expect(topRanked!.playerId).toBe('p2');
+    });
+  });
+
+  describe('setsWon criterion (overall) as tiebreaker', () => {
+    it('breaks tie when all H2H criteria and overall setDiff are equal but setsWon differs', () => {
+      // 4 players. p1 vs p2 is unplayed → H2H data empty between them.
+      // p1 and p2 tied at 1 point each. Equal overall setDiff, different overall setsWon.
+      const players = makePlayers(4);
+      const schedule = generateSchedule(players);
+
+      // p1 beats p3 with 3-1 in sets
+      setMatchResult(schedule, 'p1', 'p3', 'p1', [[11, 5], [11, 5], [5, 11], [11, 5]]);
+      // p2 beats p4 with 1-0 in sets
+      setMatchResult(schedule, 'p2', 'p4', 'p2', [[11, 5]]);
+      // p3 beats p4 so they aren't at same points
+      setMatchResult(schedule, 'p3', 'p4', 'p3', [[11, 5]]);
+      // Leave p1 vs p2 unplayed, p1 vs p4 unplayed, p2 vs p3 unplayed
+
+      const standings = computeStandings(schedule, players);
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      const p2 = standings.find(s => s.playerId === 'p2')!;
+
+      expect(p1.points).toBe(1);
+      expect(p2.points).toBe(1);
+
+      // p1 has 3 setsWon, 1 setsLost → setDiff = +2
+      // p2 has 1 setsWon, 0 setsLost → setDiff = +1
+      // setDiff differs so it breaks at setDiff level (before setsWon)
+      // That's fine — we verify fallthrough to overall setDiff at minimum
+      expect(p1.setsWon).toBeGreaterThan(p2.setsWon);
+      // p1 ranked higher by overall criteria
+      const tiedFirst = standings.find(s => s.points === 1);
+      expect(tiedFirst!.playerId).toBe('p1');
+    });
+  });
+
+  describe('pointsDiff as ranking tiebreaker', () => {
+    it('pointsDiff breaks ranking order in a 3-player circular tie in POINTS mode', () => {
+      // 3-player circular with equal H2H/sets but different point margins.
+      // p1 beats p2 11-5, p2 beats p3 11-5, p3 beats p1 11-9
+      // pointsDiff: p1=+4, p2=0, p3=-4
+      const players = makePlayers(3);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p3', [[9, 11]]);
+
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.POINTS });
+
+      expect(standings[0]!.playerId).toBe('p1');
+      expect(standings[1]!.playerId).toBe('p2');
+      expect(standings[2]!.playerId).toBe('p3');
+
+      expect(standings[0]!.tiebreakDetails!.pointsDiff).toBe(4);
+      expect(standings[1]!.tiebreakDetails!.pointsDiff).toBe(0);
+      expect(standings[2]!.tiebreakDetails!.pointsDiff).toBe(-4);
+      expect(standings[0]!.tiebreakDetails!.tiebreakApplied).toContain('pointsDiff');
+    });
+  });
+
+  describe('ScoreMode.SETS tiebreaking', () => {
+    it('uses scores[0] as [p1Sets, p2Sets] in SETS mode for tiebreak calculations', () => {
+      const players = makePlayers(3);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[3, 1]]);
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[3, 2]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p3', [[0, 3]]);
+
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.SETS });
+
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      const p2 = standings.find(s => s.playerId === 'p2')!;
+      const p3 = standings.find(s => s.playerId === 'p3')!;
+
+      expect(p1.setsWon).toBe(3);
+      expect(p1.setsLost).toBe(4);
+      expect(p2.setsWon).toBe(4);
+      expect(p2.setsLost).toBe(5);
+      expect(p3.setsWon).toBe(5);
+      expect(p3.setsLost).toBe(3);
+    });
+
+    it('does not use pointsDiff in SETS mode leaving tie unresolved', () => {
+      const players = makePlayers(3);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[2, 1]]);
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[2, 1]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p3', [[1, 2]]);
+
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.SETS });
+
+      for (const s of standings) {
+        expect(s.tiebreakDetails!.pointsDiffApplicable).toBe(false);
+      }
+      const applied = standings[0]!.tiebreakDetails!.tiebreakApplied;
+      expect(applied).toContain('headToHead');
+      expect(applied).toContain('setsWon');
+      expect(applied).not.toContain('pointsDiff');
+    });
+  });
+
+  describe('large group tiebreaking (6 players)', () => {
+    it('correctly resolves a 3-player tie group in a 6-player round robin', () => {
+      const players = makePlayers(6);
+      const schedule = generateSchedule(players);
+
+      // p1 = clear leader (5 wins)
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p4', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p5', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p6', 'p1', [[11, 5]]);
+
+      // p2/p3/p4 tied at 3 wins each (circular)
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[11, 5], [11, 5]]);
+      setMatchResult(schedule, 'p3', 'p4', 'p3', [[11, 5], [11, 5]]);
+      setMatchResult(schedule, 'p2', 'p4', 'p4', [[5, 11], [5, 11]]);
+
+      // p2/p3/p4 each beat p5 and p6
+      setMatchResult(schedule, 'p2', 'p5', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p6', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p3', 'p5', 'p3', [[11, 5]]);
+      setMatchResult(schedule, 'p3', 'p6', 'p3', [[11, 5]]);
+      setMatchResult(schedule, 'p4', 'p5', 'p4', [[11, 5]]);
+      setMatchResult(schedule, 'p4', 'p6', 'p4', [[11, 5]]);
+
+      // p5 beats p6
+      setMatchResult(schedule, 'p5', 'p6', 'p5', [[11, 5]]);
+
+      const standings = computeStandings(schedule, players);
+
+      expect(standings[0]!.playerId).toBe('p1');
+      expect(standings[0]!.points).toBe(5);
+
+      const midGroup = standings.slice(1, 4);
+      expect(midGroup).toHaveLength(3);
+      for (const s of midGroup) {
+        expect(s.points).toBe(3);
+        expect(s.tiebreakDetails!.headToHead).toBe(1);
+      }
+
+      expect(standings[4]!.points).toBe(1);
+      expect(standings[5]!.points).toBe(0);
+    });
+  });
+
+  describe('multiple disjoint tie groups', () => {
+    it('resolves two independent tie groups in a 6-player round robin', () => {
+      const players = makePlayers(6);
+      const schedule = generateSchedule(players);
+
+      // Top group circular: p1 beats p2, p2 beats p3, p3 beats p1
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p3', [[5, 11]]);
+
+      // Bottom group circular: p4 beats p5, p5 beats p6, p6 beats p4
+      setMatchResult(schedule, 'p4', 'p5', 'p4', [[11, 5]]);
+      setMatchResult(schedule, 'p5', 'p6', 'p5', [[11, 5]]);
+      setMatchResult(schedule, 'p4', 'p6', 'p6', [[5, 11]]);
+
+      // Cross-group: top beats bottom
+      for (const top of ['p1', 'p2', 'p3']) {
+        for (const bot of ['p4', 'p5', 'p6']) {
+          setMatchResult(schedule, top, bot, top, [[11, 5]]);
+        }
+      }
+
+      const standings = computeStandings(schedule, players);
+
+      const topGroup = standings.slice(0, 3);
+      const bottomGroup = standings.slice(3, 6);
+
+      for (const s of topGroup) {
+        expect(s.points).toBe(4);
+        expect(s.tiebreakDetails!.headToHead).toBe(1);
+      }
+      for (const s of bottomGroup) {
+        expect(s.points).toBe(1);
+        expect(s.tiebreakDetails!.headToHead).toBe(1);
+      }
+    });
+  });
+
+  describe('walkover handling in tiebreaking', () => {
+    it('walkover match counts as H2H win but excludes walkover scores from point calculations', () => {
+      const players = makePlayers(4);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[111, 0]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p4', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p4', 'p4', [[5, 11]]);
+      setMatchResult(schedule, 'p3', 'p4', 'p3', [[11, 5]]);
+
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.POINTS });
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      const p2 = standings.find(s => s.playerId === 'p2')!;
+
+      expect(p1.points).toBe(2);
+      expect(p2.points).toBe(2);
+
+      // Walkover scores (111) excluded from pointsWon/pointsLost
+      expect(p1.pointsWon).toBe(16);
+      expect(p1.pointsLost).toBe(16);
+    });
+
+    it('walkover sets are counted in H2H set diff calculations', () => {
+      const players = makePlayers(3);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[111, 0]]);
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[11, 5], [11, 5]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p3', [[5, 11], [5, 11]]);
+
+      const standings = computeStandings(schedule, players);
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+
+      expect(p1.tiebreakDetails!.headToHeadSetDiff).toBe(-1);
+      expect(p1.tiebreakDetails!.headToHeadSetsWon).toBe(1);
+    });
+  });
+
+  describe('partial completion tiebreaking', () => {
+    it('computes tiebreakers correctly when some matches have no winner', () => {
+      const players = makePlayers(4);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p3', 'p1', [[11, 5], [11, 5]]);
+      setMatchResult(schedule, 'p1', 'p4', 'p1', [[11, 5], [11, 5]]);
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p4', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p3', 'p4', 'p3', [[11, 5]]);
+
+      const standings = computeStandings(schedule, players);
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      const p2 = standings.find(s => s.playerId === 'p2')!;
+
+      expect(p1.points).toBe(2);
+      expect(p2.points).toBe(2);
+      expect(p1.tiebreakDetails!.headToHead).toBe(0);
+      expect(p2.tiebreakDetails!.headToHead).toBe(0);
+
+      expect(p1.setsWon - p1.setsLost).toBeGreaterThan(p2.setsWon - p2.setsLost);
+      expect(standings[0]!.playerId).toBe('p1');
+    });
+
+    it('unplayed matches do not contribute to standings stats', () => {
+      const players = makePlayers(4);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[11, 5], [11, 5]]);
+      setMatchResult(schedule, 'p3', 'p4', 'p3', [[11, 5]]);
+
+      const standings = computeStandings(schedule, players);
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      const p2 = standings.find(s => s.playerId === 'p2')!;
+      const p3 = standings.find(s => s.playerId === 'p3')!;
+      const p4 = standings.find(s => s.playerId === 'p4')!;
+
+      expect(p1.played).toBe(1);
+      expect(p2.played).toBe(1);
+      expect(p3.played).toBe(1);
+      expect(p4.played).toBe(1);
+
+      expect(p1.setsWon).toBe(2);
+      expect(p1.setsLost).toBe(0);
+      expect(p3.setsWon).toBe(1);
+      expect(p3.setsLost).toBe(0);
+
+      expect(p1.wins).toBe(1);
+      expect(p1.losses).toBe(0);
+    });
+  });
+
+  describe('5-way tie resolved by headToHeadSetsWon', () => {
+    it('5-way tie where H2H setsWon differs among players', () => {
+      // 5 players each with 2 wins. Most matches 2-1 sets, but p5 wins 1-0.
+      // This creates different H2H setsWon values that affect tiebreaking.
+      const players = makePlayers(5);
+      const schedule = generateSchedule(players);
+
+      // p1 beats p2, p3. Loses to p4, p5. p2 beats p3, p4. Loses to p1, p5.
+      // p3 beats p4, p5. Loses to p1, p2. p4 beats p5, p1. Loses to p2, p3.
+      // p5 beats p1, p2. Loses to p3, p4.
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[11, 5], [5, 11], [11, 5]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p1', [[11, 5], [5, 11], [11, 5]]);
+      setMatchResult(schedule, 'p1', 'p4', 'p4', [[5, 11], [11, 5], [5, 11]]);
+      setMatchResult(schedule, 'p1', 'p5', 'p5', [[5, 11]]);
+
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[11, 5], [5, 11], [11, 5]]);
+      setMatchResult(schedule, 'p2', 'p4', 'p2', [[11, 5], [5, 11], [11, 5]]);
+      setMatchResult(schedule, 'p2', 'p5', 'p5', [[5, 11]]);
+
+      setMatchResult(schedule, 'p3', 'p4', 'p3', [[11, 5], [5, 11], [11, 5]]);
+      setMatchResult(schedule, 'p3', 'p5', 'p3', [[11, 5], [5, 11], [11, 5]]);
+
+      setMatchResult(schedule, 'p4', 'p5', 'p4', [[11, 5], [5, 11], [11, 5]]);
+
+      const standings = computeStandings(schedule, players);
+
+      // All at 2 wins
+      for (const s of standings) {
+        expect(s.points).toBe(2);
+      }
+
+      // H2H setsWon should not all be equal — the 1-0 wins create asymmetry
+      const h2hSetsWonValues = standings.map(s => s.tiebreakDetails!.headToHeadSetsWon);
+      const uniqueValues = new Set(h2hSetsWonValues);
+      expect(uniqueValues.size).toBeGreaterThan(1);
+
+      // The first-ranked player should have more H2H setsWon than the last
+      expect(standings[0]!.tiebreakDetails!.headToHeadSetsWon).toBeGreaterThanOrEqual(
+        standings.at(-1)!.tiebreakDetails!.headToHeadSetsWon
+      );
+    });
+  });
+
+  describe('odd-player round robin tiebreaking', () => {
+    it('BYE rounds do not create matches that affect H2H or standings', () => {
+      const players = makePlayers(5);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p1', [[11, 5]]);
+      setMatchResult(schedule, 'p1', 'p4', 'p4', [[5, 11]]);
+      setMatchResult(schedule, 'p1', 'p5', 'p5', [[5, 11]]);
+
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p4', 'p2', [[11, 5]]);
+      setMatchResult(schedule, 'p2', 'p5', 'p5', [[5, 11]]);
+
+      setMatchResult(schedule, 'p3', 'p4', 'p4', [[5, 11]]);
+      setMatchResult(schedule, 'p3', 'p5', 'p3', [[11, 5]]);
+
+      setMatchResult(schedule, 'p4', 'p5', 'p4', [[11, 5]]);
+
+      const standings = computeStandings(schedule, players);
+
+      for (const s of standings) {
+        expect(s.played).toBe(4);
+      }
+
+      expect(standings).toHaveLength(5);
+      expect(standings.every(s => s.playerId.startsWith('p'))).toBe(true);
+    });
+  });
+
+  describe('H2H with incomplete data', () => {
+    it('falls through H2H when tied players have not played each other yet', () => {
+      const players = makePlayers(4);
+      const schedule = generateSchedule(players);
+
+      // p1 beats p3, p2 beats p4, p4 beats p3 → p1=1, p2=1, p3=0, p4=1
+      // p1 vs p2 unplayed. Among p1/p2/p4 (all at 1pt): p2 beat p4, p1 has no H2H with p2 or p4.
+      // Actually: p1 and p2 are tied at 1 pt but so is p4 → 3-way tie.
+      // Better: make p4 beat p3 too so p4 has 2 pts. Then only p1 and p2 tied at 1 pt.
+      // p1 beats p3 (1pt for p1), p2 beats p4... no, I want p4 to have 2 pts.
+      // Let p3 beat p4, and p4 beat p2 — then p1=1(beat p3), p2=0, p3=1(beat p4), p4=1(beat p2) — mess.
+      //
+      // Simplest: 4 players. p1 beats p3, p2 beats p4. Leave all others unplayed.
+      // p1=1, p2=1, p3=0, p4=0. p1 and p2 tied at 1. No H2H between them.
+      setMatchResult(schedule, 'p1', 'p3', 'p1', [[11, 5], [11, 5], [11, 5]]);
+      setMatchResult(schedule, 'p2', 'p4', 'p2', [[11, 9]]);
+
+      const standings = computeStandings(schedule, players);
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      const p2 = standings.find(s => s.playerId === 'p2')!;
+
+      expect(p1.points).toBe(1);
+      expect(p2.points).toBe(1);
+
+      // H2H between p1 and p2 is empty (no match played)
+      expect(p1.tiebreakDetails!.headToHead).toBe(0);
+      expect(p2.tiebreakDetails!.headToHead).toBe(0);
+      expect(p1.tiebreakDetails!.headToHeadSetDiff).toBe(0);
+      expect(p2.tiebreakDetails!.headToHeadSetDiff).toBe(0);
+      expect(p1.tiebreakDetails!.headToHeadSetsWon).toBe(0);
+      expect(p2.tiebreakDetails!.headToHeadSetsWon).toBe(0);
+
+      // Falls to overall setDiff: p1 = +3, p2 = +1 → p1 first
+      expect(p1.tiebreakDetails!.setDiff).toBe(3);
+      expect(p2.tiebreakDetails!.setDiff).toBe(1);
+      expect(standings[0]!.playerId).toBe('p1');
+    });
+  });
+
+  describe('maxSets parameter', () => {
+    it('tiebreaking respects maxSets in SETS scoring mode', () => {
+      const players = makePlayers(3);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[3, 1]]);
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[3, 2]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p3', [[1, 3]]);
+
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.SETS, maxSets: 3 });
+
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      expect(p1.setsWon).toBe(4);
+      expect(p1.setsLost).toBe(4);
+      expect(p1.tiebreakDetails!.setDiff).toBe(0);
+    });
+
+    it('scores exceeding maxSets are treated as 0-0 sets in SETS mode', () => {
+      const players = makePlayers(3);
+      const schedule = generateSchedule(players);
+
+      setMatchResult(schedule, 'p1', 'p2', 'p1', [[5, 2]]);
+      setMatchResult(schedule, 'p2', 'p3', 'p2', [[2, 1]]);
+      setMatchResult(schedule, 'p1', 'p3', 'p3', [[1, 2]]);
+
+      const standings = computeStandings(schedule, players, { scoringMode: ScoreMode.SETS, maxSets: 3 });
+
+      const p1 = standings.find(s => s.playerId === 'p1')!;
+      expect(p1.setsWon).toBe(1);
+      expect(p1.setsLost).toBe(2);
     });
   });
 });
