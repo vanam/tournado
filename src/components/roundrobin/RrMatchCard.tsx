@@ -1,19 +1,8 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
-import {
-  formatSetResults,
-  getSetTotals,
-  getWalkoverSetWinner,
-  hasWalkover,
-  isWalkoverScore,
-} from '../../utils/scoreUtils';
+import { formatSetPointEntries, getSetTotals, hasWalkover } from '../../utils/scoreUtils';
 import { ScoreMode } from '../../types';
-import type { Match, Player, SetScore } from '../../types';
-
-interface SetResultEntry {
-  text: string;
-  isWinnerSet: boolean;
-}
+import type { Match, Player } from '../../types';
 
 interface RRMatchCardProps {
   match: Match;
@@ -22,6 +11,23 @@ interface RRMatchCardProps {
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
 }
+
+interface SetPointsProps {
+  entries: { text: string; isWin: boolean }[];
+}
+const SetPoints = ({ entries }: SetPointsProps): ReactElement => (
+  <span className="text-[10px] text-[var(--color-faint)] font-mono whitespace-pre text-right">
+    {entries.map((entry, index) => (
+      <span
+        key={index}
+        className={entry.isWin ? 'font-semibold text-[var(--color-text)]' : ''}
+      >
+        {index > 0 ? ' ' : ''}
+        {entry.text}
+      </span>
+    ))}
+  </span>
+);
 
 export const RRMatchCard = ({
   match,
@@ -37,18 +43,13 @@ export const RRMatchCard = ({
 
   const { p1Sets, p2Sets } = getSetTotals(match.scores, { scoringMode, maxSets });
   const isWalkover = match.walkover || hasWalkover(match.scores);
-  const setResultsText = showPoints ? formatSetResults(match.scores) : '';
-  const setResultEntries: SetResultEntry[] = showPoints
-    ? match.scores
-        .filter((s): s is SetScore => Array.isArray(s))
-        .map((s) => getSetResultEntry(s, match))
-        .filter((entry): entry is SetResultEntry => entry != null)
-    : [];
+  const p1SetPointEntries = showPoints ? formatSetPointEntries(match.scores) : [];
+  const p2SetPointEntries = showPoints ? formatSetPointEntries(match.scores, { swapped: true }) : [];
 
   return (
     <div
       onClick={() => { onEdit(match); }}
-      className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-card)] rounded-lg px-3 py-2.5 cursor-pointer hover:border-[var(--color-primary)] hover:shadow-md hover:-translate-y-px transition-all duration-150 text-sm"
+      className="border border-[var(--color-border)] rounded-lg text-xs w-full overflow-hidden bg-[var(--color-card)] cursor-pointer hover:border-[var(--color-primary)] hover:shadow-md hover:-translate-y-px transition-all duration-150"
       role="button"
       tabIndex={0}
       aria-label={t('bracket.editMatch')}
@@ -59,86 +60,56 @@ export const RRMatchCard = ({
         }
       }}
     >
-      <span
-        className={`flex-1 text-right min-w-0 truncate text-xs sm:text-sm ${
-          match.winnerId === match.player1Id ? 'font-semibold text-[var(--color-primary-dark)]' : ''
+      <div
+        className={`flex items-center justify-between px-2 py-1.5 border-b border-[var(--color-border-soft)] ${
+          match.winnerId === match.player1Id ? 'bg-[var(--color-soft)] font-semibold border-l-3 border-l-[var(--color-primary)]' : ''
         }`}
       >
-        {p1 ? (
-          <>
-            {p1.name}
-            {p1.elo != null && (
-              <span className="ml-2 text-xs font-normal text-[var(--color-muted)]">
-                {t('players.elo', { elo: p1.elo })}
-              </span>
-            )}
-          </>
-        ) : null}
-      </span>
-      {match.winnerId ? (
-        <div className="text-center min-w-[3rem]">
-          <div className="text-[var(--color-muted)] font-mono text-xs px-2 py-0.5 rounded bg-[var(--color-soft)]">
-            {isWalkover ? 'WO' : `${p1Sets} - ${p2Sets}`}
-          </div>
-          {showPoints && setResultsText && (
-            <div className="text-[10px] text-[var(--color-faint)]">
-              {setResultEntries.map((entry, index) => (
-                <span
-                  key={`set-${index}`}
-                  className={entry.isWinnerSet ? 'font-semibold text-[var(--color-text)]' : ''}
-                >
-                  {index > 0 ? ', ' : ''}
-                  {entry.text}
+        <span className="truncate flex-1">
+          {p1 ? (
+            <>
+              {p1.name}
+              {p1.elo != null && (
+                <span className="ml-2 font-normal text-[10px] text-[var(--color-muted)]">
+                  {t('players.elo', { elo: p1.elo })}
                 </span>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <span className="text-[var(--color-faintest)] text-xs min-w-[3rem] text-center">{t('score.vs')}</span>
-      )}
-      <span
-        className={`flex-1 min-w-0 truncate text-xs sm:text-sm ${
-          match.winnerId === match.player2Id ? 'font-semibold text-[var(--color-primary-dark)]' : ''
+              )}
+            </>
+          ) : null}
+        </span>
+        {match.winnerId && (
+          <span className="ml-2 text-[var(--color-muted)] flex items-center gap-2 shrink-0">
+            {showPoints && p1SetPointEntries.length > 0 && <SetPoints entries={p1SetPointEntries} />}
+            <span className="text-[var(--color-faintest)]">|</span>
+            <span className="font-mono w-4 text-center">{isWalkover ? 'WO' : p1Sets}</span>
+          </span>
+        )}
+      </div>
+      <div
+        className={`flex items-center justify-between px-2 py-1.5 ${
+          match.winnerId === match.player2Id ? 'bg-[var(--color-soft)] font-semibold border-l-3 border-l-[var(--color-primary)]' : ''
         }`}
       >
-        {p2 ? (
-          <>
-            {p2.name}
-            {p2.elo != null && (
-              <span className="ml-2 text-xs font-normal text-[var(--color-muted)]">
-                {t('players.elo', { elo: p2.elo })}
-              </span>
-            )}
-          </>
-        ) : null}
-      </span>
+        <span className="truncate flex-1">
+          {p2 ? (
+            <>
+              {p2.name}
+              {p2.elo != null && (
+                <span className="ml-2 font-normal text-[10px] text-[var(--color-muted)]">
+                  {t('players.elo', { elo: p2.elo })}
+                </span>
+              )}
+            </>
+          ) : null}
+        </span>
+        {match.winnerId && (
+          <span className="ml-2 text-[var(--color-muted)] flex items-center gap-2 shrink-0">
+            {showPoints && p2SetPointEntries.length > 0 && <SetPoints entries={p2SetPointEntries} />}
+            <span className="text-[var(--color-faintest)]">|</span>
+            <span className="font-mono w-4 text-center">{isWalkover ? 'WO' : p2Sets}</span>
+          </span>
+        )}
+      </div>
     </div>
   );
-}
-
-function getSetResultEntry(s: SetScore, match: Match): SetResultEntry | null {
-  const [rawA, rawB] = s;
-  if (isWalkoverScore(rawA) || isWalkoverScore(rawB)) {
-    const walkoverWinner = getWalkoverSetWinner(rawA, rawB);
-    if (walkoverWinner === 0) return { text: 'WO', isWinnerSet: false };
-    const winnerId = walkoverWinner === 1 ? match.player1Id : match.player2Id;
-    return {
-      text: 'WO',
-      isWinnerSet: match.winnerId != null && match.winnerId === winnerId,
-    };
-  }
-  const a = rawA;
-  const b = rawB;
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-  let setWinner = 0;
-  if (a > b) setWinner = 1;
-  else if (b > a) setWinner = 2;
-  let isWinnerSet = false;
-  if (setWinner === 1) isWinnerSet = match.winnerId === match.player1Id;
-  else if (setWinner === 2) isWinnerSet = match.winnerId === match.player2Id;
-  return {
-    text: `${a}-${b}`,
-    isWinnerSet,
-  };
-}
+};
