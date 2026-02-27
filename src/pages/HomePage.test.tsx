@@ -64,8 +64,14 @@ vi.mock('../i18n/useTranslation', () => ({
   }),
 }));
 
-vi.mock('../utils/usePageTitle', () => ({
+vi.mock('../hooks/usePageTitle', () => ({
   usePageTitle: vi.fn(),
+}));
+
+vi.mock('../utils/analytics', () => ({
+  useAnalytics: (): { tracker: { trackPageView: () => void } } => ({
+    tracker: { trackPageView: vi.fn() },
+  }),
 }));
 
 function renderHomePage(): ReturnType<typeof render> {
