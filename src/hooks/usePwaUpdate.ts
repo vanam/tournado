@@ -4,6 +4,10 @@ import { showToast } from '../utils/toastUtils';
 import { useTranslation } from '../i18n/useTranslation';
 import { SW_UPDATE_INTERVAL_MS } from '../constants';
 
+const navigationType = (
+  performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
+)?.type;
+
 let registered = false;
 
 export function usePwaUpdate(): void {
@@ -16,6 +20,10 @@ export function usePwaUpdate(): void {
     const updateSW = registerSW({
       immediate: true,
       onNeedRefresh() {
+        if (navigationType === 'reload') {
+          void updateSW(true);
+          return;
+        }
         showToast({
           id: 'pwa-update',
           message: t('toast.newVersion'),
