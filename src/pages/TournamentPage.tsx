@@ -14,6 +14,8 @@ import { GroupStageView } from '../components/groupstage/GroupStageView';
 import { SwissView } from '../components/swiss/SwissView';
 import { Button } from '@/components/ui/Button';
 import {useAnalytics} from "@/utils/analytics";
+import { ProgressBar } from '../components/common/ProgressBar';
+import { computeTournamentProgress } from '../utils/progressUtils';
 
 const TournamentContent = (): ReactElement => {
   const { tournament, isLoading } = useTournament();
@@ -56,6 +58,8 @@ const TournamentContent = (): ReactElement => {
     );
   }
 
+  const progress = computeTournamentProgress(tournament);
+
   return (
     <div>
       <div className="mb-6">
@@ -66,6 +70,11 @@ const TournamentContent = (): ReactElement => {
           {t(`format.${tournament.format}`)} &middot;{' '}
           {t('tournament.players', { count: tournament.players.length })}
         </p>
+        <ProgressBar
+          value={progress.completed}
+          max={progress.total}
+          className="mt-2"
+        />
       </div>
 
       <PlayerList />

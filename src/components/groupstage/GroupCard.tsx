@@ -3,6 +3,8 @@ import type { Group, Player, StandingsRow, ScoreMode } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 import { indexToGroupLabel } from '../../utils/groupStageUtils';
 import { TabBar } from '../common/TabBar';
+import { ProgressBar } from '../common/ProgressBar';
+import { computeGroupProgress } from '../../utils/progressUtils';
 import { RoundSchedule } from '../roundrobin/RoundSchedule';
 import { StandingsTable } from '../roundrobin/StandingsTable';
 import { ResultsMatrix } from '../roundrobin/ResultsMatrix';
@@ -39,6 +41,7 @@ export const GroupCard = ({
   maxSets,
 }: GroupCardProps): ReactElement => {
   const { t } = useTranslation();
+  const groupProgress = computeGroupProgress(group);
 
   const tabs: { id: GroupTab; label: string }[] = [
     { id: 'standings', label: t('roundRobin.standings') },
@@ -53,6 +56,11 @@ export const GroupCard = ({
           {t('groupStage.groupTitle', { label: indexToGroupLabel(groupIndex) })}
         </div>
       </div>
+      <ProgressBar
+        value={groupProgress.completed}
+        max={groupProgress.total}
+        className="mb-3"
+      />
       <TabBar tabs={tabs} activeId={activeTab} onChange={onTabChange} />
 
       {activeTab === 'schedule' && (
