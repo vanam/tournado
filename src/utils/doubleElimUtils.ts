@@ -250,7 +250,19 @@ function canAutoAdvanceEntryMatch(
 
   if (prevRound) {
     const feeder = prevRound.find(m => m.nextMatchId === match.id && !isDummyMatch(m));
-    if (feeder && !isMatchResolved(feeder)) return false;
+    if (feeder) {
+      // A feeder is "done" (not blocking auto-advance) only if:
+      // 1. It has a winner (was actually played), OR
+      // 2. It is a genuine BYE-source match (has winnersSources, both players null)
+      //    meaning neither W-R1 source produced a real loser
+      const feederDone =
+        !!feeder.winnerId ||
+        (Array.isArray(feeder.winnersSources) &&
+         feeder.winnersSources.length > 0 &&
+         !feeder.player1Id &&
+         !feeder.player2Id);
+      if (!feederDone) return false;
+    }
   }
   return true;
 }

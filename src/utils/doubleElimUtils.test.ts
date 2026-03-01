@@ -300,3 +300,47 @@ describe('double elimination with 5 players A B C D E - full simulation', () => 
     expect(getDoubleElimWinner(de)).toBe('B');
   });
 });
+
+describe('double elimination with 8 players - losers semifinal editability', () => {
+  it('allows editing H vs D in losers semifinals when winners final is played before losers bracket', () => {
+    const players: Player[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(id => ({ id, name: id }));
+    let de = generateDoubleElim(players);
+
+    // Winners quarterfinals
+    const matchAH = findMatchInRounds(de.winners.rounds, 'A', 'H')!;
+    const matchCF = findMatchInRounds(de.winners.rounds, 'C', 'F')!;
+    const matchBG = findMatchInRounds(de.winners.rounds, 'B', 'G')!;
+    const matchDE = findMatchInRounds(de.winners.rounds, 'D', 'E')!;
+    de = advanceDoubleElim(clone(de), matchAH.id, 'A', [[2, 0]]);
+    de = advanceDoubleElim(clone(de), matchCF.id, 'C', [[2, 0]]);
+    de = advanceDoubleElim(clone(de), matchBG.id, 'B', [[2, 0]]);
+    de = advanceDoubleElim(clone(de), matchDE.id, 'D', [[2, 0]]);
+
+    // Winners semifinals
+    const matchAC = findMatchInRounds(de.winners.rounds, 'A', 'C')!;
+    const matchBD = findMatchInRounds(de.winners.rounds, 'B', 'D')!;
+    de = advanceDoubleElim(clone(de), matchAC.id, 'A', [[2, 0]]);
+    de = advanceDoubleElim(clone(de), matchBD.id, 'B', [[2, 0]]);
+
+    // Winners final played BEFORE losers bracket (B drops to losers)
+    const matchAB = findMatchInRounds(de.winners.rounds, 'A', 'B')!;
+    de = advanceDoubleElim(clone(de), matchAB.id, 'A', [[2, 0]]);
+
+    // Losers bracket round 1
+    const matchHF = findMatchInRounds(de.losers.rounds, 'H', 'F')!;
+    const matchGE = findMatchInRounds(de.losers.rounds, 'G', 'E')!;
+    de = advanceDoubleElim(clone(de), matchHF.id, 'H', [[2, 0]]);
+    de = advanceDoubleElim(clone(de), matchGE.id, 'G', [[2, 0]]);
+
+    // Losers quarterfinals (entry round)
+    const matchHC = findMatchInRounds(de.losers.rounds, 'H', 'C')!;
+    const matchDG = findMatchInRounds(de.losers.rounds, 'D', 'G')!;
+    de = advanceDoubleElim(clone(de), matchHC.id, 'H', [[2, 0]]);
+    de = advanceDoubleElim(clone(de), matchDG.id, 'D', [[2, 0]]);
+
+    // Losers semifinal H vs D must be editable
+    const matchHD = findMatchInRounds(de.losers.rounds, 'H', 'D')!;
+    expect(matchHD).toBeTruthy();
+    expect(canEditDoubleElimMatch(de, matchHD.id)).toBe(true);
+  });
+});
