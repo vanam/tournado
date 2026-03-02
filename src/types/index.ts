@@ -5,3 +5,4 @@ export * from './tournament';
 export * from './standings';
 export * from './services';
 export * from './ui';
+export * from './playerLibrary';
