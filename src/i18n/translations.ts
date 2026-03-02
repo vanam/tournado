@@ -16,6 +16,7 @@ export const en: TranslationMap = {
 
   'card.created': 'Created: {{date}}',
   'card.delete': 'Delete',
+  'card.duplicate': 'Duplicate',
   'card.winner': 'Winner: {{name}}',
 
   'create.title': 'New Tournament',
@@ -358,6 +359,7 @@ export const cs: TranslationMap = {
 
   'card.created': 'Vytvořeno: {{date}}',
   'card.delete': 'Smazat',
+  'card.duplicate': 'Duplikovat',
   'card.winner': 'Vítěz: {{name}}',
 
   'create.title': 'Nový turnaj',
@@ -703,6 +705,7 @@ export const de: TranslationMap = {
 
   'card.created': 'Erstellt: {{date}}',
   'card.delete': 'Löschen',
+  'card.duplicate': 'Duplizieren',
   'card.winner': 'Gewinner: {{name}}',
 
   'create.title': 'Neues Turnier',
@@ -1045,6 +1048,7 @@ export const es: TranslationMap = {
 
   'card.created': 'Creado: {{date}}',
   'card.delete': 'Eliminar',
+  'card.duplicate': 'Duplicar',
   'card.winner': 'Ganador: {{name}}',
 
   'create.title': 'Nuevo Torneo',

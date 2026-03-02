@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { Copy, Trash2 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import type { Tournament } from '../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -10,9 +10,10 @@ import { Badge } from '@/components/ui/Badge';
 interface TournamentCardProps {
   tournament: Tournament;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
 }
 
-export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): ReactElement => {
+export const TournamentCard = ({ tournament, onDelete, onDuplicate }: TournamentCardProps): ReactElement => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const winner = tournament.winnerId
@@ -41,18 +42,32 @@ export const TournamentCard = ({ tournament, onDelete }: TournamentCardProps): R
           <CardTitle className="text-lg font-semibold text-[var(--color-primary-dark)] group-hover:text-[var(--color-primary)] transition-colors">
             {tournament.name}
           </CardTitle>
-          <Button
-            variant="secondary-ghost"
-            size="sm"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete(tournament.id);
-            }}
-            aria-label={t('card.delete')}
-            className="text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 h-8 w-8 px-2 py-1"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="secondary-ghost"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDuplicate(tournament.id);
+              }}
+              aria-label={t('card.duplicate')}
+              className="text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 h-8 w-8 px-2 py-1"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="secondary-ghost"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(tournament.id);
+              }}
+              aria-label={t('card.delete')}
+              className="text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 h-8 w-8 px-2 py-1"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <Badge variant="secondary" className="mt-2 w-fit">
           {t(`format.${tournament.format}`)}

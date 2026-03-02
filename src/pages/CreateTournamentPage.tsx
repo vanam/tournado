@@ -1,7 +1,7 @@
 import {useState, useEffect} from 'react';
 import type {ChangeEvent, ReactElement} from 'react';
 import {useForm, useFieldArray, useWatch} from 'react-hook-form';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router-dom';
 import {DEFAULT_MAX_SETS, MIN_PLAYERS} from '../constants';
 import {useTranslation} from '../i18n/useTranslation';
 import {usePageTitle} from '../hooks/usePageTitle';
@@ -43,6 +43,7 @@ export type TournamentFormValues = {
 
 export const CreateTournamentPage = (): ReactElement => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { tracker } = useAnalytics();
 
@@ -57,6 +58,7 @@ export const CreateTournamentPage = (): ReactElement => {
     trigger,
     getValues,
     resetField,
+    reset,
     formState: { errors },
   } = useForm<TournamentFormValues>({
     defaultValues: {
@@ -84,6 +86,60 @@ export const CreateTournamentPage = (): ReactElement => {
     append: appendQualifier,
     remove: removeQualifiers,
   } = useFieldArray({ control, name: 'qualifiers' });
+
+  const duplicate = (location.state as { duplicate?: Tournament } | null)?.duplicate ?? null;
+
+  useEffect(() => {
+    if (duplicate === null) return;
+    const src = duplicate;
+    const useElo = src.players.some((p) => p.elo !== undefined);
+    const commonFields = {
+      name: src.name,
+      format: src.format,
+      scoringMode: src.scoringMode ?? ScoreMode.SETS,
+      maxSets: src.maxSets ?? DEFAULT_MAX_SETS,
+      playerName: '',
+      playerElo: 1000,
+      useElo,
+    };
+    if (src.format === Format.GROUPS_TO_BRACKET) {
+      const settings = src.groupStage.settings;
+      reset({
+        ...commonFields,
+        groupStageMaxSets: src.groupStageMaxSets ?? DEFAULT_MAX_SETS,
+        bracketMaxSets: src.bracketMaxSets ?? DEFAULT_MAX_SETS,
+        groupCount: settings.groupCount,
+        consolation: settings.consolation,
+        bracketType: settings.bracketType ?? BracketType.SINGLE_ELIM,
+        qualifiers: settings.qualifiers.map((v) => ({ value: v })),
+        swissRounds: 1,
+      });
+    } else if (src.format === Format.SWISS) {
+      reset({
+        ...commonFields,
+        groupStageMaxSets: DEFAULT_MAX_SETS,
+        bracketMaxSets: DEFAULT_MAX_SETS,
+        groupCount: 2,
+        consolation: false,
+        bracketType: BracketType.SINGLE_ELIM,
+        qualifiers: [{ value: 2 }, { value: 2 }],
+        swissRounds: src.totalRounds,
+      });
+    } else {
+      reset({
+        ...commonFields,
+        groupStageMaxSets: DEFAULT_MAX_SETS,
+        bracketMaxSets: DEFAULT_MAX_SETS,
+        groupCount: 2,
+        consolation: false,
+        bracketType: BracketType.SINGLE_ELIM,
+        qualifiers: [{ value: 2 }, { value: 2 }],
+        swissRounds: 1,
+      });
+    }
+    setPlayers(src.players.map((p, i) => ({ ...p, id: crypto.randomUUID(), seed: i + 1 })));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const format = useWatch({ control, name: 'format' });
   const scoringMode = useWatch({ control, name: 'scoringMode' });

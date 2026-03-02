@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
-import {Link, useLocation} from 'react-router-dom';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 import { Plus, Trophy } from 'lucide-react';
 import { persistence } from '../services/persistence';
 import { useTranslation } from '../i18n/useTranslation';
@@ -13,6 +13,7 @@ import {useAnalytics} from "@/utils/analytics";
 
 export const HomePage = (): ReactElement => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { tracker } = useAnalytics();
 
   useEffect(() => {
@@ -53,6 +54,12 @@ export const HomePage = (): ReactElement => {
 
   function handleDelete(id: string): void {
     setDeleteTargetId(id);
+  }
+
+  function handleDuplicate(id: string): void {
+    const tournament = tournaments.find((t) => t.id === id);
+    if (tournament === undefined) return;
+    void navigate('/create', { state: { duplicate: tournament } });
   }
 
   function handleConfirmDelete(): void {
@@ -119,6 +126,7 @@ export const HomePage = (): ReactElement => {
               key={tr.id}
               tournament={tr}
               onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
             />
           ))}
         </div>
