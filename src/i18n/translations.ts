@@ -131,6 +131,8 @@ export const en: TranslationMap = {
   'tournament.cancelEdit': 'Cancel',
   'tournament.nameEmpty': 'Name cannot be empty',
   'tournament.nameDuplicate': 'Name already exists',
+  'tournament.fullscreen': 'Enter fullscreen',
+  'tournament.exitFullscreen': 'Exit fullscreen',
 
   'format.SINGLE_ELIM': 'Single elimination',
   'format.DOUBLE_ELIM': 'Double elimination',
@@ -439,6 +441,8 @@ export const cs: TranslationMap = {
   'tournament.cancelEdit': 'Zrušit',
   'tournament.nameEmpty': 'Jméno nemůže být prázdné',
   'tournament.nameDuplicate': 'Jméno již existuje',
+  'tournament.fullscreen': 'Celá obrazovka',
+  'tournament.exitFullscreen': 'Zavřít celou obrazovku',
 
   'format.SINGLE_ELIM': 'Systém na jednu porážku',
   'format.DOUBLE_ELIM': 'Systém na dvě porážky',
@@ -744,6 +748,8 @@ export const de: TranslationMap = {
   'tournament.cancelEdit': 'Abbrechen',
   'tournament.nameEmpty': 'Name darf nicht leer sein',
   'tournament.nameDuplicate': 'Name existiert bereits',
+  'tournament.fullscreen': 'Vollbild',
+  'tournament.exitFullscreen': 'Vollbild beenden',
 
   'format.SINGLE_ELIM': 'K.O.-System',
   'format.DOUBLE_ELIM': 'Doppeltes K.O.-System',
@@ -1049,6 +1055,8 @@ export const es: TranslationMap = {
   'tournament.cancelEdit': 'Cancelar',
   'tournament.nameEmpty': 'El nombre no puede estar vacío',
   'tournament.nameDuplicate': 'El nombre ya existe',
+  'tournament.fullscreen': 'Pantalla completa',
+  'tournament.exitFullscreen': 'Salir de pantalla completa',
 
   'format.SINGLE_ELIM': 'Eliminación Simple',
   'format.DOUBLE_ELIM': 'Doble Eliminación',

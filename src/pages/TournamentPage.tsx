@@ -1,6 +1,6 @@
-import {type ReactElement, useEffect} from 'react';
+import {type ReactElement, useEffect, useRef} from 'react';
 import {useParams, Link, useLocation} from 'react-router-dom';
-import { SearchX, CircleHelp } from 'lucide-react';
+import { SearchX, CircleHelp, Maximize2 } from 'lucide-react';
 import { Format } from '../types';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -22,9 +22,19 @@ const TournamentContent = (): ReactElement => {
   const { t } = useTranslation();
   const location = useLocation();
   const { tracker } = useAnalytics();
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
       tracker.trackPageView({})
   }, [location, tracker]);
+
+  const toggleFullscreen = (): void => {
+    if (document.fullscreenElement === null) {
+      void containerRef.current?.requestFullscreen();
+    } else {
+      void document.exitFullscreen();
+    }
+  };
 
   usePageTitle(tournament ? tournament.name : t('tournament.notFoundTitle'));
 
@@ -61,15 +71,26 @@ const TournamentContent = (): ReactElement => {
   const progress = computeTournamentProgress(tournament);
 
   return (
-    <div>
-      <div className="mb-6">
+    <div ref={containerRef} className="tournament-fullscreen-container">
+      <div className="fullscreen-hidden mb-6">
         <h1 className="text-2xl font-bold text-[var(--color-text)]">
           {tournament.name}
         </h1>
-        <p className="text-sm text-[var(--color-muted)]">
-          {t(`format.${tournament.format}`)} &middot;{' '}
-          {t('tournament.players', { count: tournament.players.length })}
-        </p>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-sm text-[var(--color-muted)]">
+            {t(`format.${tournament.format}`)} &middot;{' '}
+            {t('tournament.players', { count: tournament.players.length })}
+          </p>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            aria-label={t('tournament.fullscreen')}
+            title={t('tournament.fullscreen')}
+          >
+            <Maximize2 />
+          </Button>
+        </div>
         <ProgressBar
           value={progress.completed}
           max={progress.total}
@@ -77,7 +98,9 @@ const TournamentContent = (): ReactElement => {
         />
       </div>
 
-      <PlayerList />
+      <div className="fullscreen-hidden">
+        <PlayerList />
+      </div>
 
       {tournament.format === Format.SINGLE_ELIM && <BracketView />}
       {tournament.format === Format.ROUND_ROBIN && <RoundRobinView />}
