@@ -13,6 +13,7 @@ import {FieldGroupLabel} from "@/components/ui/FieldGroupLabel";
 import { usePlayerOrder } from '../hooks/usePlayerOrder';
 import { PlayerMoveButtons } from './common/PlayerMoveButtons';
 import { PlayerOrderActions } from './common/PlayerOrderActions';
+import { ImportPlayersModal } from './ImportPlayersModal';
 
 interface PlayerInputProps {
   players: Player[];
@@ -35,6 +36,7 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
   const { moveUp, moveDown, shufflePlayers, sortPlayersByElo } = usePlayerOrder(players, setPlayers);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   function handleDragStart(index: number): void {
     setDragIndex(index);
@@ -72,20 +74,41 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
     setPlayers(updated);
   }
 
+  function handleImportPlayers(imported: Array<{ name: string; elo?: number }>): void {
+    const merged = [
+      ...players,
+      ...imported.map((p, i) => ({
+        id: crypto.randomUUID(),
+        name: p.name,
+        seed: players.length + i + 1,
+        elo: p.elo,
+      })),
+    ];
+    setPlayers(merged);
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between">
         <FieldGroupLabel>
           {t('players.title', { count: players.length })}
         </FieldGroupLabel>
-        {players.length > 1 && (
-          <PlayerOrderActions
-            useElo={useElo}
-            onSortByElo={sortPlayersByElo}
-            onShuffle={shufflePlayers}
-          />
-        )}
+        <PlayerOrderActions
+          useElo={useElo}
+          canReorder={players.length > 1}
+          onSortByElo={sortPlayersByElo}
+          onShuffle={shufflePlayers}
+          onImport={() => { setShowImportModal(true); }}
+        />
       </div>
+      {showImportModal && (
+        <ImportPlayersModal
+          open={showImportModal}
+          onClose={() => { setShowImportModal(false); }}
+          onImport={handleImportPlayers}
+          existingNames={players.map((p) => p.name)}
+        />
+      )}
       <div className="mb-3 space-y-2">
         <div className="grid grid-cols-[1fr_auto] gap-2 sm:flex sm:gap-2">
           <Input
