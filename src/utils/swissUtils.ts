@@ -15,7 +15,7 @@ import type {
 
 const BYE_PLAYER_ID = '__BYE__';
 
-export function computeTotalRounds(playerCount: number): number {
+export function computeMinTotalRounds(playerCount: number): number {
   return Math.ceil(Math.log2(playerCount));
 }
 

@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import type {ChangeEvent, ReactElement} from 'react';
 import {useForm, useFieldArray, useWatch} from 'react-hook-form';
 import {useNavigate} from 'react-router-dom';
@@ -9,7 +9,7 @@ import {persistence} from '../services/persistence';
 import {useAnalytics} from '../utils/analytics';
 import {generateBracket} from '../utils/bracketUtils';
 import {generateSchedule} from '../utils/roundRobinUtils';
-import {generateSwissInitialSchedule, computeTotalRounds} from '../utils/swissUtils';
+import {generateSwissInitialSchedule, computeMinTotalRounds} from '../utils/swissUtils';
 import {createGroupStage, distributePlayersToGroups, indexToGroupLabel} from '../utils/groupStageUtils';
 import type {BaseGroup} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
@@ -38,6 +38,7 @@ export type TournamentFormValues = {
   playerName: string;
   playerElo: number;
   useElo: boolean;
+  swissRounds: number;
 };
 
 export const CreateTournamentPage = (): ReactElement => {
@@ -72,6 +73,7 @@ export const CreateTournamentPage = (): ReactElement => {
       playerName: '',
       playerElo: 1000,
       useElo: false,
+      swissRounds: 1,
     },
   });
 
@@ -88,6 +90,17 @@ export const CreateTournamentPage = (): ReactElement => {
   const bracketType = useWatch({ control, name: 'bracketType' });
   const useElo = useWatch({ control, name: 'useElo' });
   const groupCount = useWatch({ control, name: 'groupCount' });
+  const swissRounds = useWatch({ control, name: 'swissRounds' });
+
+  const swissMinRounds = players.length >= 2 ? computeMinTotalRounds(players.length) : 1;
+  const swissRoundRobinMax = players.length % 2 === 0 ? players.length - 1 : players.length;
+  const swissMaxRounds = players.length >= 2 ? swissRoundRobinMax : 1;
+
+  useEffect(() => {
+    if (format === Format.SWISS && (swissRounds < swissMinRounds || swissRounds > swissMaxRounds)) {
+      setValue('swissRounds', swissMinRounds);
+    }
+  }, [players.length, format, swissMinRounds, swissMaxRounds, swissRounds, setValue]);
 
   // Custom group assignments stored with their context so they auto-invalidate when inputs change.
   const [customGroupsState, setCustomGroupsState] = useState<{
@@ -234,7 +247,7 @@ export const CreateTournamentPage = (): ReactElement => {
           ...base,
           format: Format.SWISS,
           schedule: generateSwissInitialSchedule(players),
-          totalRounds: computeTotalRounds(players.length),
+          totalRounds: data.swissRounds,
         };
         break;
       }
@@ -335,20 +348,44 @@ export const CreateTournamentPage = (): ReactElement => {
             </div>
 
             {format !== Format.GROUPS_TO_BRACKET && (
-              <div>
-                <Label htmlFor="max-sets" className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  {t('create.maxSetsLabel')}
-                </Label>
-                <Input
-                  id="max-sets"
-                  type="number"
-                  min="1"
-                  className="w-24"
-                  {...register('maxSets', {
-                    valueAsNumber: true,
-                    onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('maxSets', normalizeMaxSets(e.target.value)); },
-                  })}
-                />
+              <div className="flex flex-wrap gap-6 items-start">
+                <div>
+                  <Label htmlFor="max-sets" className="block text-sm font-medium text-[var(--color-text)] mb-1">
+                    {t('create.maxSetsLabel')}
+                  </Label>
+                  <Input
+                    id="max-sets"
+                    type="number"
+                    min="1"
+                    className="w-24"
+                    {...register('maxSets', {
+                      valueAsNumber: true,
+                      onChange: (e: ChangeEvent<HTMLInputElement>) => { setValue('maxSets', normalizeMaxSets(e.target.value)); },
+                    })}
+                  />
+                </div>
+                {format === Format.SWISS && players.length >= 2 && (
+                  <div>
+                    <Label htmlFor="swiss-rounds" className="block text-sm font-medium text-[var(--color-text)] mb-1">
+                      {t('create.swissRoundsLabel')}
+                    </Label>
+                    <Input
+                      id="swiss-rounds"
+                      type="number"
+                      min={swissMinRounds}
+                      max={swissMaxRounds}
+                      className="w-24"
+                      {...register('swissRounds', {
+                        valueAsNumber: true,
+                        min: swissMinRounds,
+                        max: swissMaxRounds,
+                      })}
+                    />
+                    <p className="text-xs text-[var(--color-muted)] mt-1">
+                      (min: {swissMinRounds}, max: {swissMaxRounds})
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

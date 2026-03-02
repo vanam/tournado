@@ -36,6 +36,7 @@ export const en: TranslationMap = {
   'create.maxSetsLabel': 'Max games',
   'create.maxSetsGroupLabel': 'Group stage max games',
   'create.maxSetsBracketLabel': 'Playoff max games',
+  'create.swissRoundsLabel': 'Number of rounds',
 
   'players.title': 'Players ({{count}})',
   'players.shuffle': 'Shuffle seeds',
@@ -341,6 +342,7 @@ export const cs: TranslationMap = {
   'create.maxSetsLabel': 'Max. počet setů',
   'create.maxSetsGroupLabel': 'Max. počet setů ve skupině',
   'create.maxSetsBracketLabel': 'Max. počet setů v playoff',
+  'create.swissRoundsLabel': 'Počet kol',
 
   'players.title': 'Hráči ({{count}})',
   'players.shuffle': 'Zamíchat nasazení',
@@ -647,6 +649,7 @@ export const de: TranslationMap = {
   'create.maxSetsLabel': 'Max. Sätze',
   'create.maxSetsGroupLabel': 'Max. Sätze in Gruppenphase',
   'create.maxSetsBracketLabel': 'Max. Sätze im Playoff',
+  'create.swissRoundsLabel': 'Anzahl der Runden',
 
   'players.title': 'Spieler ({{count}})',
   'players.shuffle': 'Setzung mischen',
@@ -951,6 +954,7 @@ export const es: TranslationMap = {
   'create.maxSetsLabel': 'Máx. sets',
   'create.maxSetsGroupLabel': 'Máx. sets en fase de grupos',
   'create.maxSetsBracketLabel': 'Máx. sets en playoff',
+  'create.swissRoundsLabel': 'Número de rondas',
 
   'players.title': 'Jugadores ({{count}})',
   'players.shuffle': 'Mezclar cabezas de serie',

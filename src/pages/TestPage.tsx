@@ -5,7 +5,7 @@ import {DEFAULT_MAX_SETS} from '../constants';
 import {persistence} from '../services/persistence';
 import {generateBracket} from '../utils/bracketUtils';
 import {generateSchedule} from '../utils/roundRobinUtils';
-import {generateSwissInitialSchedule, computeTotalRounds} from '../utils/swissUtils';
+import {generateSwissInitialSchedule, computeMinTotalRounds} from '../utils/swissUtils';
 import {createGroupStage} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
 import {BracketType, Format, ScoreMode} from '../types';
@@ -94,7 +94,7 @@ function buildTournament(
         ...base,
         format: Format.SWISS,
         schedule: generateSwissInitialSchedule(players),
-        totalRounds: computeTotalRounds(players.length),
+        totalRounds: computeMinTotalRounds(players.length),
       };
     }
   }
