@@ -1,6 +1,6 @@
 import { type ReactElement, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import type { GroupStage, Player, StandingsRow, ScoreMode } from '../../types';
+import type { GroupStage, Participant, Player, StandingsRow, ScoreMode } from '../../types';
 import { getGroupPlayers, indexToGroupLabel } from '../../utils/groupStageUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { GroupCard } from './GroupCard';
@@ -17,6 +17,8 @@ interface GroupStandingsEntry {
 interface GroupStageGroupsProps {
   readonly groupStage: GroupStage;
   readonly players: Player[];
+  readonly allPlayers?: Player[] | undefined;
+  readonly participants?: Participant[] | undefined;
   readonly standingsByGroup: GroupStandingsEntry[];
   readonly wildCardIds: Set<string> | null;
   readonly groupTabs: Record<string, GroupTab>;
@@ -29,6 +31,8 @@ interface GroupStageGroupsProps {
 export const GroupStageGroups = ({
   groupStage,
   players,
+  allPlayers,
+  participants,
   standingsByGroup,
   wildCardIds,
   groupTabs,
@@ -82,6 +86,8 @@ export const GroupStageGroups = ({
               group={group}
               groupIndex={index}
               groupPlayers={groupPlayers}
+              allPlayers={allPlayers}
+              participants={participants}
               standings={standings ?? []}
               qualifierCount={qualifierCount}
               wildCardIds={wildCardIds}

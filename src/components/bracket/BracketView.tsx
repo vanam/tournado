@@ -7,6 +7,7 @@ import { FinalResultsTable } from '../common/FinalResultsTable';
 import { MatchCard } from './MatchCard';
 import { advanceWinner, getBracketWinner, clearMatchResult, canEditMatch } from '../../utils/bracketUtils';
 import { buildBracketResults } from '../../utils/resultsUtils';
+import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
@@ -24,6 +25,8 @@ export const BracketView = (): ReactElement | null => {
   if (!tournament) return null;
 
   const { bracket, players } = tournament;
+  const storedParticipants = ensureParticipants(players, tournament.participants);
+  const participantPlayers = getParticipantPlayers(players, storedParticipants);
   const scoringMode = tournament.scoringMode ?? ScoreMode.SETS;
   const maxSets = tournament.maxSets ?? DEFAULT_MAX_SETS;
   const winner = getBracketWinner(bracket);
@@ -54,7 +57,7 @@ export const BracketView = (): ReactElement | null => {
     <div>
       {winner && (
         <WinnerBanner
-          label={t('bracket.winner', { name: players.find((p) => p.id === winner)?.name ?? '' })}
+          label={t('bracket.winner', { name: participantPlayers.find((p) => p.id === winner)?.name ?? '' })}
         />
       )}
 
@@ -65,6 +68,7 @@ export const BracketView = (): ReactElement | null => {
           <BracketRounds
             bracket={bracket}
             players={players}
+            participants={storedParticipants}
             scoringMode={scoringMode}
             maxSets={maxSets}
             showSeedNumbers
@@ -79,6 +83,7 @@ export const BracketView = (): ReactElement | null => {
               <MatchCard
                 match={thirdPlaceMatch}
                 players={players}
+                participants={storedParticipants}
                 canEdit={canEditMatch(bracket, thirdPlaceMatch.id)}
                 onClick={() => { setEditingMatch(thirdPlaceMatch); }}
                 scoringMode={scoringMode}
@@ -92,6 +97,7 @@ export const BracketView = (): ReactElement | null => {
             <ScoreModal
               match={editingMatch}
               players={players}
+              participants={storedParticipants}
               scoringMode={scoringMode}
               maxSets={maxSets}
               onSave={handleSave}
@@ -100,7 +106,7 @@ export const BracketView = (): ReactElement | null => {
           )}
         </>
       ) : (
-        <FinalResultsTable results={buildBracketResults(bracket, players)} />
+        <FinalResultsTable results={buildBracketResults(bracket, participantPlayers)} />
       )}
     </div>
   );

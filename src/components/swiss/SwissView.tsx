@@ -12,6 +12,7 @@ import {
   generateNextSwissRound,
   buildSwissResults,
 } from '../../utils/swissUtils';
+import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
@@ -32,11 +33,13 @@ export const SwissView = (): ReactElement | null => {
   if (!tournament) return null;
 
   const { schedule, players } = tournament;
+  const storedParticipants = ensureParticipants(players, tournament.participants);
+  const participantPlayers = getParticipantPlayers(players, storedParticipants);
   const scoringMode = tournament.scoringMode ?? ScoreMode.SETS;
   const maxSets = tournament.maxSets ?? DEFAULT_MAX_SETS;
   const showPoints = scoringMode === ScoreMode.POINTS;
 
-  const standings = computeSwissStandings(schedule, players, { scoringMode, maxSets });
+  const standings = computeSwissStandings(schedule, participantPlayers, { scoringMode, maxSets });
   const roundComplete = isCurrentRoundComplete(schedule);
   const complete = isSwissTournamentComplete(tournament);
   const currentRound = schedule.rounds.length;
@@ -62,8 +65,10 @@ export const SwissView = (): ReactElement | null => {
       }
 
       const nowComplete = isSwissTournamentComplete({ ...prev, schedule: updatedSchedule });
+      const prevStoredParticipants = ensureParticipants(prev.players, prev.participants);
+      const prevParticipantPlayers = getParticipantPlayers(prev.players, prevStoredParticipants);
       const newStandings = nowComplete
-        ? computeSwissStandings(updatedSchedule, prev.players, { scoringMode, maxSets })
+        ? computeSwissStandings(updatedSchedule, prevParticipantPlayers, { scoringMode, maxSets })
         : null;
 
       return {
@@ -99,7 +104,9 @@ export const SwissView = (): ReactElement | null => {
         <div>
           <RoundSchedule
             schedule={schedule}
-            players={players}
+            players={participantPlayers}
+            allPlayers={players}
+            participants={storedParticipants}
             onEditMatch={setEditingMatch}
             scoringMode={scoringMode}
             maxSets={maxSets}
@@ -129,6 +136,7 @@ export const SwissView = (): ReactElement | null => {
         <ScoreModal
           match={editingMatch}
           players={players}
+          participants={storedParticipants}
           scoringMode={scoringMode}
           maxSets={maxSets}
           onSave={handleSave}

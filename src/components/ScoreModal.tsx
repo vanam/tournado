@@ -11,13 +11,38 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { DEFAULT_MAX_SETS } from '../constants';
 import { getSetTotals, getWalkoverSetWinner, hasWalkover } from '../utils/scoreUtils';
 import { ScoreMode } from '../types';
-import type { Match, Player, SetScore } from '../types';
+import type { Match, Player, Participant, SetScore } from '../types';
+import { getParticipantMembers } from '../utils/participantUtils';
+import { getWinnerName } from '../utils/scoreModalUtils';
 
 export const MAX_POINTS = 111;
+
+interface ScoreSideNameProps {
+  readonly members: Player[];
+  readonly single: Player | undefined;
+  readonly align?: 'left' | 'right';
+}
+
+const ScoreSideName = ({ members, single, align = 'left' }: ScoreSideNameProps): ReactElement | null => {
+  if (members.length > 0) {
+    return (
+      <span className={`flex flex-col ${align === 'right' ? 'items-end' : ''}`}>
+        {members.map((m) => (
+          <span key={m.id} className="truncate">{m.name}</span>
+        ))}
+      </span>
+    );
+  }
+  if (single) {
+    return <span className="truncate block">{single.name}</span>;
+  }
+  return null;
+};
 
 interface ScoreModalProps {
   match: Match;
   players: Player[];
+  participants?: Participant[] | undefined;
   onSave: (matchId: string, winnerId: string | null, scores: SetScore[], walkover: boolean) => void;
   onClose: () => void;
   scoringMode?: ScoreMode;
@@ -31,31 +56,11 @@ function getWalkoverWinnerId(walkoverInfo: { winnerIndex: 0 | 1 } | null, match:
   return match.player2Id;
 }
 
-function getWinnerName(
-  winnerId: string | null,
-  match: Match,
-  p1?: Player,
-  p2?: Player,
-  t?: (key: string, params?: Record<string, string | number>) => string
-): string {
-  if (!winnerId) return '';
-  if (winnerId === match.player1Id) {
-    let name = p1?.name ?? '';
-    if (p1?.elo != null && t) {
-      name += ` (${t('players.elo', { elo: p1.elo })})`;
-    }
-    return name;
-  }
-  let name = p2?.name ?? '';
-  if (p2?.elo != null && t) {
-    name += ` (${t('players.elo', { elo: p2.elo })})`;
-  }
-  return name;
-}
 
 export const ScoreModal = ({
   match,
   players,
+  participants,
   onSave,
   onClose,
   scoringMode = ScoreMode.SETS,
@@ -65,6 +70,12 @@ export const ScoreModal = ({
   const maxSets = Number.isFinite(maxSetsProp) && maxSetsProp > 0 ? maxSetsProp : DEFAULT_MAX_SETS;
   const p1 = players.find((p) => p.id === match.player1Id);
   const p2 = players.find((p) => p.id === match.player2Id);
+  const p1Members = match.player1Id && participants
+    ? getParticipantMembers(match.player1Id, players, participants)
+    : [];
+  const p2Members = match.player2Id && participants
+    ? getParticipantMembers(match.player2Id, players, participants)
+    : [];
   const isSetOnly = scoringMode === ScoreMode.SETS;
   const canUseWalkover = isSetOnly;
 
@@ -228,30 +239,12 @@ export const ScoreModal = ({
         <DialogContent className="max-w-md" aria-describedby={undefined}>
           <DialogTitle className="text-lg font-bold mb-5 pb-3 border-b border-[var(--color-border-soft)]">{t('score.title')}</DialogTitle>
           <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-4">
-            <div className="text-right font-medium text-xs sm:text-sm min-w-0 truncate">
-              {p1 ? (
-                <>
-                  {p1.name}
-                  {p1.elo != null && (
-                    <span className="ml-2 text-xs font-normal text-[var(--color-muted)]">
-                      {t('players.elo', { elo: p1.elo })}
-                    </span>
-                  )}
-                </>
-              ) : null}
+            <div className="text-right font-medium text-xs sm:text-sm min-w-0">
+              <ScoreSideName members={p1Members} single={p1} align="right" />
             </div>
             <div className="text-[var(--color-faint)] text-sm">{t('score.vs')}</div>
-            <div className="font-medium text-xs sm:text-sm min-w-0 truncate">
-              {p2 ? (
-                <>
-                  {p2.name}
-                  {p2.elo != null && (
-                    <span className="ml-2 text-xs font-normal text-[var(--color-muted)]">
-                      {t('players.elo', { elo: p2.elo })}
-                    </span>
-                  )}
-                </>
-              ) : null}
+            <div className="font-medium text-xs sm:text-sm min-w-0">
+              <ScoreSideName members={p2Members} single={p2} />
             </div>
           </div>
 
@@ -360,7 +353,7 @@ export const ScoreModal = ({
           {winner && (
             <p className="text-sm text-[var(--color-primary-dark)] font-medium bg-[var(--color-soft)] rounded-lg px-3 py-2 mb-4">
               {t('score.winner', {
-                name: getWinnerName(winner, match, p1, p2, t),
+                name: getWinnerName(winner, match, p1, p2, p1Members, p2Members),
               })}
             </p>
           )}

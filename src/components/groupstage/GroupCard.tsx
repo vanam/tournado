@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import type { Group, Player, StandingsRow, ScoreMode } from '../../types';
+import type { Group, Participant, Player, StandingsRow, ScoreMode } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 import { indexToGroupLabel } from '../../utils/groupStageUtils';
 import { TabBar } from '../common/TabBar';
@@ -15,6 +15,8 @@ interface GroupCardProps {
   readonly group: Group;
   readonly groupIndex: number;
   readonly groupPlayers: Player[];
+  readonly allPlayers?: Player[] | undefined;
+  readonly participants?: Participant[] | undefined;
   readonly standings: StandingsRow[];
   readonly qualifierCount: number;
   readonly wildCardIds: Set<string> | null;
@@ -30,6 +32,8 @@ export const GroupCard = ({
   group,
   groupIndex,
   groupPlayers,
+  allPlayers,
+  participants,
   standings,
   qualifierCount,
   wildCardIds,
@@ -67,6 +71,8 @@ export const GroupCard = ({
         <RoundSchedule
           schedule={group.schedule}
           players={groupPlayers}
+          allPlayers={allPlayers}
+          participants={participants}
           onEditMatch={onEditMatch}
           scoringMode={scoringMode}
           maxSets={maxSets}

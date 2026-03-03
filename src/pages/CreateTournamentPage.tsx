@@ -13,10 +13,12 @@ import {generateSwissInitialSchedule, computeMinTotalRounds} from '../utils/swis
 import {createGroupStage, distributePlayersToGroups, indexToGroupLabel} from '../utils/groupStageUtils';
 import type {BaseGroup} from '../utils/groupStageUtils';
 import {generateDoubleElim} from '../utils/doubleElimUtils';
+import {allParticipantsComplete, buildParticipants, getParticipantPlayers} from '../utils/participantUtils';
 import {PlayerInput} from '../components/PlayerInput';
+import {ParticipantPlayerInput} from '../components/common/ParticipantPlayerInput';
 import {TournamentPreview} from '../components/TournamentPreview';
 import {BracketType, Format, ScoreMode} from '../types';
-import type {Player, Tournament} from '../types';
+import type {Player, Participant, Tournament} from '../types';
 import { Button } from '@/components/ui/Button';
 import { FieldGroupLabel } from '@/components/ui/FieldGroupLabel';
 import { Input } from '@/components/ui/Input';
@@ -80,6 +82,8 @@ export const CreateTournamentPage = (): ReactElement => {
   });
 
   const [players, setPlayers] = useState<Player[]>([]);
+  const [teamSize, setTeamSize] = useState<number>(1);
+  const [participants, setParticipants] = useState<Participant[]>([]);
 
   const {
     fields: qualifierFields,
@@ -137,7 +141,21 @@ export const CreateTournamentPage = (): ReactElement => {
         swissRounds: 1,
       });
     }
-    setPlayers(src.players.map((p, i) => ({ ...p, id: crypto.randomUUID(), seed: i + 1 })));
+    const dupPlayers = src.players.map((p, i) => ({ ...p, id: crypto.randomUUID(), seed: i + 1 }));
+    const dupTeamSize = src.teamSize ?? 1;
+    setTeamSize(dupTeamSize);
+    setPlayers(dupPlayers);
+    if (src.participants && src.participants.length > 0) {
+      // Remap old player IDs to new player IDs sequentially
+      const idMap = new Map(src.players.map((p, i) => [p.id, dupPlayers[i]?.id ?? '']));
+      setParticipants(src.participants.map((p, pi) => ({
+        id: crypto.randomUUID(),
+        playerIds: p.playerIds.map((pid) => idMap.get(pid) ?? pid),
+        seed: pi + 1,
+      })));
+    } else {
+      setParticipants(buildParticipants(dupPlayers, dupTeamSize, []));
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -148,20 +166,22 @@ export const CreateTournamentPage = (): ReactElement => {
   const groupCount = useWatch({ control, name: 'groupCount' });
   const swissRounds = useWatch({ control, name: 'swissRounds' });
 
-  const swissMinRounds = players.length >= 2 ? computeMinTotalRounds(players.length) : 1;
-  const swissRoundRobinMax = players.length % 2 === 0 ? players.length - 1 : players.length;
-  const swissMaxRounds = players.length >= 2 ? swissRoundRobinMax : 1;
+  const participantCount = participants.length;
+  const swissMinRounds = participantCount >= 2 ? computeMinTotalRounds(participantCount) : 1;
+  const swissRoundRobinMax = participantCount % 2 === 0 ? participantCount - 1 : participantCount;
+  const swissMaxRounds = participantCount >= 2 ? swissRoundRobinMax : 1;
 
   useEffect(() => {
     if (format === Format.SWISS && (swissRounds < swissMinRounds || swissRounds > swissMaxRounds)) {
       setValue('swissRounds', swissMinRounds);
     }
-  }, [players.length, format, swissMinRounds, swissMaxRounds, swissRounds, setValue]);
+  }, [participantCount, format, swissMinRounds, swissMaxRounds, swissRounds, setValue]);
 
   // Custom group assignments stored with their context so they auto-invalidate when inputs change.
   const [customGroupsState, setCustomGroupsState] = useState<{
     groups: BaseGroup[];
     players: Player[];
+    participants: Participant[];
     format: Format;
     groupCount: number;
   } | null>(null);
@@ -169,6 +189,7 @@ export const CreateTournamentPage = (): ReactElement => {
   const customGroups =
     customGroupsState !== null &&
     customGroupsState.players === players &&
+    customGroupsState.participants === participants &&
     customGroupsState.format === format &&
     customGroupsState.groupCount === groupCount
       ? customGroupsState.groups
@@ -181,15 +202,15 @@ export const CreateTournamentPage = (): ReactElement => {
     if (!name) return;
     const eloValue = getValues('playerElo');
     const useEloValue = getValues('useElo');
-    setPlayers([
-      ...players,
-      {
-        id: crypto.randomUUID(),
-        name,
-        seed: players.length + 1,
-        elo: useEloValue && Number.isFinite(eloValue) ? eloValue : undefined,
-      },
-    ]);
+    const newPlayer: Player = {
+      id: crypto.randomUUID(),
+      name,
+      seed: players.length + 1,
+    };
+    if (useEloValue && Number.isFinite(eloValue)) newPlayer.elo = eloValue;
+    const newPlayers = [...players, newPlayer];
+    setPlayers(newPlayers);
+    setParticipants(buildParticipants(newPlayers, teamSize, participants));
     resetField('playerName');
     resetField('playerElo');
   }
@@ -216,11 +237,17 @@ export const CreateTournamentPage = (): ReactElement => {
   }
 
   const onSubmit = handleSubmit((data) => {
-    if (players.length < MIN_PLAYERS) {
+    const participantPlayers = getParticipantPlayers(players, participants);
+
+    if (participantPlayers.length < MIN_PLAYERS) {
       setError('root', { message: t('create.errorPlayers', { minPlayers: MIN_PLAYERS }) });
       return;
     }
-    if (data.format === Format.GROUPS_TO_BRACKET && data.groupCount > players.length) {
+    if (!allParticipantsComplete(participants, teamSize)) {
+      setError('root', { message: t('create.errorIncompleteParticipant', { teamSize }) });
+      return;
+    }
+    if (data.format === Format.GROUPS_TO_BRACKET && data.groupCount > participantPlayers.length) {
       setError('root', { message: t('create.errorGroupsTooMany') });
       return;
     }
@@ -228,7 +255,7 @@ export const CreateTournamentPage = (): ReactElement => {
     const qualifiers = data.qualifiers.map((q) => q.value);
 
     if (data.format === Format.GROUPS_TO_BRACKET) {
-      const groups = customGroups ?? distributePlayersToGroups(players, data.groupCount);
+      const groups = customGroups ?? distributePlayersToGroups(participantPlayers, data.groupCount);
       for (const [i, group] of groups.entries()) {
         const required = qualifiers[i] ?? 0;
         if (required > 0 && group.playerIds.length < required) {
@@ -251,6 +278,8 @@ export const CreateTournamentPage = (): ReactElement => {
       groupStageMaxSets: data.groupStageMaxSets,
       bracketMaxSets: data.bracketMaxSets,
       players: players.map((p) => ({ ...p })),
+      teamSize,
+      participants: participants.map((p) => ({ ...p })),
       createdAt: new Date().toISOString(),
       completedAt: null,
       winnerId: null,
@@ -263,7 +292,7 @@ export const CreateTournamentPage = (): ReactElement => {
         tournament = {
           ...base,
           format: Format.SINGLE_ELIM,
-          bracket: generateBracket(players),
+          bracket: generateBracket(participantPlayers),
         };
         break;
       }
@@ -271,7 +300,7 @@ export const CreateTournamentPage = (): ReactElement => {
         tournament = {
           ...base,
           format: Format.ROUND_ROBIN,
-          schedule: generateSchedule(players),
+          schedule: generateSchedule(participantPlayers),
         };
         break;
       }
@@ -279,17 +308,18 @@ export const CreateTournamentPage = (): ReactElement => {
         tournament = {
           ...base,
           format: Format.DOUBLE_ELIM,
-          doubleElim: generateDoubleElim(players),
+          doubleElim: generateDoubleElim(participantPlayers),
         };
         break;
       }
       case Format.GROUPS_TO_BRACKET: {
-        const groupStage = createGroupStage(players, {
+        const groups = customGroups ?? distributePlayersToGroups(participantPlayers, data.groupCount);
+        const groupStage = createGroupStage(participantPlayers, {
           groupCount: data.groupCount,
           qualifiers,
           consolation: data.consolation,
           bracketType: data.bracketType,
-        }, customGroups ?? undefined);
+        }, groups);
         tournament = {
           ...base,
           format: Format.GROUPS_TO_BRACKET,
@@ -302,7 +332,7 @@ export const CreateTournamentPage = (): ReactElement => {
         tournament = {
           ...base,
           format: Format.SWISS,
-          schedule: generateSwissInitialSchedule(players),
+          schedule: generateSwissInitialSchedule(participantPlayers),
           totalRounds: data.swissRounds,
         };
         break;
@@ -320,7 +350,7 @@ export const CreateTournamentPage = (): ReactElement => {
     tracker.trackTournamentCreated({
       tournament_type: data.format,
       scoring_mode: data.scoringMode,
-      player_count: players.length,
+      player_count: participantPlayers.length,
       playoff_type: playoffTypeMap[data.format] ?? 'none',
     });
     persistence.save(tournament);
@@ -548,34 +578,151 @@ export const CreateTournamentPage = (): ReactElement => {
             )}
           </div>
 
-          {/* Right column: player input */}
-          <div>
-            <PlayerInput
-              players={players}
-              setPlayers={setPlayers}
-              register={register}
-              errors={errors}
-              setValue={setValue}
-              useElo={useElo}
-              onAddPlayer={() => { void handleAddPlayer(); }}
-            />
+          {/* Right column: team size + player input */}
+          <div className="space-y-4">
+            <div>
+              <FieldGroupLabel>
+                {t('create.teamSize')}
+              </FieldGroupLabel>
+              <div className="grid grid-cols-2 gap-2">
+                {([1, 2] as const).map((size) => (
+                  <label
+                    key={size}
+                    className={`flex items-center justify-center flex-1 text-center px-4 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                      teamSize === size
+                        ? 'bg-[var(--color-primary)] text-[var(--color-surface)] border-[var(--color-primary)] shadow-sm'
+                        : 'text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="teamSize"
+                      value={size}
+                      className="sr-only"
+                      checked={teamSize === size}
+                      onChange={() => {
+                        setTeamSize(size);
+                        setPlayers([]);
+                        setParticipants([]);
+                      }}
+                    />
+                    {size === 1 ? t('create.singles') : t('create.doubles')}
+                  </label>
+                ))}
+              </div>
+            </div>
+            {teamSize === 1 ? (
+              <PlayerInput
+                players={players}
+                setPlayers={(newPlayers) => {
+                  setPlayers(newPlayers);
+                  setParticipants(buildParticipants(newPlayers, 1, participants));
+                }}
+                register={register}
+                errors={errors}
+                setValue={setValue}
+                useElo={useElo}
+                onAddPlayer={() => { void handleAddPlayer(); }}
+              />
+            ) : (
+              <div>
+                <div className="mb-3 space-y-2">
+                  <div className="grid grid-cols-[1fr_auto] gap-2 sm:flex sm:gap-2">
+                    <input
+                      id="player-name"
+                      type="text"
+                      aria-label={t('players.placeholder')}
+                      placeholder={t('players.placeholder')}
+                      className="border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm min-w-0 sm:flex-1 bg-[var(--color-card)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                      {...register('playerName', {
+                        validate: (v) => {
+                          const trimmed = v.trim();
+                          if (!trimmed) return true;
+                          return (
+                            !players.some((p) => p.name.toLowerCase() === trimmed.toLowerCase()) ||
+                            t('players.errorUnique')
+                          );
+                        },
+                      })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); void handleAddPlayer(); }
+                      }}
+                    />
+                    <Button type="button" onClick={() => { void handleAddPlayer(); }}>
+                      {t('players.add')}
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="use-elo-doubles"
+                      type="checkbox"
+                      checked={useElo}
+                      onChange={(e) => { setValue('useElo', e.target.checked); }}
+                    />
+                    <Label htmlFor="use-elo-doubles" className="text-sm text-[var(--color-text)]">
+                      {t('players.useElo')}
+                    </Label>
+                    <Input
+                      id="elo-rating-doubles"
+                      type="number"
+                      min="0"
+                      aria-label={t('players.eloPlaceholder')}
+                      placeholder={t('players.eloPlaceholder')}
+                      disabled={!useElo}
+                      className="w-24"
+                      {...register('playerElo', { valueAsNumber: true })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); void handleAddPlayer(); }
+                      }}
+                    />
+                  </div>
+                </div>
+                {errors.playerName && <p className="text-[var(--color-accent)] text-sm mb-2">{errors.playerName.message}</p>}
+                <ParticipantPlayerInput
+                  teamSize={teamSize}
+                  players={players}
+                  participants={participants}
+                  useElo={useElo}
+                  onPlayersChange={(newPlayers, newParticipants) => {
+                    setPlayers(newPlayers);
+                    setParticipants(newParticipants);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
 
         {/* Full-width: preview + submit */}
         <TournamentPreview
           format={format}
-          players={players}
+          players={getParticipantPlayers(players, participants)}
           groupCount={groupCount}
           externalGroups={customGroups}
           onGroupsChange={(groups) => {
             const orderedIds = groups.flatMap((g) => g.playerIds);
+            const currentParticipantPlayers = getParticipantPlayers(players, participants);
             const reordered = orderedIds
-              .map((id) => players.find((p) => p.id === id))
+              .map((id) => currentParticipantPlayers.find((p) => p.id === id))
               .filter((p): p is Player => p !== undefined)
               .map((p, i) => ({ ...p, seed: i + 1 }));
-            setPlayers(reordered);
-            setCustomGroupsState({ groups, players: reordered, format, groupCount });
+            // Reorder participants to match new order
+            const reorderedParticipants = reordered
+              .map((rp) => participants.find((p) => p.id === rp.id))
+              .filter((p): p is Participant => p !== undefined)
+              .map((p, i) => ({ ...p, seed: i + 1 }));
+            setParticipants(reorderedParticipants);
+            if (teamSize <= 1) {
+              // For singles, also keep players array in sync with participant order
+              const reorderedPlayers = reorderedParticipants
+                .map((p) => players.find((pl) => pl.id === p.id))
+                .filter((pl): pl is Player => pl !== undefined)
+                .map((pl, i) => ({ ...pl, seed: i + 1 }));
+              setPlayers(reorderedPlayers);
+              setCustomGroupsState({ groups, players: reorderedPlayers, participants: reorderedParticipants, format, groupCount });
+            } else {
+              setCustomGroupsState({ groups, players, participants: reorderedParticipants, format, groupCount });
+            }
           }}
         />
 

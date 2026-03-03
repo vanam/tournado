@@ -12,6 +12,7 @@ import {
   getDoubleElimWinner,
 } from '../../utils/doubleElimUtils';
 import { buildDoubleElimResults } from '../../utils/resultsUtils';
+import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
@@ -35,6 +36,14 @@ export const DoubleElimView = (): ReactElement | null => {
 
   const doubleElim = tournament?.doubleElim;
   const players = useMemo(() => tournament?.players ?? [], [tournament?.players]);
+  const storedParticipants = useMemo(
+    () => ensureParticipants(players, tournament?.participants),
+    [players, tournament?.participants],
+  );
+  const participantPlayers = useMemo(
+    () => getParticipantPlayers(players, storedParticipants),
+    [players, storedParticipants],
+  );
   const scoringMode = tournament?.scoringMode ?? ScoreMode.SETS;
   const maxSets = tournament?.maxSets ?? DEFAULT_MAX_SETS;
 
@@ -45,8 +54,8 @@ export const DoubleElimView = (): ReactElement | null => {
 
   const winnerId = useMemo(() => (doubleElim ? getDoubleElimWinner(doubleElim) : null), [doubleElim]);
   const winner = useMemo(
-    () => (winnerId ? players.find((p) => p.id === winnerId) : null),
-    [players, winnerId]
+    () => (winnerId ? participantPlayers.find((p) => p.id === winnerId) : null),
+    [participantPlayers, winnerId]
   );
   const finalsRoundIndex = doubleElim?.winners.rounds.length ?? 0;
 
@@ -84,7 +93,7 @@ export const DoubleElimView = (): ReactElement | null => {
     <div className="space-y-8">
       {winner && (
         <WinnerBanner
-          label={t('bracket.winner', { name: players.find((p) => p.id === winner.id)?.name ?? '' })}
+          label={t('bracket.winner', { name: winner.name })}
         />
       )}
 
@@ -99,6 +108,7 @@ export const DoubleElimView = (): ReactElement | null => {
             <BracketRounds
               bracket={doubleElim.winners}
               players={players}
+              participants={storedParticipants}
               scoringMode={scoringMode}
               maxSets={maxSets}
               showSeedNumbers
@@ -115,6 +125,7 @@ export const DoubleElimView = (): ReactElement | null => {
               <BracketRounds
                 bracket={doubleElim.losers}
                 players={players}
+                participants={storedParticipants}
                 scoringMode={scoringMode}
                 maxSets={maxSets}
                 showSeedNumbers
@@ -133,6 +144,7 @@ export const DoubleElimView = (): ReactElement | null => {
                 <MatchCard
                   match={finals.grandFinal}
                   players={players}
+                  participants={storedParticipants}
                   canEdit={canEditDoubleElimMatch(doubleElim, finals.grandFinal.id)}
                   scoringMode={scoringMode}
                   maxSets={maxSets}
@@ -149,6 +161,7 @@ export const DoubleElimView = (): ReactElement | null => {
                   <MatchCard
                     match={finals.resetFinal}
                     players={players}
+                    participants={storedParticipants}
                     canEdit={canEditDoubleElimMatch(doubleElim, finals.resetFinal.id)}
                     scoringMode={scoringMode}
                     maxSets={maxSets}
@@ -165,6 +178,7 @@ export const DoubleElimView = (): ReactElement | null => {
             <ScoreModal
               match={editingMatch}
               players={players}
+              participants={storedParticipants}
               scoringMode={scoringMode}
               maxSets={maxSets}
               onSave={handleSave}
@@ -173,7 +187,7 @@ export const DoubleElimView = (): ReactElement | null => {
           )}
         </>
       ) : (
-        <FinalResultsTable results={buildDoubleElimResults(doubleElim, players)} />
+        <FinalResultsTable results={buildDoubleElimResults(doubleElim, participantPlayers)} />
       )}
     </div>
   );

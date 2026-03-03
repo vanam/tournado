@@ -2,14 +2,16 @@ import type { ReactElement } from 'react';
 import { MatchCard } from '../bracket/MatchCard';
 import { canEditMatch } from '../../utils/bracketUtils';
 import { useTranslation } from '../../i18n/useTranslation';
-import type { Bracket, Match, Player, ScoreMode } from '../../types';
+import type { Bracket, Match, Player, Participant, ScoreMode } from '../../types';
 
 const BASE_MATCH_HEIGHT = 64;
+const BASE_MATCH_HEIGHT_DOUBLES = 96;
 const BASE_ROUND_GAP = 8;
 
 interface BracketRoundsProps {
   bracket?: Bracket | null;
   players: Player[];
+  participants?: Participant[] | undefined;
   onEditMatch?: (match: Match) => void;
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
@@ -24,6 +26,7 @@ interface RoundMatchProps {
   roundIndex: number;
   matchHeight: number;
   players: Player[];
+  participants?: Participant[] | undefined;
   bracket: Bracket;
   onEditMatch?: ((match: Match) => void) | undefined;
   scoringMode?: ScoreMode | undefined;
@@ -39,6 +42,7 @@ const RoundMatch = ({
   roundIndex,
   matchHeight,
   players,
+  participants,
   bracket,
   onEditMatch,
   scoringMode,
@@ -68,6 +72,7 @@ const RoundMatch = ({
       <MatchCard
         match={match}
         players={players}
+        participants={participants}
         canEdit={editable}
         wildCardIds={wildCardIds}
         scoringMode={scoringMode}
@@ -86,6 +91,7 @@ interface BracketRoundProps {
   roundIndex: number;
   roundLabel: string | undefined;
   players: Player[];
+  participants?: Participant[] | undefined;
   bracket: Bracket;
   onEditMatch?: ((match: Match) => void) | undefined;
   scoringMode?: ScoreMode | undefined;
@@ -101,6 +107,7 @@ const BracketRound = ({
   roundIndex,
   roundLabel,
   players,
+  participants,
   bracket,
   onEditMatch,
   scoringMode,
@@ -110,7 +117,9 @@ const BracketRound = ({
   groupPlacementByPlayerId,
   showSeedNumbers,
 }: BracketRoundProps): ReactElement => {
-  const matchHeight = BASE_MATCH_HEIGHT * Math.pow(2, roundIndex);
+  const teamSize = participants?.[0]?.playerIds.length ?? 1;
+  const baseMatchHeight = teamSize >= 2 ? BASE_MATCH_HEIGHT_DOUBLES : BASE_MATCH_HEIGHT;
+  const matchHeight = baseMatchHeight * Math.pow(2, roundIndex);
   const roundGap = BASE_ROUND_GAP * Math.pow(2, roundIndex);
   const roundOffset = (BASE_ROUND_GAP / 2) * (Math.pow(2, roundIndex) - 1);
 
@@ -130,6 +139,7 @@ const BracketRound = ({
             roundIndex={roundIndex}
             matchHeight={matchHeight}
             players={players}
+            participants={participants}
             bracket={bracket}
             onEditMatch={onEditMatch}
             scoringMode={scoringMode}
@@ -148,6 +158,7 @@ const BracketRound = ({
 export const BracketRounds = ({
   bracket,
   players,
+  participants,
   onEditMatch,
   scoringMode,
   maxSets,
@@ -177,6 +188,7 @@ export const BracketRounds = ({
             roundIndex={roundIndex}
             roundLabel={roundLabels[roundIndex]}
             players={players}
+            participants={participants}
             bracket={bracket}
             onEditMatch={onEditMatch}
             scoringMode={scoringMode}

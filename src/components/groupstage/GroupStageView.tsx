@@ -7,6 +7,7 @@ import { GroupAdvancersPanel } from './GroupAdvancersPanel';
 import { GroupStageGroups } from './GroupStageGroups';
 import { PlayoffSection } from './PlayoffSection';
 import { ScoreModalWrapper } from './ScoreModalWrapper';
+import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import {
   buildGroupStagePlayoffs,
   getGroupPlayers,
@@ -120,6 +121,14 @@ export const GroupStageView = (): ReactElement | null => {
 
   const groupStage = tournament?.groupStage;
   const players = useMemo(() => tournament?.players ?? [], [tournament?.players]);
+  const storedParticipants = useMemo(
+    () => ensureParticipants(players, tournament?.participants),
+    [players, tournament?.participants],
+  );
+  const participants = useMemo(
+    () => getParticipantPlayers(players, storedParticipants),
+    [players, storedParticipants],
+  );
   const playoffs = tournament ? getPlayoffs(tournament) : null;
 
   const scoringMode = tournament?.scoringMode ?? ScoreMode.SETS;
@@ -128,9 +137,9 @@ export const GroupStageView = (): ReactElement | null => {
   const bracketType = playoffs?.bracketType ?? groupStage?.settings.bracketType ?? BracketType.SINGLE_ELIM;
   const isDoubleElim = bracketType === BracketType.DOUBLE_ELIM;
 
-  const standingsByGroup = useGroupStageStandings(groupStage, players, scoringMode, groupStageMaxSets);
+  const standingsByGroup = useGroupStageStandings(groupStage, participants, scoringMode, groupStageMaxSets);
   const groupComplete = useGroupComplete(groupStage);
-  const advancers = useAdvancers(groupComplete, groupStage, players, scoringMode, groupStageMaxSets);
+  const advancers = useAdvancers(groupComplete, groupStage, participants, scoringMode, groupStageMaxSets);
   const wildCardIds = useWildCardIds(advancers);
   const groupPlacementByPlayerId = useGroupPlacementByPlayerId(advancers, groupStage);
 
@@ -141,8 +150,8 @@ export const GroupStageView = (): ReactElement | null => {
   }, [playoffs, tournament, isDoubleElim]);
 
   const winner = useMemo(
-    () => (winnerId ? players.find((p) => p.id === winnerId) : null),
-    [players, winnerId]
+    () => (winnerId ? participants.find((p) => p.id === winnerId) : null),
+    [participants, winnerId]
   );
 
   useEffect(() => {
@@ -155,7 +164,7 @@ export const GroupStageView = (): ReactElement | null => {
 
     const nextPlayoffs = buildGroupStagePlayoffs(
       groupStage,
-      players,
+      participants,
       { scoringMode, maxSets: groupStageMaxSets }
     );
 
@@ -169,7 +178,7 @@ export const GroupStageView = (): ReactElement | null => {
       winnerId: mainWinner ?? null,
       completedAt: mainWinner ? new Date().toISOString() : null,
     }));
-  }, [advancers, groupComplete, groupStage, playoffs, players, scoringMode, groupStageMaxSets, updateTournament, isDoubleElim, tournament]);
+  }, [advancers, groupComplete, groupStage, playoffs, participants, scoringMode, groupStageMaxSets, updateTournament, isDoubleElim, tournament]);
 
   const activeMatch = useMemo(() => {
     if (!editing || !groupStage) return null;
@@ -188,13 +197,13 @@ export const GroupStageView = (): ReactElement | null => {
   }, [editing, groupStage, playoffs]);
 
   const activePlayers = useMemo(() => {
-    if (!editing || !groupStage) return players;
+    if (!editing || !groupStage) return participants;
     if (editing.type === 'group') {
       const group = groupStage.groups.find((g) => g.id === editing.groupId);
-      return group ? getGroupPlayers(group, players) : players;
+      return group ? getGroupPlayers(group, participants) : participants;
     }
-    return players;
-  }, [editing, groupStage, players]);
+    return participants;
+  }, [editing, groupStage, participants]);
 
   const finalResults = useMemo(() => {
     if (mainTab !== 'results') return [];
@@ -203,26 +212,26 @@ export const GroupStageView = (): ReactElement | null => {
 
     if (playoffs) {
       if (isDoubleElim && playoffs.mainDoubleElim) {
-        mainResults = buildDoubleElimResults(playoffs.mainDoubleElim, players);
+        mainResults = buildDoubleElimResults(playoffs.mainDoubleElim, participants);
       } else if (playoffs.mainBracket) {
-        mainResults = buildBracketResults(playoffs.mainBracket, players);
+        mainResults = buildBracketResults(playoffs.mainBracket, participants);
       }
 
       if (isDoubleElim && playoffs.consolationDoubleElim) {
         consolationResults = offsetResults(
-          buildDoubleElimResults(playoffs.consolationDoubleElim, players),
+          buildDoubleElimResults(playoffs.consolationDoubleElim, participants),
           mainResults.length
         );
       } else if (playoffs.consolationBracket) {
         consolationResults = offsetResults(
-          buildBracketResults(playoffs.consolationBracket, players),
+          buildBracketResults(playoffs.consolationBracket, participants),
           mainResults.length
         );
       }
     }
 
     return sortResults([...mainResults, ...consolationResults]);
-  }, [mainTab, playoffs, players, isDoubleElim]);
+  }, [mainTab, playoffs, participants, isDoubleElim]);
 
   function handleSaveGroupMatch(matchId: string, winnerIdValue: string | null, scores: SetScore[], walkover = false): void {
     if (!groupStage) return;
@@ -245,7 +254,7 @@ export const GroupStageView = (): ReactElement | null => {
       isGroupStageComplete(updatedGroupStage) &&
       !hasExistingPlayoffs
     ) {
-      nextPlayoffs = buildGroupStagePlayoffs(updatedGroupStage, players, { scoringMode, maxSets: groupStageMaxSets });
+      nextPlayoffs = buildGroupStagePlayoffs(updatedGroupStage, participants, { scoringMode, maxSets: groupStageMaxSets });
     }
 
     const mainWinner = getMainWinner(nextPlayoffs, isDoubleElim);
@@ -368,7 +377,9 @@ export const GroupStageView = (): ReactElement | null => {
         <>
           <GroupStageGroups
             groupStage={groupStage}
-            players={players}
+            players={participants}
+            allPlayers={players}
+            participants={storedParticipants}
             standingsByGroup={standingsByGroup}
             wildCardIds={wildCardIds}
             groupTabs={groupTabs}
@@ -392,7 +403,7 @@ export const GroupStageView = (): ReactElement | null => {
           <PlayoffSection
             playoffs={playoffs}
             isDoubleElim={isDoubleElim}
-            players={players}
+            players={participants}
             wildCardIds={wildCardIds}
             groupPlacementByPlayerId={groupPlacementByPlayerId}
             scoringMode={scoringMode}
@@ -407,6 +418,7 @@ export const GroupStageView = (): ReactElement | null => {
             editing={editing}
             activeMatch={activeMatch}
             activePlayers={activePlayers}
+            participants={storedParticipants}
             scoringMode={scoringMode}
             groupStageMaxSets={groupStageMaxSets}
             bracketMaxSets={bracketMaxSets}

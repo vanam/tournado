@@ -1,5 +1,5 @@
 import type { Format, BracketType, ScoreMode } from './enums';
-import type { Player, Bracket, RoundRobinSchedule, DoubleElim } from './core';
+import type { Player, Participant, Bracket, RoundRobinSchedule, DoubleElim } from './core';
 
 // --- Group Stage ---
 
@@ -39,6 +39,8 @@ interface TournamentBase {
   id: string;
   name: string;
   players: Player[];
+  teamSize?: number;
+  participants?: Participant[];
   createdAt: string;
   completedAt?: string | null;
   winnerId?: string | null;

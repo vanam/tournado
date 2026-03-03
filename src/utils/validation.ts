@@ -2,6 +2,7 @@ import { Format, BracketType, ScoreMode } from '../types';
 import type {
   Tournament,
   Player,
+  Participant,
   Match,
   Bracket,
   Round,
@@ -62,6 +63,15 @@ function isValidPlayer(value: unknown): value is Player {
   if (!isString(value['name'])) return false;
   if ('seed' in value && !isNullish(value['seed']) && !isNumber(value['seed'])) return false;
   if ('elo' in value && !isNullish(value['elo']) && !isNumber(value['elo'])) return false;
+  return true;
+}
+
+function isValidParticipant(value: unknown): value is Participant {
+  if (!isObject(value)) return false;
+  if (!isString(value['id'])) return false;
+  if (!isArray(value['playerIds']) || !value['playerIds'].every((p) => isString(p))) return false;
+  if (value['playerIds'].length === 0) return false;
+  if ('seed' in value && !isNullish(value['seed']) && !isNumber(value['seed'])) return false;
   return true;
 }
 
@@ -187,6 +197,12 @@ function isValidTournamentBase(value: unknown): value is Record<string, unknown>
   if ('maxSets' in value && !isNullish(value['maxSets']) && !isNumber(value['maxSets'])) return false;
   if ('groupStageMaxSets' in value && !isNullish(value['groupStageMaxSets']) && !isNumber(value['groupStageMaxSets'])) return false;
   if ('bracketMaxSets' in value && !isNullish(value['bracketMaxSets']) && !isNumber(value['bracketMaxSets'])) return false;
+  if ('teamSize' in value && !isNullish(value['teamSize']) && (!isNumber(value['teamSize']) || !Number.isInteger(value['teamSize']) || value['teamSize'] < 1)) return false;
+  if ('participants' in value && !isNullish(value['participants'])) {
+    if (!isArray(value['participants']) || !value['participants'].every((t) => isValidParticipant(t))) return false;
+    const teamSize = isNumber(value['teamSize']) ? value['teamSize'] : null;
+    if (teamSize !== null && !value['participants'].every((t) => isObject(t) && isArray(t['playerIds']) && t['playerIds'].length === teamSize)) return false;
+  }
   return true;
 }
 

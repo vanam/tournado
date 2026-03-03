@@ -31,6 +31,7 @@ export const en: TranslationMap = {
     one: 'Group {{label}} needs at least {{count}} player',
     other: 'Group {{label}} needs at least {{count}} players',
   },
+  'create.errorIncompleteParticipant': 'All participants must have {{teamSize}} players',
   'create.scoringLabel': 'Scoring',
   'create.scoringSets': 'Games only',
   'create.scoringPoints': 'Points per game',
@@ -341,6 +342,12 @@ export const en: TranslationMap = {
   'players.importDeselectAll': 'Deselect all',
   'players.importAlreadyAdded': 'already added',
   'players.importNoneSelected': 'No players selected',
+
+  'create.teamSize': 'Team size',
+  'create.singles': 'Singles (1v1)',
+  'create.doubles': 'Doubles (2v2)',
+  'players.participant': 'Participant {{n}}',
+  'players.emptySlot': 'Empty slot',
 };
 
 export const cs: TranslationMap = {
@@ -375,6 +382,7 @@ export const cs: TranslationMap = {
     few: 'Skupina {{label}} potřebuje alespoň {{count}} hráče',
     other: 'Skupina {{label}} potřebuje alespoň {{count}} hráčů',
   },
+  'create.errorIncompleteParticipant': 'Každý účastník musí mít {{teamSize}} hráče',
   'create.scoringLabel': 'Způsob počítání',
   'create.scoringSets': 'Jen sety',
   'create.scoringPoints': 'Míčky v setech',
@@ -687,6 +695,12 @@ export const cs: TranslationMap = {
   'players.importDeselectAll': 'Zrušit výběr',
   'players.importAlreadyAdded': 'již přidán',
   'players.importNoneSelected': 'Žádní hráči nevybráni',
+
+  'create.teamSize': 'Velikost týmu',
+  'create.singles': 'Singel (1v1)',
+  'create.doubles': 'Čtyřhra (2v2)',
+  'players.participant': 'Účastník {{n}}',
+  'players.emptySlot': 'Prázdné místo',
 };
 
 export const de: TranslationMap = {
@@ -720,6 +734,7 @@ export const de: TranslationMap = {
     one: 'Gruppe {{label}} benötigt mindestens {{count}} Spieler',
     other: 'Gruppe {{label}} benötigt mindestens {{count}} Spieler',
   },
+  'create.errorIncompleteParticipant': 'Jeder Teilnehmer muss {{teamSize}} Spieler haben',
   'create.scoringLabel': 'Wertung',
   'create.scoringSets': 'Nur Sätze',
   'create.scoringPoints': 'Punkte pro Satz',
@@ -1030,6 +1045,12 @@ export const de: TranslationMap = {
   'players.importDeselectAll': 'Auswahl aufheben',
   'players.importAlreadyAdded': 'bereits hinzugefügt',
   'players.importNoneSelected': 'Keine Spieler ausgewählt',
+
+  'create.teamSize': 'Teamgröße',
+  'create.singles': 'Einzel (1v1)',
+  'create.doubles': 'Doppel (2v2)',
+  'players.participant': 'Teilnehmer {{n}}',
+  'players.emptySlot': 'Leerer Platz',
 };
 
 export const es: TranslationMap = {
@@ -1063,6 +1084,7 @@ export const es: TranslationMap = {
     one: 'El grupo {{label}} necesita al menos {{count}} jugador',
     other: 'El grupo {{label}} necesita al menos {{count}} jugadores',
   },
+  'create.errorIncompleteParticipant': 'Cada participante debe tener {{teamSize}} jugadores',
   'create.scoringLabel': 'Puntuación',
   'create.scoringSets': 'Solo sets',
   'create.scoringPoints': 'Puntos por set',
@@ -1373,4 +1395,10 @@ export const es: TranslationMap = {
   'players.importDeselectAll': 'Deseleccionar todos',
   'players.importAlreadyAdded': 'ya añadido',
   'players.importNoneSelected': 'Ningún jugador seleccionado',
+
+  'create.teamSize': 'Tamaño del equipo',
+  'create.singles': 'Individual (1v1)',
+  'create.doubles': 'Dobles (2v2)',
+  'players.participant': 'Participante {{n}}',
+  'players.emptySlot': 'Lugar vacío',
 };

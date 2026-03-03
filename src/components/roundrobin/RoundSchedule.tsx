@@ -2,11 +2,13 @@ import type { ReactElement } from 'react';
 import { RRMatchCard } from './RrMatchCard';
 import { useTranslation } from '../../i18n/useTranslation';
 import { ScoreMode } from '../../types';
-import type { Match, Player, Round, RoundRobinSchedule } from '../../types';
+import type { Match, Player, Participant, Round, RoundRobinSchedule } from '../../types';
 
 interface ScheduleRoundProps {
   round: Round;
   players: Player[];
+  allPlayers?: Player[] | undefined;
+  participants?: Participant[] | undefined;
   onEditMatch: (match: Match) => void;
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
@@ -17,6 +19,8 @@ interface ScheduleRoundProps {
 const ScheduleRound = ({
   round,
   players,
+  allPlayers,
+  participants,
   onEditMatch,
   scoringMode,
   maxSets,
@@ -48,7 +52,8 @@ const ScheduleRound = ({
           <RRMatchCard
             key={match.id}
             match={match}
-            players={players}
+            players={allPlayers ?? players}
+            participants={participants}
             onEdit={onEditMatch}
             scoringMode={scoringMode}
             maxSets={maxSets}
@@ -62,6 +67,8 @@ const ScheduleRound = ({
 interface RoundScheduleProps {
   schedule: RoundRobinSchedule;
   players: Player[];
+  allPlayers?: Player[] | undefined;
+  participants?: Participant[] | undefined;
   onEditMatch: (match: Match) => void;
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
@@ -72,6 +79,8 @@ interface RoundScheduleProps {
 export const RoundSchedule = ({
   schedule,
   players,
+  allPlayers,
+  participants,
   onEditMatch,
   scoringMode = ScoreMode.SETS,
   maxSets,
@@ -85,6 +94,8 @@ export const RoundSchedule = ({
           key={round.roundNumber}
           round={round}
           players={players}
+          allPlayers={allPlayers}
+          participants={participants}
           onEditMatch={onEditMatch}
           scoringMode={scoringMode}
           maxSets={maxSets}

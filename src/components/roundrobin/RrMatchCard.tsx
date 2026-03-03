@@ -1,37 +1,24 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { formatSetPointEntries, getSetTotals, hasWalkover } from '../../utils/scoreUtils';
+import { getParticipantMembers } from '../../utils/participantUtils';
 import { ScoreMode } from '../../types';
-import type { Match, Player } from '../../types';
+import type { Match, Player, Participant } from '../../types';
+import { MatchSideName, ScoreInfo } from '../bracket/MatchCard';
 
 interface RRMatchCardProps {
   match: Match;
   players: Player[];
+  participants?: Participant[] | undefined;
   onEdit: (match: Match) => void;
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
 }
 
-interface SetPointsProps {
-  entries: { text: string; isWin: boolean }[];
-}
-const SetPoints = ({ entries }: SetPointsProps): ReactElement => (
-  <span className="text-[10px] text-[var(--color-faint)] font-mono whitespace-pre text-right">
-    {entries.map((entry, index) => (
-      <span
-        key={index}
-        className={entry.isWin ? 'font-semibold text-[var(--color-text)]' : ''}
-      >
-        {index > 0 ? ' ' : ''}
-        {entry.text}
-      </span>
-    ))}
-  </span>
-);
-
 export const RRMatchCard = ({
   match,
   players,
+  participants,
   onEdit,
   scoringMode = ScoreMode.SETS,
   maxSets,
@@ -39,6 +26,12 @@ export const RRMatchCard = ({
   const { t } = useTranslation();
   const p1 = players.find((p) => p.id === match.player1Id);
   const p2 = players.find((p) => p.id === match.player2Id);
+  const p1Members = match.player1Id && participants
+    ? getParticipantMembers(match.player1Id, players, participants)
+    : [];
+  const p2Members = match.player2Id && participants
+    ? getParticipantMembers(match.player2Id, players, participants)
+    : [];
   const showPoints = scoringMode === ScoreMode.POINTS;
 
   const { p1Sets, p2Sets } = getSetTotals(match.scores, { scoringMode, maxSets });
@@ -66,23 +59,23 @@ export const RRMatchCard = ({
         }`}
       >
         <span className="truncate flex-1">
-          {p1 ? (
-            <>
-              {p1.name}
-              {p1.elo != null && (
-                <span className="ml-2 font-normal text-[10px] text-[var(--color-muted)]">
-                  {t('players.elo', { elo: p1.elo })}
-                </span>
-              )}
-            </>
-          ) : null}
+          <MatchSideName
+            members={p1Members}
+            player={p1}
+            playerId={match.player1Id}
+            placement={null}
+            seed={null}
+            isWildCard={undefined}
+            t={t}
+          />
         </span>
         {match.winnerId && (
-          <span className="ml-2 text-[var(--color-muted)] flex items-center gap-2 shrink-0">
-            {showPoints && p1SetPointEntries.length > 0 && <SetPoints entries={p1SetPointEntries} />}
-            <span className="text-[var(--color-faintest)]">|</span>
-            <span className="font-mono w-4 text-center">{isWalkover ? 'WO' : p1Sets}</span>
-          </span>
+          <ScoreInfo
+            showPoints={showPoints}
+            setPointEntries={p1SetPointEntries}
+            isWalkover={isWalkover}
+            sets={p1Sets}
+          />
         )}
       </div>
       <div
@@ -91,23 +84,23 @@ export const RRMatchCard = ({
         }`}
       >
         <span className="truncate flex-1">
-          {p2 ? (
-            <>
-              {p2.name}
-              {p2.elo != null && (
-                <span className="ml-2 font-normal text-[10px] text-[var(--color-muted)]">
-                  {t('players.elo', { elo: p2.elo })}
-                </span>
-              )}
-            </>
-          ) : null}
+          <MatchSideName
+            members={p2Members}
+            player={p2}
+            playerId={match.player2Id}
+            placement={null}
+            seed={null}
+            isWildCard={undefined}
+            t={t}
+          />
         </span>
         {match.winnerId && (
-          <span className="ml-2 text-[var(--color-muted)] flex items-center gap-2 shrink-0">
-            {showPoints && p2SetPointEntries.length > 0 && <SetPoints entries={p2SetPointEntries} />}
-            <span className="text-[var(--color-faintest)]">|</span>
-            <span className="font-mono w-4 text-center">{isWalkover ? 'WO' : p2Sets}</span>
-          </span>
+          <ScoreInfo
+            showPoints={showPoints}
+            setPointEntries={p2SetPointEntries}
+            isWalkover={isWalkover}
+            sets={p2Sets}
+          />
         )}
       </div>
     </div>

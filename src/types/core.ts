@@ -7,6 +7,12 @@ export interface Player {
   elo?: number | undefined; // sjednoceno na number
 }
 
+export interface Participant {
+  id: string;
+  playerIds: string[];
+  seed?: number;
+}
+
 export type SetScore = [number, number];
 
 export interface Match {

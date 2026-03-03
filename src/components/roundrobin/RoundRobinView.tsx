@@ -9,6 +9,7 @@ import { WinnerBanner } from '../common/WinnerBanner';
 import { FinalResultsTable } from '../common/FinalResultsTable';
 import { computeStandings, isScheduleComplete } from '../../utils/roundRobinUtils';
 import { buildRoundRobinResults } from '../../utils/resultsUtils';
+import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
@@ -37,9 +38,11 @@ export const RoundRobinView = (): ReactElement | null => {
 
   const handlePrint = useCallback((): void => {
     if (!tournament) return;
+    const storedParticipants = ensureParticipants(tournament.players, tournament.participants);
+    const printParticipants = getParticipantPlayers(tournament.players, storedParticipants);
     setPrintData({
       groupLabel: tournament.name,
-      players: tournament.players,
+      players: printParticipants,
       schedule: tournament.schedule,
       scoringMode: tournament.scoringMode ?? ScoreMode.SETS,
       maxSets: tournament.maxSets ?? DEFAULT_MAX_SETS,
@@ -49,10 +52,12 @@ export const RoundRobinView = (): ReactElement | null => {
   if (!tournament) return null;
 
   const { schedule, players } = tournament;
+  const storedParticipants = ensureParticipants(players, tournament.participants);
+  const participantPlayers = getParticipantPlayers(players, storedParticipants);
   const scoringMode = tournament.scoringMode ?? ScoreMode.SETS;
   const maxSets = tournament.maxSets ?? DEFAULT_MAX_SETS;
 
-  const standings = computeStandings(schedule, players, { scoringMode, maxSets });
+  const standings = computeStandings(schedule, participantPlayers, { scoringMode, maxSets });
   const complete = isScheduleComplete(schedule);
 
   const tabs: { id: RoundRobinTab; label: string }[] = [
@@ -76,8 +81,10 @@ export const RoundRobinView = (): ReactElement | null => {
       }
 
       const nowComplete = isScheduleComplete(updatedSchedule);
+      const prevStoredParticipants = ensureParticipants(prev.players, prev.participants);
+      const prevParticipantPlayers = getParticipantPlayers(prev.players, prevStoredParticipants);
       const newStandings = nowComplete
-        ? computeStandings(updatedSchedule, prev.players, { scoringMode, maxSets })
+        ? computeStandings(updatedSchedule, prevParticipantPlayers, { scoringMode, maxSets })
         : null;
 
       return {
@@ -103,7 +110,9 @@ export const RoundRobinView = (): ReactElement | null => {
       {tab === 'schedule' ? (
         <RoundSchedule
           schedule={schedule}
-          players={players}
+          players={participantPlayers}
+          allPlayers={players}
+          participants={storedParticipants}
           onEditMatch={setEditingMatch}
           scoringMode={scoringMode}
           maxSets={maxSets}
@@ -138,12 +147,12 @@ export const RoundRobinView = (): ReactElement | null => {
                   </svg>
                 </button>
               </div>
-              <ResultsMatrix schedule={schedule} players={players} scoringMode={scoringMode} maxSets={maxSets} />
+              <ResultsMatrix schedule={schedule} players={participantPlayers} scoringMode={scoringMode} maxSets={maxSets} />
             </div>
           )}
           {tab !== 'standings' && tab !== 'matrix' && (
             <div className="mt-6">
-              <FinalResultsTable results={buildRoundRobinResults(schedule, players, { scoringMode })} />
+              <FinalResultsTable results={buildRoundRobinResults(schedule, participantPlayers, { scoringMode })} />
             </div>
           )}
         </>
@@ -153,6 +162,7 @@ export const RoundRobinView = (): ReactElement | null => {
         <ScoreModal
           match={editingMatch}
           players={players}
+          participants={storedParticipants}
           scoringMode={scoringMode}
           maxSets={maxSets}
           onSave={handleSave}

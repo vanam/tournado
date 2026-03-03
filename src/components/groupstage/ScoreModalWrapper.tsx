@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import type { Match, Player, SetScore, ScoreMode } from '../../types';
+import type { Match, Player, Participant, SetScore, ScoreMode } from '../../types';
 import { ScoreModal } from '../ScoreModal';
 
 type EditingType =
@@ -19,6 +19,7 @@ interface ScoreModalWrapperProps {
   readonly editing: EditingState | null;
   readonly activeMatch: Match | null;
   readonly activePlayers: Player[];
+  readonly participants?: Participant[] | undefined;
   readonly scoringMode: ScoreMode;
   readonly groupStageMaxSets: number;
   readonly bracketMaxSets: number;
@@ -35,6 +36,7 @@ export const ScoreModalWrapper = ({
   editing,
   activeMatch,
   activePlayers,
+  participants,
   scoringMode,
   groupStageMaxSets,
   bracketMaxSets,
@@ -49,6 +51,7 @@ export const ScoreModalWrapper = ({
     <ScoreModal
       match={activeMatch}
       players={activePlayers}
+      participants={participants}
       scoringMode={scoringMode}
       maxSets={maxSets}
       onSave={onSave}
