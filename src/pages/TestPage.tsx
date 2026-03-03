@@ -3,6 +3,7 @@ import type {ReactElement, ChangeEvent} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {DEFAULT_MAX_SETS} from '../constants';
 import {persistence} from '../services/persistence';
+import {loadLibrary, saveLibrary} from '../services/playerLibraryService';
 import {generateBracket} from '../utils/bracketUtils';
 import {generateSchedule} from '../utils/roundRobinUtils';
 import {generateSwissInitialSchedule, computeMinTotalRounds} from '../utils/swissUtils';
@@ -23,14 +24,39 @@ const FORMAT_LABELS: Record<Format, string> = {
   [Format.SWISS]: 'Swiss',
 };
 
-function randomElo(): number {
-  const buf = new Uint16Array(1);
+const PLAYER_NAMES = [
+  'Aria', 'Blake', 'Casey', 'Dana', 'Eden', 'Finn', 'Gray', 'Harper',
+  'Ira', 'Jules', 'Kai', 'Lane', 'Morgan', 'Nova', 'Owen', 'Paris',
+  'Quinn', 'Reese', 'Sage', 'Taylor', 'Uma', 'Vale', 'West', 'Xander',
+  'Yara', 'Zoe', 'Alex', 'Brett', 'Chris', 'Drew',
+];
+
+const GROUP_NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta'];
+
+function randomInt(min: number, max: number): number {
+  const buf = new Uint32Array(1);
   crypto.getRandomValues(buf);
   const val = buf[0] ?? 0;
-  return 800 + (val % 801);
+  return min + (val % (max - min + 1));
 }
 
-function generatePlayers(participantCount: number, teamSize: number): Player[] {
+function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = randomInt(0, i);
+    const a = result[i] as T;
+    const b = result[j] as T;
+    result[i] = b;
+    result[j] = a;
+  }
+  return result;
+}
+
+function randomElo(): number {
+  return 800 + randomInt(0, 800);
+}
+
+function generateLibraryPlayers(participantCount: number, teamSize: number): Player[] {
   if (teamSize <= 1) {
     return Array.from({length: participantCount}, (_, i) => ({
       id: crypto.randomUUID(),
@@ -49,6 +75,77 @@ function generatePlayers(participantCount: number, teamSize: number): Player[] {
       elo: randomElo(),
     };
   });
+}
+
+function samplePlayers(participantCount: number, teamSize: number, useLib: boolean): Player[] {
+  const totalNeeded = participantCount * teamSize;
+
+  if (!useLib) {
+    return generateLibraryPlayers(participantCount, teamSize);
+  }
+
+  const lib = loadLibrary();
+  const libPlayers = shuffle(lib.players).slice(0, totalNeeded);
+
+  const fromLib: Player[] = libPlayers.map((entry, i) => ({
+    id: entry.id,
+    name: entry.name,
+    seed: i + 1,
+    elo: entry.elo ?? randomElo(),
+  }));
+
+  if (fromLib.length >= totalNeeded) {
+    return fromLib;
+  }
+
+  // Fill remaining slots with generated players
+  const remaining = totalNeeded - fromLib.length;
+  const libNames = new Set(fromLib.map((p) => p.name));
+  const fallback: Player[] = [];
+  let letterIdx = 0;
+  while (fallback.length < remaining) {
+    const name = String.fromCodePoint(65 + letterIdx);
+    if (!libNames.has(name)) {
+      fallback.push({
+        id: crypto.randomUUID(),
+        name,
+        seed: fromLib.length + fallback.length + 1,
+        elo: randomElo(),
+      });
+    }
+    letterIdx++;
+    if (letterIdx > 25) break;
+  }
+
+  const all = [...fromLib, ...fallback].map((p, i) => ({...p, seed: i + 1}));
+  return all;
+}
+
+function generateRandomLibrary(): string {
+  const usedNames = shuffle([...PLAYER_NAMES]);
+  let nameIdx = 0;
+
+  const groups = GROUP_NAMES.map((groupName) => ({
+    id: crypto.randomUUID(),
+    name: groupName,
+  }));
+
+  const players = groups.flatMap((group) => {
+    const count = randomInt(3, 5);
+    return Array.from({length: count}, () => {
+      const name = usedNames[nameIdx] ?? `Player${nameIdx}`;
+      nameIdx++;
+      return {
+        id: crypto.randomUUID(),
+        name,
+        elo: randomElo(),
+        groupIds: [group.id],
+      };
+    });
+  });
+
+  saveLibrary({groups, players});
+  return `Generated ${groups.length} groups with ${players.length} players.`;
 }
 
 function buildTournament(
@@ -137,8 +234,15 @@ export const TestPage = (): ReactElement => {
   const [groupCount, setGroupCount] = useState(2);
   const [qualifiersPerGroup, setQualifiersPerGroup] = useState(2);
   const [bracketType, setBracketType] = useState<BracketType>(BracketType.SINGLE_ELIM);
+  const [useLibraryPlayers, setUseLibraryPlayers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string[] | null>(null);
+  const [libraryMsg, setLibraryMsg] = useState<string | null>(null);
+
+  function handleGenerateLibrary(): void {
+    const msg = generateRandomLibrary();
+    setLibraryMsg(msg);
+  }
 
   function handleGenerate(): void {
     setError(null);
@@ -165,7 +269,7 @@ export const TestPage = (): ReactElement => {
         if (fmt === Format.GROUPS_TO_BRACKET && n < groupCount * 2) {
           continue;
         }
-        const players = generatePlayers(n, teamSize);
+        const players = samplePlayers(n, teamSize, useLibraryPlayers);
         const participants = buildParticipants(players, teamSize, []);
         const participantPlayers = getParticipantPlayers(players, participants);
         const tournament = buildTournament(
@@ -198,6 +302,21 @@ export const TestPage = (): ReactElement => {
       <h1 className="text-2xl font-bold text-[var(--color-text)] mb-6">Test Tournament Generator</h1>
 
       <div className="space-y-4">
+
+        {/* Player library section */}
+        <div className="border border-[var(--color-border)] rounded-xl p-4 bg-[var(--color-soft)] space-y-3">
+          <p className="text-sm font-medium text-[var(--color-text)]">Player library</p>
+          <p className="text-xs text-[var(--color-muted)]">
+            Generates 4 groups (Alpha–Delta) with 3–5 random named players each and saves them to the library.
+          </p>
+          <Button type="button" onClick={handleGenerateLibrary}>
+            Generate random library
+          </Button>
+          {libraryMsg !== null && (
+            <p className="text-xs text-[var(--color-muted)]">{libraryMsg}</p>
+          )}
+        </div>
+
         <div>
           <Label htmlFor="test-format" className="block text-sm font-medium text-[var(--color-text)] mb-1">
             Format
@@ -333,7 +452,16 @@ export const TestPage = (): ReactElement => {
           </>
         )}
 
-{error !== null && <p className="text-[var(--color-accent)] text-sm">{error}</p>}
+        <Label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+          <input
+            type="checkbox"
+            checked={useLibraryPlayers}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => { setUseLibraryPlayers(e.target.checked); }}
+          />
+          Use library players (fills gaps with A/B/C... if library is too small)
+        </Label>
+
+        {error !== null && <p className="text-[var(--color-accent)] text-sm">{error}</p>}
 
         <Button
           type="button"
