@@ -12,7 +12,7 @@ import type { PlayerLibrary } from '../types';
 interface ImportPlayersModalProps {
   open: boolean;
   onClose: () => void;
-  onImport: (players: Array<{ name: string; elo?: number }>) => void;
+  onImport: (players: Array<{ name: string; elo?: number; libraryId?: string }>) => void;
   existingNames: string[];
 }
 
@@ -63,16 +63,16 @@ export const ImportPlayersModal = ({
       setErrors([{ line: 0, msg: t('players.importNoneSelected') }]);
       return;
     }
-    const playersToImport: Array<{ name: string; elo?: number }> = [];
+    const playersToImport: Array<{ name: string; elo?: number; libraryId?: string }> = [];
     for (const pid of selectedPlayerIds) {
       const player = library.players.find((p) => p.id === pid);
       if (player === undefined) continue;
       if (existingNames.includes(player.name)) continue;
-      playersToImport.push(
-        player.elo === undefined
-          ? { name: player.name }
-          : { name: player.name, elo: player.elo }
-      );
+      playersToImport.push({
+        name: player.name,
+        ...(player.elo !== undefined && { elo: player.elo }),
+        libraryId: player.id,
+      });
     }
     if (playersToImport.length === 0) {
       setErrors([{ line: 0, msg: t('players.importErrorNone') }]);

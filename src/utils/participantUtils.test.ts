@@ -94,4 +94,27 @@ describe('getParticipantPlayers', () => {
     expect(result[1]!.id).toBe('p2');
     expect(result[1]!.name).toBe('Bob');
   });
+
+  it('reproduces bug: libraryId missing from single-player participant linked to player library', () => {
+    // When players are imported from the library, they have libraryId set.
+    // getParticipantPlayers must forward libraryId so standings/results can render profile links.
+    const players: Player[] = [
+      { id: 'p1', name: 'Alice', libraryId: 'lib-1' },
+      { id: 'p2', name: 'Bob' },
+    ];
+    const participants = [makeParticipant('p1', ['p1']), makeParticipant('p2', ['p2'])];
+    const result = getParticipantPlayers(players, participants);
+    expect(result[0]!.libraryId).toBe('lib-1');
+    expect(result[1]!.libraryId).toBeUndefined();
+  });
+
+  it('does not set libraryId for multi-player participants', () => {
+    const players: Player[] = [
+      { id: 'p1', name: 'Alice', libraryId: 'lib-1' },
+      { id: 'p2', name: 'Bob', libraryId: 'lib-2' },
+    ];
+    const participants = [makeParticipant('t1', ['p1', 'p2'])];
+    const result = getParticipantPlayers(players, participants);
+    expect(result[0]!.libraryId).toBeUndefined();
+  });
 });

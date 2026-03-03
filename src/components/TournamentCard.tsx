@@ -5,7 +5,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import type { Tournament } from '../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+import { FormatBadge } from '@/components/ui/FormatBadge';
 
 interface TournamentCardProps {
   tournament: Tournament;
@@ -69,9 +69,7 @@ export const TournamentCard = ({ tournament, onDelete, onDuplicate }: Tournament
             </Button>
           </div>
         </div>
-        <Badge variant="secondary" className="mt-2 w-fit">
-          {t(`format.${tournament.format}`)}
-        </Badge>
+        <FormatBadge format={tournament.format} className="mt-2 w-fit" />
         <CardDescription className="text-sm text-[var(--color-muted)] mt-1">
           {t('tournament.players', { count: tournament.players.length })}
         </CardDescription>

@@ -348,6 +348,16 @@ export const en: TranslationMap = {
   'create.doubles': 'Doubles (2v2)',
   'players.participant': 'Participant {{n}}',
   'players.emptySlot': 'Empty slot',
+
+  'playerProfile.notFoundTitle': 'Player Not Found',
+  'playerProfile.notFoundMessage': 'This player does not exist in the library.',
+  'playerProfile.backToLibrary': 'Back to Player Library',
+  'playerProfile.back': '← Player Library',
+  'playerProfile.tournamentsTitle': 'Tournament History',
+  'playerProfile.noTournaments': 'This player has not participated in any tournament yet.',
+  'playerProfile.winner': 'Winner',
+  'playerProfile.statusCompleted': 'Completed',
+  'playerProfile.statusInProgress': 'In Progress',
 };
 
 export const cs: TranslationMap = {
@@ -701,6 +711,16 @@ export const cs: TranslationMap = {
   'create.doubles': 'Čtyřhra (2v2)',
   'players.participant': 'Účastník {{n}}',
   'players.emptySlot': 'Prázdné místo',
+
+  'playerProfile.notFoundTitle': 'Hráč nenalezen',
+  'playerProfile.notFoundMessage': 'Tento hráč v knihovně neexistuje.',
+  'playerProfile.backToLibrary': 'Zpět do knihovny hráčů',
+  'playerProfile.back': '← Knihovna hráčů',
+  'playerProfile.tournamentsTitle': 'Historie turnajů',
+  'playerProfile.noTournaments': 'Tento hráč zatím nebyl přidán do žádného turnaje.',
+  'playerProfile.winner': 'Vítěz',
+  'playerProfile.statusCompleted': 'Dokončeno',
+  'playerProfile.statusInProgress': 'Probíhá',
 };
 
 export const de: TranslationMap = {
@@ -1051,6 +1071,16 @@ export const de: TranslationMap = {
   'create.doubles': 'Doppel (2v2)',
   'players.participant': 'Teilnehmer {{n}}',
   'players.emptySlot': 'Leerer Platz',
+
+  'playerProfile.notFoundTitle': 'Spieler nicht gefunden',
+  'playerProfile.notFoundMessage': 'Dieser Spieler existiert nicht in der Bibliothek.',
+  'playerProfile.backToLibrary': 'Zurück zur Spielerbibliothek',
+  'playerProfile.back': '← Spielerbibliothek',
+  'playerProfile.tournamentsTitle': 'Turnierverlauf',
+  'playerProfile.noTournaments': 'Dieser Spieler wurde noch keinem Turnier hinzugefügt.',
+  'playerProfile.winner': 'Sieger',
+  'playerProfile.statusCompleted': 'Abgeschlossen',
+  'playerProfile.statusInProgress': 'Läuft',
 };
 
 export const es: TranslationMap = {
@@ -1401,4 +1431,14 @@ export const es: TranslationMap = {
   'create.doubles': 'Dobles (2v2)',
   'players.participant': 'Participante {{n}}',
   'players.emptySlot': 'Lugar vacío',
+
+  'playerProfile.notFoundTitle': 'Jugador no encontrado',
+  'playerProfile.notFoundMessage': 'Este jugador no existe en la biblioteca.',
+  'playerProfile.backToLibrary': 'Volver a la biblioteca de jugadores',
+  'playerProfile.back': '← Biblioteca de jugadores',
+  'playerProfile.tournamentsTitle': 'Historial de torneos',
+  'playerProfile.noTournaments': 'Este jugador aún no ha sido añadido a ningún torneo.',
+  'playerProfile.winner': 'Ganador',
+  'playerProfile.statusCompleted': 'Completado',
+  'playerProfile.statusInProgress': 'En progreso',
 };

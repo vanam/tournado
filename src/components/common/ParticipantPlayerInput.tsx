@@ -53,7 +53,7 @@ export const ParticipantPlayerInput = ({
     syncPlayers(updated);
   }
 
-  function handleImportPlayers(imported: Array<{ name: string; elo?: number }>): void {
+  function handleImportPlayers(imported: Array<{ name: string; elo?: number; libraryId?: string }>): void {
     const merged = [
       ...players,
       ...imported.map((p, i) => {
@@ -63,6 +63,7 @@ export const ParticipantPlayerInput = ({
           seed: players.length + i + 1,
         };
         if (p.elo !== undefined) player.elo = p.elo;
+        if (p.libraryId !== undefined) player.libraryId = p.libraryId;
         return player;
       }),
     ];

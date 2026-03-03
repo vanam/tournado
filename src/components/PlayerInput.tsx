@@ -74,15 +74,19 @@ export const PlayerInput = ({ players, setPlayers, register, errors, setValue, u
     setPlayers(updated);
   }
 
-  function handleImportPlayers(imported: Array<{ name: string; elo?: number }>): void {
+  function handleImportPlayers(imported: Array<{ name: string; elo?: number; libraryId?: string }>): void {
     const merged = [
       ...players,
-      ...imported.map((p, i) => ({
-        id: crypto.randomUUID(),
-        name: p.name,
-        seed: players.length + i + 1,
-        elo: p.elo,
-      })),
+      ...imported.map((p, i) => {
+        const player: Player = {
+          id: crypto.randomUUID(),
+          name: p.name,
+          seed: players.length + i + 1,
+        };
+        if (p.elo !== undefined) player.elo = p.elo;
+        if (p.libraryId !== undefined) player.libraryId = p.libraryId;
+        return player;
+      }),
     ];
     setPlayers(merged);
   }

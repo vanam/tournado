@@ -1,4 +1,5 @@
 import { useState, Fragment, type ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from '../../i18n/useTranslation';
 import { ScoreMode } from '../../types';
 import type { StandingsRow, RoundRobinTiebreakDetails, RoundRobinCriteriaKey, CriteriaRow } from '../../types';
@@ -112,15 +113,18 @@ const ExpandIcon = ({ isExpanded }: { isExpanded: boolean }): ReactElement => (
 
 interface PlayerNameCellProps {
   name: string;
+  libraryId: string | undefined;
   isWildCard: boolean;
   elo: number | null | undefined;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-const PlayerNameCell = ({ name, isWildCard, elo, t }: PlayerNameCellProps): ReactElement => (
+const PlayerNameCell = ({ name, libraryId, isWildCard, elo, t }: PlayerNameCellProps): ReactElement => (
   <TableCell className="py-2.5 pr-3 font-medium">
     <span className="inline-flex items-center gap-2">
-      <span>{name}</span>
+      {libraryId === undefined
+        ? <span>{name}</span>
+        : <Link to={`/players/${libraryId}`} className="hover:text-[var(--color-primary)] hover:underline transition-colors">{name}</Link>}
       {isWildCard && (
         <Badge variant="accent" className="text-[10px] px-1.5 py-0.5">{t('groupStage.wildCardBadge')}</Badge>
       )}
@@ -207,7 +211,7 @@ const StandingsTableRow = ({
           {hasTiebreak && <ExpandIcon isExpanded={isExpanded} />}
           {rank}
         </TableCell>
-        <PlayerNameCell name={row.name} isWildCard={isWildCard} elo={row.elo} t={t} />
+        <PlayerNameCell name={row.name} libraryId={row.libraryId} isWildCard={isWildCard} elo={row.elo} t={t} />
         <TableCell className="py-2.5 pr-3 text-center tabular-nums">{row.played}</TableCell>
         <TableCell className="py-2.5 pr-3 text-center tabular-nums">{row.wins}</TableCell>
         <TableCell className="py-2.5 pr-3 text-center tabular-nums">{row.losses}</TableCell>

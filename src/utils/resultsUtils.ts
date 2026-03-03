@@ -1,8 +1,11 @@
 import { computeStandings } from './roundRobinUtils';
 import { getBracketWinner } from './bracketUtils';
 import { getDoubleElimWinner } from './doubleElimUtils';
-import { ScoreMode } from '../types';
-import type { Player, Bracket, RoundRobinSchedule, StandingsRow, RankedResult, DoubleElim, Match } from '../types';
+import { computeSwissStandings, buildSwissResults } from './swissUtils';
+import { ensureParticipants, getParticipantPlayers } from './participantUtils';
+import { DEFAULT_MAX_SETS } from '../constants';
+import { Format, BracketType, ScoreMode } from '../types';
+import type { Player, Bracket, RoundRobinSchedule, StandingsRow, RankedResult, DoubleElim, Match, Tournament } from '../types';
 
 interface TieKeyRow {
   points?: number | undefined;
@@ -167,6 +170,7 @@ export function buildBracketResults(bracket: Bracket | null, players: Player[]):
     return {
       playerId,
       name: player?.name ?? playerId,
+      ...(player?.libraryId !== undefined && { libraryId: player.libraryId }),
       ...rankByPlayer.get(playerId),
     };
   });
@@ -252,9 +256,51 @@ export function buildDoubleElimResults(doubleElim: DoubleElim | null, players: P
     return {
       playerId,
       name: player?.name ?? playerId,
+      ...(player?.libraryId !== undefined && { libraryId: player.libraryId }),
       ...rankByPlayer.get(playerId),
     };
   });
 
   return sortResults(rows);
+}
+
+export function getTournamentResults(tournament: Tournament): RankedResult[] {
+  const storedParticipants = ensureParticipants(tournament.players, tournament.participants);
+  const participantPlayers = getParticipantPlayers(tournament.players, storedParticipants);
+  const scoringMode = tournament.scoringMode ?? ScoreMode.SETS;
+
+  switch (tournament.format) {
+    case Format.SINGLE_ELIM: {
+      return buildBracketResults(tournament.bracket, participantPlayers);
+    }
+    case Format.DOUBLE_ELIM: {
+      return buildDoubleElimResults(tournament.doubleElim, participantPlayers);
+    }
+    case Format.ROUND_ROBIN: {
+      return buildRoundRobinResults(tournament.schedule, participantPlayers, { scoringMode });
+    }
+    case Format.SWISS: {
+      const maxSets = tournament.maxSets ?? DEFAULT_MAX_SETS;
+      const standings = computeSwissStandings(tournament.schedule, participantPlayers, { scoringMode, maxSets });
+      return buildSwissResults(standings);
+    }
+    case Format.GROUPS_TO_BRACKET: {
+      const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets ?? null;
+      if (playoffs === null) return [];
+      const isDoubleElim = playoffs.bracketType === BracketType.DOUBLE_ELIM;
+      let mainResults: RankedResult[] = [];
+      let consolationResults: RankedResult[] = [];
+      if (isDoubleElim && playoffs.mainDoubleElim) {
+        mainResults = buildDoubleElimResults(playoffs.mainDoubleElim, participantPlayers);
+      } else if (playoffs.mainBracket) {
+        mainResults = buildBracketResults(playoffs.mainBracket, participantPlayers);
+      }
+      if (isDoubleElim && playoffs.consolationDoubleElim) {
+        consolationResults = offsetResults(buildDoubleElimResults(playoffs.consolationDoubleElim, participantPlayers), mainResults.length);
+      } else if (playoffs.consolationBracket) {
+        consolationResults = offsetResults(buildBracketResults(playoffs.consolationBracket, participantPlayers), mainResults.length);
+      }
+      return sortResults([...mainResults, ...consolationResults]);
+    }
+  }
 }

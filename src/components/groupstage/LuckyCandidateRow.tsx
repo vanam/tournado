@@ -1,4 +1,5 @@
 import { Fragment, type ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import type { GroupAdvancerEntry, StandingsRow } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 import { CriteriaTable } from './CriteriaTable';
@@ -59,7 +60,11 @@ export const LuckyCandidateRow = ({
           </span>
           {index + 1}
         </td>
-        <td className="py-2 pr-2 font-medium text-[var(--color-text)]">{player.name}</td>
+        <td className="py-2 pr-2 font-medium text-[var(--color-text)]">
+          {player.libraryId === undefined
+            ? player.name
+            : <Link to={`/players/${player.libraryId}`} className="hover:text-[var(--color-primary)] hover:underline transition-colors">{player.name}</Link>}
+        </td>
         <td className="py-2 pr-2 text-[var(--color-muted)]">
           {t('groupStage.advancerGroupRank', {
             group: groupLabel,

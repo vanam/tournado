@@ -327,12 +327,15 @@ function computeTiebreakApplied(
 function buildFinalRow(
   row: IntermediateRow,
   playerNameMap: Map<string, string>,
-  tiebreakAppliedMap: Map<string, SwissCriteriaKey[]>
+  tiebreakAppliedMap: Map<string, SwissCriteriaKey[]>,
+  playerLibraryIdMap: Map<string, string>
 ): SwissStandingsRow {
   const applied = tiebreakAppliedMap.get(row.playerId) ?? [];
+  const libraryId = playerLibraryIdMap.get(row.playerId);
   const base: SwissStandingsRow = {
     playerId: row.playerId,
     name: playerNameMap.get(row.playerId) ?? '',
+    ...(libraryId !== undefined && { libraryId }),
     elo: row.elo,
     played: row.played,
     wins: row.wins,
@@ -398,7 +401,10 @@ export function computeSwissStandings(
 
   // Phase 5: build final rows
   const playerNameMap = new Map(players.map((p) => [p.id, p.name]));
-  return sortedRows.map((row) => buildFinalRow(row, playerNameMap, tiebreakAppliedMap));
+  const playerLibraryIdMap = new Map(
+    players.filter((p) => p.libraryId !== undefined).map((p) => [p.id, p.libraryId as string])
+  );
+  return sortedRows.map((row) => buildFinalRow(row, playerNameMap, tiebreakAppliedMap, playerLibraryIdMap));
 }
 
 // ─── Round generation ─────────────────────────────────────────────────────────
@@ -513,6 +519,7 @@ export function buildSwissResults(standings: SwissStandingsRow[]): RankedResult[
   return standings.map((row, i) => ({
     playerId: row.playerId,
     name: row.name,
+    ...(row.libraryId !== undefined && { libraryId: row.libraryId }),
     rankStart: i + 1,
     rankEnd: i + 1,
   }));

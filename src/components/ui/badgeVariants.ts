@@ -10,6 +10,11 @@ export const badgeVariants = cva(
         accent: "border-transparent bg-[var(--color-accent-soft)] text-[var(--color-accent)]",
         outline: "border-[var(--color-border)] text-[var(--color-text)]",
         destructive: "border-transparent bg-destructive text-destructive-foreground",
+        rose: "border-transparent bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+        orange: "border-transparent bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+        blue: "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+        purple: "border-transparent bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+        emerald: "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
       },
     },
     defaultVariants: {

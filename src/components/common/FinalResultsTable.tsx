@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import { Trophy, Medal } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import type { RankedResult } from '../../types';
@@ -56,7 +57,11 @@ export const FinalResultsTable = ({ results }: FinalResultsTableProps): ReactEle
               )}
               {rankLabel(row.rankStart, row.rankEnd)}
             </TableCell>
-            <TableCell className="py-2.5 pr-3 font-medium">{row.name}</TableCell>
+            <TableCell className="py-2.5 pr-3 font-medium">
+              {row.libraryId === undefined
+                ? row.name
+                : <Link to={`/players/${row.libraryId}`} className="hover:text-[var(--color-primary)] hover:underline transition-colors">{row.name}</Link>}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

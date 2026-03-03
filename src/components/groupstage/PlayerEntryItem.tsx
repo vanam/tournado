@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import type { GroupAdvancerEntry } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 
@@ -28,7 +29,11 @@ export const PlayerEntryItem = ({
   return (
     <li className="flex items-start justify-between gap-3">
       <div>
-        <div className="text-sm font-medium text-[var(--color-text)]">{player.name}</div>
+        <div className="text-sm font-medium text-[var(--color-text)]">
+          {player.libraryId === undefined
+            ? player.name
+            : <Link to={`/players/${player.libraryId}`} className="hover:text-[var(--color-primary)] hover:underline transition-colors">{player.name}</Link>}
+        </div>
         <div className="text-xs text-[var(--color-muted)]">
           {t('groupStage.advancerGroupRank', {
             group: groupLabel,

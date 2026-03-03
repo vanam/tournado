@@ -5,6 +5,7 @@ export interface Player {
   name: string;
   seed?: number;
   elo?: number | undefined; // sjednoceno na number
+  libraryId?: string;
 }
 
 export interface Participant {

@@ -62,6 +62,10 @@ export function getParticipantPlayers(players: Player[], participants: Participa
     const elo = computeParticipantElo(p.playerIds, players);
     if (elo !== undefined) participant.elo = elo;
     if (p.seed !== undefined) participant.seed = p.seed;
+    if (p.playerIds.length === 1) {
+      const member = players.find((pl) => pl.id === p.playerIds[0]);
+      if (member?.libraryId !== undefined) participant.libraryId = member.libraryId;
+    }
     return participant;
   });
 }

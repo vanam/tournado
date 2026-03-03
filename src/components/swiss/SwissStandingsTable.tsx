@@ -1,4 +1,5 @@
 import { useState, Fragment, type ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from '../../i18n/useTranslation';
 import type { SwissStandingsRow, SwissTiebreakDetails, SwissCriteriaKey } from '../../types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
@@ -156,7 +157,9 @@ export const SwissStandingsTable = ({
                 </TableCell>
                 <TableCell className="py-2.5 pr-3 font-medium">
                   <span className="inline-flex items-center gap-2">
-                    <span>{row.name}</span>
+                    {row.libraryId === undefined
+                      ? <span>{row.name}</span>
+                      : <Link to={`/players/${row.libraryId}`} className="hover:text-[var(--color-primary)] hover:underline transition-colors">{row.name}</Link>}
                     {row.elo != null && (
                       <span className="text-xs font-normal text-[var(--color-muted)]">
                         {t('players.elo', { elo: row.elo })}

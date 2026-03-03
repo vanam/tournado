@@ -5,6 +5,7 @@ import type { Player } from './core';
 export interface StandingsRow {
   playerId: string;
   name: string;
+  libraryId?: string;
   elo?: number | undefined;
   played: number;
   wins: number;
@@ -47,6 +48,7 @@ export interface RoundRobinTiebreakDetails {
 export interface RankedResult {
   playerId: string;
   name: string;
+  libraryId?: string;
   rankStart?: number;
   rankEnd?: number;
 }

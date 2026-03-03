@@ -360,6 +360,7 @@ export function computeStandings(schedule: RoundRobinSchedule, players: Player[]
     stats[p.id] = {
       playerId: p.id,
       name: p.name,
+      ...(p.libraryId !== undefined && { libraryId: p.libraryId }),
       elo: typeof p.elo === 'number' && Number.isFinite(p.elo) ? p.elo : undefined,
       played: 0,
       wins: 0,

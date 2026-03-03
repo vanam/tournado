@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import type { ReactElement, KeyboardEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Pencil, Trash2, Plus, X, Upload } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -52,6 +53,7 @@ export const PlayerLibraryPage = (): ReactElement => {
   // Player form state
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerElo, setNewPlayerElo] = useState('');
+  const [newPlayerEloError, setNewPlayerEloError] = useState(false);
   const [newPlayerGroupIds, setNewPlayerGroupIds] = useState<string[]>([]);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editingPlayerName, setEditingPlayerName] = useState('');
@@ -142,10 +144,20 @@ export const PlayerLibraryPage = (): ReactElement => {
   function handleAddPlayer(): void {
     const trimmed = newPlayerName.trim();
     if (trimmed.length === 0) return;
-    const eloNum = newPlayerElo.trim().length > 0 ? Number(newPlayerElo.trim()) : undefined;
-    setLibrary(addPlayer(trimmed, eloNum, newPlayerGroupIds));
+    const eloRaw = newPlayerElo.trim();
+    if (eloRaw.length > 0) {
+      const eloNum = Number(eloRaw);
+      if (!Number.isInteger(eloNum) || eloNum < 1 || eloNum > 9999) {
+        setNewPlayerEloError(true);
+        return;
+      }
+      setLibrary(addPlayer(trimmed, eloNum, newPlayerGroupIds));
+    } else {
+      setLibrary(addPlayer(trimmed, undefined, newPlayerGroupIds));
+    }
     setNewPlayerName('');
     setNewPlayerElo('');
+    setNewPlayerEloError(false);
     setNewPlayerGroupIds([]);
   }
 
@@ -169,7 +181,12 @@ export const PlayerLibraryPage = (): ReactElement => {
       setEditingPlayerId(null);
       return;
     }
-    const eloNum = editingPlayerElo.trim().length > 0 ? Number(editingPlayerElo.trim()) : undefined;
+    const eloRaw = editingPlayerElo.trim();
+    let eloNum: number | undefined;
+    if (eloRaw.length > 0) {
+      const parsed = Number(eloRaw);
+      eloNum = Number.isInteger(parsed) && parsed >= 1 && parsed <= 9999 ? parsed : undefined;
+    }
     const patch = eloNum === undefined ? { name: trimmed } : { name: trimmed, elo: eloNum };
     setLibrary(updatePlayer(editingPlayerId, patch));
     setEditingPlayerId(null);
@@ -241,51 +258,118 @@ export const PlayerLibraryPage = (): ReactElement => {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-[var(--color-text)]">
-        {t('playerLibrary.title')}
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-[var(--color-text)]">
+          {t('playerLibrary.title')}
+        </h1>
+        {library.players.length > 0 && (
+          <Button
+            variant="secondary-ghost"
+            size="icon"
+            aria-label={t('playerLibrary.deleteAllPlayers')}
+            onClick={() => { setShowDeleteAllPlayersConfirm(true); }}
+            className="h-8 w-8"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
 
-      <div className="flex gap-4 items-start">
-        {/* Left panel: Groups */}
-        <div className="w-56 shrink-0 rounded-lg border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-3 space-y-1">
+      {/* Top row: Add Player (left) + Groups management (right) */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Left: Add Player */}
+        <div className="lg:w-1/2 rounded-lg border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">
+            {t('playerLibrary.addPlayer')}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              value={newPlayerName}
+              onChange={(e) => { setNewPlayerName(e.target.value); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddPlayer(); }}
+              placeholder={t('playerLibrary.playerName')}
+              className="h-8 text-sm w-48"
+            />
+            <div className="flex flex-col gap-0.5">
+              <Input
+                value={newPlayerElo}
+                onChange={(e) => { setNewPlayerElo(e.target.value); setNewPlayerEloError(false); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddPlayer(); }}
+                placeholder={t('playerLibrary.elo')}
+                type="number"
+                min={1}
+                max={9999}
+                className={`h-8 text-sm w-24${newPlayerEloError ? ' border-[var(--color-accent)]' : ''}`}
+              />
+              {newPlayerEloError && (
+                <span className="text-xs text-[var(--color-accent)]">1–9999</span>
+              )}
+            </div>
+          </div>
+
+          {library.groups.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs text-[var(--color-muted)]">{t('playerLibrary.assignGroups')}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 max-h-32 overflow-y-auto">
+                {library.groups.map((g, idx) => (
+                  <label key={g.id} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newPlayerGroupIds.includes(g.id)}
+                      onChange={() => { handleNewPlayerGroupToggle(g.id); }}
+                      className="accent-[var(--color-primary)] h-3.5 w-3.5"
+                    />
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${getGroupColor(idx)}`}>
+                      {g.name}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              onClick={handleAddPlayer}
+              disabled={newPlayerName.trim().length === 0}
+            >
+              {t('playerLibrary.add')}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => { setShowImportModal(true); }}
+              className="flex items-center gap-1.5 text-sm"
+            >
+              <Upload className="h-4 w-4" />
+              {t('players.importTitle')}
+            </Button>
+          </div>
+        </div>
+
+        {/* Right: Groups management */}
+        <div className="lg:w-1/2 rounded-lg border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-4 space-y-1">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">
               {t('playerLibrary.groups')}
             </p>
             {library.groups.length > 0 && (
-              <button
-                type="button"
+              <Button
+                variant="secondary-ghost"
+                size="icon"
                 aria-label={t('playerLibrary.deleteAllGroups')}
                 onClick={() => { setShowDeleteAllGroupsConfirm(true); }}
-                className="p-1 text-[var(--color-muted)] hover:text-[var(--color-accent)] transition-colors"
+                className="h-7 w-7"
               >
                 <Trash2 className="h-3 w-3" />
-              </button>
+              </Button>
             )}
           </div>
 
-          {/* All Players */}
-          <button
-            type="button"
-            onClick={() => { setSelectedGroupId(null); }}
-            className={`w-full text-left px-2 py-1.5 rounded text-sm transition-colors ${
-              selectedGroupId === null
-                ? 'bg-[var(--color-primary)] text-white font-medium'
-                : 'text-[var(--color-text)] hover:bg-[var(--color-soft)]'
-            }`}
-          >
-            {t('playerLibrary.allPlayers')}
-          </button>
-
-          {/* Group list */}
           {library.groups.map((group) => (
             <div
               key={group.id}
-              className={`flex items-center gap-1 rounded transition-colors ${
-                selectedGroupId === group.id
-                  ? 'bg-[var(--color-primary)]/10'
-                  : ''
-              }`}
+              className="flex items-center gap-1 rounded px-1 py-0.5"
             >
               {editingGroupId === group.id ? (
                 <Input
@@ -297,46 +381,41 @@ export const PlayerLibraryPage = (): ReactElement => {
                   className="h-7 text-sm flex-1"
                 />
               ) : (
-                <button
-                  type="button"
-                  onClick={() => { setSelectedGroupId(group.id); }}
-                  className="flex-1 text-left px-2 py-1.5 text-sm text-[var(--color-text)] truncate"
-                >
-                  {group.name}
-                </button>
-              )}
-              {editingGroupId !== group.id && (
                 <>
-                  <button
-                    type="button"
+                  <span className="flex-1 text-sm text-[var(--color-text)] truncate px-1">
+                    {group.name}
+                  </span>
+                  <Button
+                    variant="primary-ghost"
+                    size="icon"
                     aria-label={t('playerLibrary.renameGroup')}
                     onClick={() => { handleStartEditGroup(group); }}
-                    className="p-1 text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors shrink-0"
+                    className="h-7 w-7 shrink-0"
                   >
                     <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="secondary-ghost"
+                    size="icon"
                     aria-label={t('playerLibrary.deleteGroup')}
                     onClick={() => { setDeleteGroupTarget(group); }}
-                    className="p-1 text-[var(--color-muted)] hover:text-[var(--color-accent)] transition-colors shrink-0"
+                    className="h-7 w-7 shrink-0"
                   >
                     <Trash2 className="h-3 w-3" />
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
           ))}
 
           {library.groups.length === 0 && (
-            <p className="text-xs text-[var(--color-faint)] px-2 py-1">
+            <p className="text-xs text-[var(--color-faint)] px-1 py-1">
               {t('playerLibrary.noGroups')}
             </p>
           )}
 
-          {/* Add Group */}
           {showAddGroup ? (
-            <div className="flex gap-1 pt-1">
+            <div className="pt-1">
               <Input
                 ref={groupInputRef}
                 value={newGroupName}
@@ -344,49 +423,57 @@ export const PlayerLibraryPage = (): ReactElement => {
                 onBlur={handleSaveNewGroup}
                 onKeyDown={handleNewGroupKeyDown}
                 placeholder={t('playerLibrary.groupName')}
-                className="h-7 text-sm flex-1"
+                className="h-7 text-sm w-full"
               />
             </div>
           ) : (
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               onClick={handleStartAddGroup}
-              className="w-full text-left px-2 py-1.5 text-sm text-[var(--color-primary-dark)] hover:text-[var(--color-primary)] transition-colors flex items-center gap-1"
             >
               <Plus className="h-3 w-3" />
               {t('playerLibrary.addGroup')}
-            </button>
+            </Button>
           )}
         </div>
+      </div>
 
-        {/* Right panel: Players */}
-        <div className="flex-1 min-w-0 rounded-lg border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[var(--color-text)]">
-              {t('players.title', { count: filteredPlayers.length })}
-            </h2>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="primary-ghost"
-                onClick={() => { setShowImportModal(true); }}
-                className="flex items-center gap-1.5 text-sm"
-              >
-                <Upload className="h-4 w-4" />
-                {t('players.importTitle')}
-              </Button>
-              {library.players.length > 0 && (
-                <button
-                  type="button"
-                  aria-label={t('playerLibrary.deleteAllPlayers')}
-                  onClick={() => { setShowDeleteAllPlayersConfirm(true); }}
-                  className="p-1.5 text-[var(--color-muted)] hover:text-[var(--color-accent)] transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
+      {/* Tabs + Player list */}
+      <div className="rounded-lg border border-[var(--color-border-soft)] bg-[var(--color-surface)]">
+        {/* Tab bar */}
+        <div className="flex items-center gap-0.5 border-b border-[var(--color-border-soft)] overflow-x-auto overflow-y-hidden">
+          <button
+            type="button"
+            onClick={() => { setSelectedGroupId(null); }}
+            className={`px-3 py-2.5 text-sm whitespace-nowrap transition-colors border-b-2 -mb-px ${
+              selectedGroupId === null
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-medium'
+                : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
+            }`}
+          >
+            {t('playerLibrary.allPlayers')} ({library.players.length})
+          </button>
 
+          {library.groups.map((group) => (
+            <button
+              key={group.id}
+              type="button"
+              onClick={() => { setSelectedGroupId(group.id); }}
+              className={`px-3 py-2.5 text-sm whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                selectedGroupId === group.id
+                  ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-medium'
+                  : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
+              }`}
+            >
+              {group.name} ({library.players.filter((p) => p.groupIds.includes(group.id)).length})
+            </button>
+          ))}
+        </div>
+
+        {/* Player panel */}
+        <div className="p-4 space-y-4">
           {filteredPlayers.length === 0 && (
             <p className="text-sm text-[var(--color-muted)]">
               {t('playerLibrary.noPlayers')}
@@ -421,12 +508,19 @@ export const PlayerLibraryPage = (): ReactElement => {
                         onKeyDown={handleEditPlayerKeyDown}
                         placeholder={t('playerLibrary.elo')}
                         type="number"
+                        min={1}
+                        max={9999}
                         className="h-7 text-sm w-20"
                       />
                     </>
                   ) : (
                     <>
-                      <span className="font-medium text-sm text-[var(--color-text)]">{player.name}</span>
+                      <Link
+                        to={`/players/${player.id}`}
+                        className="font-medium text-sm text-[var(--color-text)] hover:text-[var(--color-primary)] hover:underline transition-colors"
+                      >
+                        {player.name}
+                      </Link>
                       <span className="text-xs text-[var(--color-muted)]">
                         {player.elo === undefined ? '—' : t('players.elo', { elo: String(player.elo) })}
                       </span>
@@ -493,80 +587,29 @@ export const PlayerLibraryPage = (): ReactElement => {
 
                   <div className="ml-auto flex items-center gap-1">
                     {!isEditing && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="primary-ghost"
+                        size="icon"
                         aria-label={t('playerLibrary.renameGroup')}
                         onClick={() => { handleStartEditPlayer(player); }}
-                        className="p-1 text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
+                        className="h-7 w-7"
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary-ghost"
+                      size="icon"
                       aria-label={t('playerLibrary.deletePlayer')}
                       onClick={() => { handleDeletePlayer(player.id); }}
-                      className="p-1 text-[var(--color-muted)] hover:text-[var(--color-accent)] transition-colors"
+                      className="h-7 w-7"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
             })}
-          </div>
-
-          {/* Add Player form */}
-          <div className="border-t border-[var(--color-border-soft)] pt-4 space-y-3">
-            <h3 className="text-sm font-semibold text-[var(--color-text)]">
-              {t('playerLibrary.addPlayer')}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              <Input
-                value={newPlayerName}
-                onChange={(e) => { setNewPlayerName(e.target.value); }}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddPlayer(); }}
-                placeholder={t('playerLibrary.playerName')}
-                className="h-8 text-sm w-48"
-              />
-              <Input
-                value={newPlayerElo}
-                onChange={(e) => { setNewPlayerElo(e.target.value); }}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddPlayer(); }}
-                placeholder={t('playerLibrary.elo')}
-                type="number"
-                className="h-8 text-sm w-24"
-              />
-            </div>
-
-            {library.groups.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-xs text-[var(--color-muted)]">{t('playerLibrary.assignGroups')}</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 max-h-32 overflow-y-auto">
-                  {library.groups.map((g, idx) => (
-                    <label key={g.id} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={newPlayerGroupIds.includes(g.id)}
-                        onChange={() => { handleNewPlayerGroupToggle(g.id); }}
-                        className="accent-[var(--color-primary)] h-3.5 w-3.5"
-                      />
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${getGroupColor(idx)}`}>
-                        {g.name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Button
-              variant="secondary"
-              onClick={handleAddPlayer}
-              disabled={newPlayerName.trim().length === 0}
-            >
-              {t('playerLibrary.add')}
-            </Button>
           </div>
         </div>
       </div>

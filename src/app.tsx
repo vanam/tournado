@@ -27,6 +27,7 @@ const FormatsPage = lazy(() => import('./pages/FormatsPage').then(m => ({ defaul
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 const TestPage = lazy(() => import('./pages/TestPage').then(m => ({ default: m.TestPage })));
 const PlayerLibraryPage = lazy(() => import('./pages/PlayerLibraryPage').then(m => ({ default: m.PlayerLibraryPage })));
+const PlayerProfilePage = lazy(() => import('./pages/PlayerProfilePage').then(m => ({ default: m.PlayerProfilePage })));
 
 export const App = (): ReactElement => {
   return (
@@ -87,6 +88,13 @@ export const App = (): ReactElement => {
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
                   <PlayerLibraryPage />
+                </Suspense>
+              </ErrorBoundary>
+            } />
+            <Route path="/players/:id" element={
+              <ErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <PlayerProfilePage />
                 </Suspense>
               </ErrorBoundary>
             } />
