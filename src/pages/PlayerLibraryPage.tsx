@@ -1,20 +1,20 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ReactElement, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Pencil, Trash2, Plus, X, Upload } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import {
-  loadLibrary,
-  addGroup,
-  updateGroup,
-  deleteGroup,
-  addPlayer,
-  updatePlayer,
-  deletePlayer,
-  deleteAllPlayers,
-  deleteAllGroups,
-} from '../services/playerLibraryService';
+  listPlayers,
+  listPlayerGroups,
+  createPlayer,
+  updatePlayer as updatePlayerApi,
+  deletePlayer as deletePlayerApi,
+  deleteAllPlayers as deleteAllPlayersApi,
+  createPlayerGroup,
+  updatePlayerGroup,
+  deletePlayerGroup,
+} from '../api/client';
 import type { PlayerLibrary, PlayerGroup, PlayerLibraryEntry } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { CustomDialog } from '../components/CustomDialog';
@@ -36,11 +36,23 @@ function getGroupColor(index: number): string {
 }
 
 export const PlayerLibraryPage = (): ReactElement => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   usePageTitle(t('playerLibrary.title'));
 
-  const [library, setLibrary] = useState<PlayerLibrary>(() => loadLibrary());
+  const [library, setLibrary] = useState<PlayerLibrary>({ groups: [], players: [] });
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
+  function reloadLibrary(): void {
+    void Promise.all([listPlayers(), listPlayerGroups()]).then(([players, groups]) => {
+      setLibrary({ players, groups });
+    });
+  }
+
+  useEffect(() => {
+    void Promise.all([listPlayers(), listPlayerGroups()]).then(([players, groups]) => {
+      setLibrary({ players, groups });
+    });
+  }, []);
 
   // Group form state
   const [newGroupName, setNewGroupName] = useState('');
@@ -72,9 +84,10 @@ export const PlayerLibraryPage = (): ReactElement => {
   const editGroupInputRef = useRef<HTMLInputElement>(null);
   const editPlayerNameRef = useRef<HTMLInputElement>(null);
 
-  const filteredPlayers = selectedGroupId === null
+  const filteredPlayers = (selectedGroupId === null
     ? library.players
-    : library.players.filter((p) => p.groupIds.includes(selectedGroupId));
+    : library.players.filter((p) => p.groupIds.includes(selectedGroupId))
+  ).toSorted((a, b) => a.name.localeCompare(b.name, language));
 
   // --- Group handlers ---
 
@@ -90,7 +103,7 @@ export const PlayerLibraryPage = (): ReactElement => {
       setShowAddGroup(false);
       return;
     }
-    setLibrary(addGroup(trimmed));
+    void createPlayerGroup({ name: trimmed }).then(reloadLibrary);
     setNewGroupName('');
     setShowAddGroup(false);
   }
@@ -114,7 +127,7 @@ export const PlayerLibraryPage = (): ReactElement => {
     const trimmed = editingGroupName.trim();
     if (editingGroupId === null) return;
     if (trimmed.length > 0) {
-      setLibrary(updateGroup(editingGroupId, trimmed));
+      void updatePlayerGroup(editingGroupId, { name: trimmed }).then(reloadLibrary);
     }
     setEditingGroupId(null);
     setEditingGroupName('');
@@ -135,7 +148,7 @@ export const PlayerLibraryPage = (): ReactElement => {
     if (selectedGroupId === id) {
       setSelectedGroupId(null);
     }
-    setLibrary(deleteGroup(id));
+    void deletePlayerGroup(id).then(reloadLibrary);
     setDeleteGroupTarget(null);
   }
 
@@ -145,16 +158,15 @@ export const PlayerLibraryPage = (): ReactElement => {
     const trimmed = newPlayerName.trim();
     if (trimmed.length === 0) return;
     const eloRaw = newPlayerElo.trim();
-    if (eloRaw.length > 0) {
-      const eloNum = Number(eloRaw);
-      if (!Number.isInteger(eloNum) || eloNum < 1 || eloNum > 9999) {
-        setNewPlayerEloError(true);
-        return;
-      }
-      setLibrary(addPlayer(trimmed, eloNum, newPlayerGroupIds));
-    } else {
-      setLibrary(addPlayer(trimmed, undefined, newPlayerGroupIds));
+    const eloNum = eloRaw.length > 0 ? Number(eloRaw) : undefined;
+    if (eloNum !== undefined && (!Number.isInteger(eloNum) || eloNum < 1 || eloNum > 9999)) {
+      setNewPlayerEloError(true);
+      return;
     }
+    const req = eloNum === undefined
+      ? { name: trimmed, groupIds: newPlayerGroupIds }
+      : { name: trimmed, elo: eloNum, groupIds: newPlayerGroupIds };
+    void createPlayer(req).then(reloadLibrary);
     setNewPlayerName('');
     setNewPlayerElo('');
     setNewPlayerEloError(false);
@@ -188,7 +200,7 @@ export const PlayerLibraryPage = (): ReactElement => {
       eloNum = Number.isInteger(parsed) && parsed >= 1 && parsed <= 9999 ? parsed : undefined;
     }
     const patch = eloNum === undefined ? { name: trimmed } : { name: trimmed, elo: eloNum };
-    setLibrary(updatePlayer(editingPlayerId, patch));
+    void updatePlayerApi(editingPlayerId, patch).then(reloadLibrary);
     setEditingPlayerId(null);
     setEditingPlayerName('');
     setEditingPlayerElo('');
@@ -207,30 +219,34 @@ export const PlayerLibraryPage = (): ReactElement => {
   function handleRemovePlayerGroup(playerId: string, groupId: string): void {
     const player = library.players.find((p) => p.id === playerId);
     if (player === undefined) return;
-    setLibrary(updatePlayer(playerId, { groupIds: player.groupIds.filter((gid) => gid !== groupId) }));
+    void updatePlayerApi(playerId, { groupIds: player.groupIds.filter((gid) => gid !== groupId) }).then(reloadLibrary);
   }
 
   function handleAddGroupToPlayer(playerId: string, groupId: string): void {
     const player = library.players.find((p) => p.id === playerId);
     if (player === undefined) return;
-    setLibrary(updatePlayer(playerId, { groupIds: [...player.groupIds, groupId] }));
+    void updatePlayerApi(playerId, { groupIds: [...player.groupIds, groupId] }).then(reloadLibrary);
     setAddingGroupForPlayerId(null);
   }
 
   function handleDeletePlayer(playerId: string): void {
-    setLibrary(deletePlayer(playerId));
+    const players = library.players.filter((p) => p.id !== playerId);
+    setLibrary((prev) => ({ ...prev, players }));
+    void deletePlayerApi(playerId);
   }
 
   // --- Delete-all handlers ---
 
   function handleDeleteAllPlayers(): void {
-    setLibrary(deleteAllPlayers());
+    setLibrary((prev) => ({ ...prev, players: [] }));
     setShowDeleteAllPlayersConfirm(false);
+    void deleteAllPlayersApi();
   }
 
   function handleDeleteAllGroups(): void {
     setSelectedGroupId(null);
-    setLibrary(deleteAllGroups());
+    const ids = library.groups.map((g) => g.id);
+    void Promise.all(ids.map((id) => deletePlayerGroup(id))).then(reloadLibrary);
     setShowDeleteAllGroupsConfirm(false);
   }
 
@@ -246,11 +262,7 @@ export const PlayerLibraryPage = (): ReactElement => {
     if (parsed.length === 0) { setImportErrors([{ line: 0, msg: t('players.importErrorNone') }]); return; }
 
     const groupIds = selectedGroupId === null ? [] : [selectedGroupId];
-    let lib = loadLibrary();
-    for (const p of parsed) {
-      lib = addPlayer(p.name, p.elo, groupIds);
-    }
-    setLibrary(lib);
+    void Promise.all(parsed.map((p) => createPlayer({ name: p.name, ...(p.elo !== undefined && { elo: p.elo }), groupIds }))).then(reloadLibrary);
     setShowImportModal(false);
     setImportText('');
     setImportErrors([]);

@@ -1,97 +1,118 @@
-import { PLAYER_LIBRARY_KEY } from '../constants';
-import type { PlayerLibrary, PlayerLibraryEntry, PlayerGroup } from '../types';
+import type { PlayerLibrary, PlayerLibraryEntry, PlayerGroup, PlayerLibraryStorageAdapter, PlayerLibraryService } from '../types';
+import { createIndexedDbPlayerLibraryAdapter } from './indexedDbPlayerLibraryAdapter';
 
-export function loadLibrary(): PlayerLibrary {
-  try {
-    const raw = localStorage.getItem(PLAYER_LIBRARY_KEY);
-    if (raw === null) return { groups: [], players: [] };
-    const parsed = JSON.parse(raw) as unknown;
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      Array.isArray((parsed as PlayerLibrary).groups) &&
-      Array.isArray((parsed as PlayerLibrary).players)
-    ) {
-      return parsed as PlayerLibrary;
+export function createPlayerLibraryService(
+  adapter: PlayerLibraryStorageAdapter = createIndexedDbPlayerLibraryAdapter()
+): PlayerLibraryService {
+  const subscribers = new Set<() => void>();
+  let cache: PlayerLibrary | null = null;
+
+  function notify(): void {
+    for (const cb of subscribers) {
+      cb();
     }
-    return { groups: [], players: [] };
-  } catch {
-    return { groups: [], players: [] };
   }
-}
 
-export function saveLibrary(lib: PlayerLibrary): void {
-  localStorage.setItem(PLAYER_LIBRARY_KEY, JSON.stringify(lib));
-}
-
-export function addGroup(name: string): PlayerLibrary {
-  const lib = loadLibrary();
-  const group: PlayerGroup = { id: crypto.randomUUID(), name };
-  lib.groups.push(group);
-  saveLibrary(lib);
-  return lib;
-}
-
-export function updateGroup(id: string, name: string): PlayerLibrary {
-  const lib = loadLibrary();
-  const group = lib.groups.find((g) => g.id === id);
-  if (group !== undefined) {
-    group.name = name;
+  async function getCache(): Promise<PlayerLibrary> {
+    cache ??= await adapter.load();
+    return cache;
   }
-  saveLibrary(lib);
-  return lib;
-}
 
-export function deleteGroup(id: string): PlayerLibrary {
-  const lib = loadLibrary();
-  lib.groups = lib.groups.filter((g) => g.id !== id);
-  lib.players = lib.players.map((p) => ({
-    ...p,
-    groupIds: p.groupIds.filter((gid) => gid !== id),
-  }));
-  saveLibrary(lib);
-  return lib;
-}
-
-export function addPlayer(name: string, elo?: number, groupIds: string[] = []): PlayerLibrary {
-  const lib = loadLibrary();
-  const player: PlayerLibraryEntry = { id: crypto.randomUUID(), name, groupIds };
-  if (elo !== undefined) {
-    player.elo = elo;
+  async function persist(lib: PlayerLibrary): Promise<PlayerLibrary> {
+    cache = lib;
+    await adapter.save(lib);
+    notify();
+    return lib;
   }
-  lib.players.push(player);
-  saveLibrary(lib);
-  return lib;
+
+  return {
+    async loadLibrary(): Promise<PlayerLibrary> {
+      return getCache();
+    },
+
+    async saveLibrary(lib: PlayerLibrary): Promise<void> {
+      await persist(lib);
+    },
+
+    async addGroup(name: string): Promise<PlayerLibrary> {
+      const lib = await getCache();
+      const group: PlayerGroup = { id: crypto.randomUUID(), name };
+      return persist({ ...lib, groups: [...lib.groups, group] });
+    },
+
+    async updateGroup(id: string, name: string): Promise<PlayerLibrary> {
+      const lib = await getCache();
+      return persist({
+        ...lib,
+        groups: lib.groups.map((g) => (g.id === id ? { ...g, name } : g)),
+      });
+    },
+
+    async deleteGroup(id: string): Promise<PlayerLibrary> {
+      const lib = await getCache();
+      return persist({
+        groups: lib.groups.filter((g) => g.id !== id),
+        players: lib.players.map((p) => ({
+          ...p,
+          groupIds: p.groupIds.filter((gid) => gid !== id),
+        })),
+      });
+    },
+
+    async addPlayer(name: string, elo?: number, groupIds: string[] = []): Promise<PlayerLibrary> {
+      const lib = await getCache();
+      const player: PlayerLibraryEntry = { id: crypto.randomUUID(), name, groupIds };
+      if (elo !== undefined) {
+        player.elo = elo;
+      }
+      return persist({ ...lib, players: [...lib.players, player] });
+    },
+
+    async updatePlayer(id: string, patch: Partial<PlayerLibraryEntry>): Promise<PlayerLibrary> {
+      const lib = await getCache();
+      return persist({
+        ...lib,
+        players: lib.players.map((p) =>
+          p.id === id ? ({ ...p, ...patch } as PlayerLibraryEntry) : p
+        ),
+      });
+    },
+
+    async deletePlayer(id: string): Promise<PlayerLibrary> {
+      const lib = await getCache();
+      return persist({ ...lib, players: lib.players.filter((p) => p.id !== id) });
+    },
+
+    async deleteAllPlayers(): Promise<PlayerLibrary> {
+      const lib = await getCache();
+      return persist({ ...lib, players: [] });
+    },
+
+    async deleteAllGroups(): Promise<PlayerLibrary> {
+      const lib = await getCache();
+      return persist({
+        groups: [],
+        players: lib.players.map((p) => ({ ...p, groupIds: [] })),
+      });
+    },
+
+    subscribe(callback: () => void): () => void {
+      subscribers.add(callback);
+      return () => subscribers.delete(callback);
+    },
+  };
 }
 
-export function updatePlayer(id: string, patch: Partial<Omit<PlayerLibraryEntry, 'id'>>): PlayerLibrary {
-  const lib = loadLibrary();
-  const idx = lib.players.findIndex((p) => p.id === id);
-  if (idx !== -1) {
-    lib.players[idx] = { ...lib.players[idx], ...patch } as PlayerLibraryEntry;
-  }
-  saveLibrary(lib);
-  return lib;
-}
+const _service = createPlayerLibraryService();
 
-export function deletePlayer(id: string): PlayerLibrary {
-  const lib = loadLibrary();
-  lib.players = lib.players.filter((p) => p.id !== id);
-  saveLibrary(lib);
-  return lib;
-}
-
-export function deleteAllPlayers(): PlayerLibrary {
-  const lib = loadLibrary();
-  lib.players = [];
-  saveLibrary(lib);
-  return lib;
-}
-
-export function deleteAllGroups(): PlayerLibrary {
-  const lib = loadLibrary();
-  lib.groups = [];
-  lib.players = lib.players.map((p) => ({ ...p, groupIds: [] }));
-  saveLibrary(lib);
-  return lib;
-}
+export const loadLibrary = (): Promise<PlayerLibrary> => _service.loadLibrary();
+export const saveLibrary = (lib: PlayerLibrary): Promise<void> => _service.saveLibrary(lib);
+export const addGroup = (name: string): Promise<PlayerLibrary> => _service.addGroup(name);
+export const updateGroup = (id: string, name: string): Promise<PlayerLibrary> => _service.updateGroup(id, name);
+export const deleteGroup = (id: string): Promise<PlayerLibrary> => _service.deleteGroup(id);
+export const addPlayer = (name: string, elo?: number, groupIds?: string[]): Promise<PlayerLibrary> => _service.addPlayer(name, elo, groupIds);
+export const updatePlayer = (id: string, patch: Partial<PlayerLibraryEntry>): Promise<PlayerLibrary> => _service.updatePlayer(id, patch);
+export const deletePlayer = (id: string): Promise<PlayerLibrary> => _service.deletePlayer(id);
+export const deleteAllPlayers = (): Promise<PlayerLibrary> => _service.deleteAllPlayers();
+export const deleteAllGroups = (): Promise<PlayerLibrary> => _service.deleteAllGroups();
+export const subscribeToPlayerLibrary = (callback: () => void): (() => void) => _service.subscribe(callback);

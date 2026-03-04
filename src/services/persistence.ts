@@ -1,9 +1,8 @@
 import type { Tournament, TournamentStorageAdapter, PersistenceService } from '../types';
-import { createLocalStorageAdapter } from './localStorageAdapter';
-import { STORAGE_KEY } from '../constants';
+import { createIndexedDbAdapter } from './indexedDbAdapter';
 
 export function createPersistenceService(
-  adapter: TournamentStorageAdapter = createLocalStorageAdapter()
+  adapter: TournamentStorageAdapter = createIndexedDbAdapter()
 ): PersistenceService {
   const subscribers = new Set<() => void>();
   const cache = new Map<string, Tournament>();
@@ -14,45 +13,36 @@ export function createPersistenceService(
     }
   }
 
-  if (typeof window !== 'undefined') {
-    window.addEventListener('storage', (event: StorageEvent) => {
-      if (event.storageArea !== localStorage) return;
-      if (event.key !== null && event.key !== STORAGE_KEY) return;
-      cache.clear();
-      notify();
-    });
-  }
-
   return {
-    save(tournament: Tournament): void {
+    async save(tournament: Tournament): Promise<void> {
       cache.set(tournament.id, tournament);
-      adapter.save(tournament);
+      await adapter.save(tournament);
       notify();
     },
 
-    load(id: string): Tournament | null {
+    async load(id: string): Promise<Tournament | null> {
       const cached = cache.get(id);
       if (cached) return cached;
-      const tournament = adapter.load(id);
+      const tournament = await adapter.load(id);
       if (tournament) {
         cache.set(id, tournament);
       }
       return tournament;
     },
 
-    loadAll(): Tournament[] {
+    async loadAll(): Promise<Tournament[]> {
       return adapter.loadAll();
     },
 
-    delete(id: string): void {
+    async delete(id: string): Promise<void> {
       cache.delete(id);
-      adapter.delete(id);
+      await adapter.delete(id);
       notify();
     },
 
-    deleteAll(): void {
+    async deleteAll(): Promise<void> {
       cache.clear();
-      adapter.deleteAll();
+      await adapter.deleteAll();
       notify();
     },
 

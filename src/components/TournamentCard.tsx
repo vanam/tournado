@@ -2,13 +2,13 @@ import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Copy, Trash2, User, Users } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
-import type { Tournament } from '../types';
+import type { TournamentSummary } from '../api/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { FormatBadge } from '@/components/ui/FormatBadge';
 
 interface TournamentCardProps {
-  tournament: Tournament;
+  tournament: TournamentSummary;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
 }
@@ -16,9 +16,7 @@ interface TournamentCardProps {
 export const TournamentCard = ({ tournament, onDelete, onDuplicate }: TournamentCardProps): ReactElement => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const winner = tournament.winnerId
-    ? tournament.players.find((p) => p.id === tournament.winnerId)
-    : null;
+  const isCompleted = !!tournament.winnerId;
 
   const handleCardActivate = (): void => {
     void navigate(`/tournament/${tournament.id}`);
@@ -26,7 +24,7 @@ export const TournamentCard = ({ tournament, onDelete, onDuplicate }: Tournament
 
   return (
     <Card
-      className={`group cursor-pointer hover:shadow-lg hover:border-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200${tournament.winnerId ? ' brightness-95' : ''}`}
+      className={`group cursor-pointer hover:shadow-lg hover:border-[var(--color-primary)] hover:-translate-y-0.5 transition-all duration-200${isCompleted ? ' brightness-95' : ''}`}
       role="button"
       tabIndex={0}
       onClick={handleCardActivate}
@@ -74,18 +72,16 @@ export const TournamentCard = ({ tournament, onDelete, onDuplicate }: Tournament
           {tournament.teamSize === 2 ? <Users className="h-3.5 w-3.5 shrink-0" /> : <User className="h-3.5 w-3.5 shrink-0" />}
           <span>{tournament.teamSize === 2 ? '2v2' : '1v1'}</span>
           <span>·</span>
-          <span>{t('tournament.players', { count: tournament.players.length })}</span>
+          <span>{t('tournament.players', { count: tournament.playerCount })}</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="p-5 pt-0">
         <p className="text-xs text-[var(--color-subtle)]">
           {t('card.created', { date: new Date(tournament.createdAt).toLocaleDateString() })}
         </p>
-        {winner && (
+        {isCompleted && (
           <p className="text-xs text-[var(--color-subtle)] font-medium mt-2">
-            {t('card.winner', {
-              name: winner.name,
-            })}
+            {t('playerProfile.statusCompleted')}
           </p>
         )}
       </CardContent>

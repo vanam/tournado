@@ -13,6 +13,7 @@ import { ensureParticipants, getParticipantPlayers } from '../../utils/participa
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
+import { recordScore, clearScore } from '../../api/client';
 import { ScoreMode, Format } from '../../types';
 import type { Match, RoundRobinTournament, SetScore } from '../../types';
 import { RoundSchedule } from './RoundSchedule';
@@ -22,7 +23,7 @@ import type { GroupPrintData } from '../groupstage/GroupPrintView';
 type RoundRobinTab = 'standings' | 'matrix' | 'schedule' | 'results';
 
 export const RoundRobinView = (): ReactElement | null => {
-  const { tournament, updateTournament } = useTypedTournament<RoundRobinTournament>(Format.ROUND_ROBIN);
+  const { tournament, reloadTournament } = useTypedTournament<RoundRobinTournament>(Format.ROUND_ROBIN);
   const [tab, setTab] = useState<RoundRobinTab>('standings');
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [printData, setPrintData] = useState<GroupPrintData | null>(null);
@@ -59,6 +60,7 @@ export const RoundRobinView = (): ReactElement | null => {
 
   const standings = computeStandings(schedule, participantPlayers, { scoringMode, maxSets });
   const complete = isScheduleComplete(schedule);
+  const { id: tournamentId } = tournament;
 
   const tabs: { id: RoundRobinTab; label: string }[] = [
     { id: 'standings', label: t('roundRobin.standings') },
@@ -68,33 +70,10 @@ export const RoundRobinView = (): ReactElement | null => {
   ];
 
   function handleSave(matchId: string, winnerId: string | null, scores: SetScore[], walkover = false): void {
-    updateTournament((prev) => {
-      const updatedSchedule = structuredClone(prev.schedule);
-      for (const round of updatedSchedule.rounds) {
-        const match = round.matches.find((m) => m.id === matchId);
-        if (match) {
-          match.winnerId = winnerId;
-          match.scores = scores;
-          match.walkover = walkover;
-          break;
-        }
-      }
-
-      const nowComplete = isScheduleComplete(updatedSchedule);
-      const prevStoredParticipants = ensureParticipants(prev.players, prev.participants);
-      const prevParticipantPlayers = getParticipantPlayers(prev.players, prevStoredParticipants);
-      const newStandings = nowComplete
-        ? computeStandings(updatedSchedule, prevParticipantPlayers, { scoringMode, maxSets })
-        : null;
-
-      return {
-        ...prev,
-        schedule: updatedSchedule,
-        winnerId: nowComplete ? newStandings?.[0]?.playerId ?? null : null,
-        completedAt: nowComplete ? new Date().toISOString() : null,
-      };
-    });
-    setEditingMatch(null);
+    const scoreOp = winnerId === null
+      ? clearScore(tournamentId, matchId)
+      : recordScore(tournamentId, matchId, { scores, walkover });
+    void scoreOp.then(reloadTournament).then(() => { setEditingMatch(null); });
   }
 
   return (

@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useSyncExternalStore, type ReactElement, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import type { Tournament } from '../types';
-import { persistence } from '../services/persistence';
+import { getTournament } from '../api/client';
 import { TournamentContext } from './tournamentContext';
 
 interface TournamentProviderProps {
@@ -9,22 +9,31 @@ interface TournamentProviderProps {
 }
 
 export const TournamentProvider = ({ tournamentId, children }: TournamentProviderProps): ReactElement => {
-  const tournament = useSyncExternalStore(
-    persistence.subscribe,
-    useCallback(() => persistence.load(tournamentId), [tournamentId])
-  );
+  const [state, setState] = useState<{ tournament: Tournament | null; isLoading: boolean }>({
+    tournament: null,
+    isLoading: true,
+  });
 
-  const updateTournament = useCallback((updater: (prev: Tournament) => Tournament) => {
-    const current = persistence.load(tournamentId);
-    if (!current) return;
-    persistence.save(updater(current));
+  const reloadTournament = useCallback(async (): Promise<void> => {
+    const t = await getTournament(tournamentId);
+    setState((prev) => ({ ...prev, tournament: t }));
+  }, [tournamentId]);
+
+  useEffect(() => {
+    let active = true;
+    void getTournament(tournamentId).then((t) => {
+      if (active) {
+        setState({ tournament: t, isLoading: false });
+      }
+    });
+    return (): void => { active = false; };
   }, [tournamentId]);
 
   const contextValue = useMemo(() => ({
-    tournament,
-    updateTournament,
-    isLoading: false,
-  }), [tournament, updateTournament]);
+    tournament: state.tournament,
+    reloadTournament,
+    isLoading: state.isLoading,
+  }), [state.tournament, state.isLoading, reloadTournament]);
 
   return (
     <TournamentContext.Provider value={contextValue}>

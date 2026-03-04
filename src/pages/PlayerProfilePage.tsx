@@ -1,12 +1,11 @@
-import { type ReactElement, useState } from 'react';
+import { type ReactElement, useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { User, Users } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
-import { loadLibrary } from '../services/playerLibraryService';
-import { persistence } from '../services/persistence';
-import { getTournamentResults } from '../utils/resultsUtils';
-import type { Tournament } from '../types';
+import { getPlayerProfile, listPlayerGroups } from '../api/client';
+import type { PlayerProfile } from '../api/types';
+import type { PlayerGroup } from '../types';
 import { FormatBadge } from '../components/ui/FormatBadge';
 import { TabBar } from '../components/common/TabBar';
 
@@ -21,12 +20,6 @@ const GROUP_COLORS = [
 
 function getGroupColor(index: number): string {
   return GROUP_COLORS[index % GROUP_COLORS.length] ?? 'bg-gray-100 text-gray-800';
-}
-
-interface TournamentEntry {
-  tournament: Tournament;
-  rankStart?: number | undefined;
-  rankEnd?: number | undefined;
 }
 
 function rankLabel(rankStart: number, rankEnd: number): string {
@@ -52,59 +45,58 @@ const RankBadge = ({ rankStart, rankEnd }: RankBadgeProps): ReactElement => (
   </span>
 );
 
-function getTournamentEntries(libraryId: string): TournamentEntry[] {
-  const tournaments = persistence.loadAll();
-  const entries: TournamentEntry[] = [];
-
-  for (const tournament of tournaments) {
-    const matchedPlayer = tournament.players.find((p) => p.libraryId === libraryId);
-    if (matchedPlayer === undefined) continue;
-
-    const isCompleted = tournament.winnerId !== undefined && tournament.winnerId !== null;
-    let rankStart: number | undefined;
-    let rankEnd: number | undefined;
-
-    if (isCompleted) {
-      const results = getTournamentResults(tournament);
-      const result = results.find((r) => r.libraryId === libraryId);
-      if (result?.rankStart !== undefined) {
-        rankStart = result.rankStart;
-        rankEnd = result.rankEnd ?? result.rankStart;
-      }
-    }
-
-    entries.push({ tournament, rankStart, rankEnd });
-  }
-
-  return entries.toSorted((a, b) => {
-    const aInProgress = a.tournament.winnerId === undefined || a.tournament.winnerId === null;
-    const bInProgress = b.tournament.winnerId === undefined || b.tournament.winnerId === null;
-    if (aInProgress && !bInProgress) return -1;
-    if (!aInProgress && bInProgress) return 1;
-    return b.tournament.createdAt.localeCompare(a.tournament.createdAt);
-  });
-}
-
 export const PlayerProfilePage = (): ReactElement => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
 
-  const library = loadLibrary();
-  const libraryEntry = id === undefined ? undefined : library.players.find((p) => p.id === id);
+  const [profile, setProfile] = useState<PlayerProfile | null>(null);
+  const [groups, setGroups] = useState<PlayerGroup[]>([]);
+  const [isLoading, setIsLoading] = useState(id !== undefined);
+  const [isNotFound, setIsNotFound] = useState(false);
 
-  usePageTitle(libraryEntry === undefined ? t('playerProfile.notFoundTitle') : libraryEntry.name);
+  useEffect(() => {
+    if (id === undefined) return;
+    void Promise.all([getPlayerProfile(id), listPlayerGroups()])
+      .then(([p, g]) => {
+        setProfile(p);
+        setGroups(g);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setIsNotFound(true);
+        setIsLoading(false);
+      });
+  }, [id]);
 
-  const entries = libraryEntry === undefined ? [] : getTournamentEntries(libraryEntry.id);
-  const years = [...new Set(entries.map((e) => new Date(e.tournament.createdAt).getFullYear()))]
+  usePageTitle(profile === null ? t('playerProfile.notFoundTitle') : profile.name);
+
+  const entries = profile === null ? [] : profile.tournaments.toSorted((a, b) => {
+    if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+
+  const years = [...new Set(entries.map((e) => new Date(e.createdAt).getFullYear()))]
     .toSorted((a, b) => b - a)
     .map(String);
-  const [activeYear, setActiveYear] = useState<string>(years.at(0) ?? '');
+  const defaultYear = years.at(0) ?? '';
+  const [activeYear, setActiveYear] = useState<string>('');
   const yearTabs = years.map((y) => ({ id: y, label: y }));
+
+  const effectiveYear = activeYear === '' ? defaultYear : activeYear;
+
   const visibleEntries = entries.filter(
-    (e) => String(new Date(e.tournament.createdAt).getFullYear()) === activeYear,
+    (e) => String(new Date(e.createdAt).getFullYear()) === effectiveYear,
   );
 
-  if (libraryEntry === undefined) {
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-[var(--color-muted)]">{t('tournament.loading')}</p>
+      </div>
+    );
+  }
+
+  if (isNotFound || profile === null) {
     return (
       <div className="space-y-4">
         <Link
@@ -141,18 +133,18 @@ export const PlayerProfilePage = (): ReactElement => {
           {t('playerProfile.back')}
         </Link>
         <div className="mt-3 flex items-baseline gap-3">
-          <h1 className="text-2xl font-bold text-[var(--color-text)]">{libraryEntry.name}</h1>
-          {libraryEntry.elo !== undefined && (
+          <h1 className="text-2xl font-bold text-[var(--color-text)]">{profile.name}</h1>
+          {profile.elo !== undefined && (
             <span className="text-sm text-[var(--color-muted)]">
-              {t('players.elo', { elo: String(libraryEntry.elo) })}
+              {t('players.elo', { elo: String(profile.elo) })}
             </span>
           )}
         </div>
-        {libraryEntry.groupIds.length > 0 && (
+        {profile.groupIds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {libraryEntry.groupIds.map((gid) => {
-              const colorIdx = library.groups.findIndex((g) => g.id === gid);
-              const group = library.groups.find((g) => g.id === gid);
+            {profile.groupIds.map((gid) => {
+              const colorIdx = groups.findIndex((g) => g.id === gid);
+              const group = groups.find((g) => g.id === gid);
               if (group === undefined) return null;
               return (
                 <span
@@ -177,39 +169,38 @@ export const PlayerProfilePage = (): ReactElement => {
           </p>
         ) : (
           <>
-            <TabBar tabs={yearTabs} activeId={activeYear} onChange={setActiveYear} />
+            <TabBar tabs={yearTabs} activeId={effectiveYear} onChange={setActiveYear} />
             <div className="space-y-2">
-              {visibleEntries.map(({ tournament, rankStart, rankEnd }) => {
-                const isInProgress = tournament.winnerId === undefined || tournament.winnerId === null;
-                const date = new Date(tournament.createdAt);
+              {visibleEntries.map((entry) => {
+                const date = new Date(entry.createdAt);
                 return (
                   <Link
-                    key={tournament.id}
-                    to={`/tournament/${tournament.id}`}
+                    key={entry.tournamentId}
+                    to={`/tournament/${entry.tournamentId}`}
                     className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--color-border-soft)] bg-[var(--color-surface)] px-4 py-3 hover:border-[var(--color-primary)] hover:bg-[var(--color-soft)] transition-colors"
                   >
                     <span className="font-medium text-sm text-[var(--color-text)] flex-1">
-                      {tournament.name}
+                      {entry.tournamentName}
                     </span>
-                    {!isInProgress && rankStart !== undefined && rankEnd !== undefined && (
-                        <RankBadge rankStart={rankStart} rankEnd={rankEnd} />
+                    {entry.isCompleted && entry.rankStart !== undefined && entry.rankEnd !== undefined && (
+                      <RankBadge rankStart={entry.rankStart} rankEnd={entry.rankEnd} />
                     )}
-                    {!isInProgress && rankStart === undefined && (
-                        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-muted)]">
+                    {entry.isCompleted && entry.rankStart === undefined && (
+                      <span className="inline-flex items-center rounded-full border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-muted)]">
                         {t('playerProfile.statusCompleted')}
                       </span>
                     )}
-                    {isInProgress && (
-                        <span className="inline-flex items-center rounded-full bg-[var(--color-soft)] border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text)]">
+                    {!entry.isCompleted && (
+                      <span className="inline-flex items-center rounded-full bg-[var(--color-soft)] border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text)]">
                         {t('playerProfile.statusInProgress')}
                       </span>
                     )}
-                    <FormatBadge format={tournament.format} />
+                    <FormatBadge format={entry.format} />
                     <span className="flex items-center gap-1 text-xs text-[var(--color-faint)]">
-                      {tournament.teamSize === 2 ? <Users className="h-3.5 w-3.5 shrink-0" /> : <User className="h-3.5 w-3.5 shrink-0" />}
-                      <span>{tournament.teamSize === 2 ? '2v2' : '1v1'}</span>
+                      {entry.teamSize === 2 ? <Users className="h-3.5 w-3.5 shrink-0" /> : <User className="h-3.5 w-3.5 shrink-0" />}
+                      <span>{entry.teamSize === 2 ? '2v2' : '1v1'}</span>
                       <span>|</span>
-                      <span>{t('tournament.players', { count: tournament.players.length })}</span>
+                      <span>{t('tournament.players', { count: entry.playerCount })}</span>
                       <span>|</span>
                       <span>{date.toLocaleDateString()}</span>
                     </span>

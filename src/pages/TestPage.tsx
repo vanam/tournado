@@ -2,16 +2,16 @@ import {useState} from 'react';
 import type {ReactElement, ChangeEvent} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {DEFAULT_MAX_SETS} from '../constants';
-import {persistence} from '../services/persistence';
-import {loadLibrary, saveLibrary} from '../services/playerLibraryService';
-import {generateBracket} from '../utils/bracketUtils';
-import {generateSchedule} from '../utils/roundRobinUtils';
-import {generateSwissInitialSchedule, computeMinTotalRounds} from '../utils/swissUtils';
-import {createGroupStage} from '../utils/groupStageUtils';
-import {generateDoubleElim} from '../utils/doubleElimUtils';
-import {buildParticipants, getParticipantPlayers} from '../utils/participantUtils';
+import {
+  createTournament as createTournamentApi,
+  listPlayers as listPlayersApi,
+  createPlayer as createPlayerApi,
+  createPlayerGroup as createPlayerGroupApi,
+} from '../api/client';
+import type {CreateTournamentRequest} from '../api/types';
+import {computeMinTotalRounds} from '../utils/swissUtils';
 import {BracketType, Format, ScoreMode} from '../types';
-import type {Player, Participant, Tournament} from '../types';
+import type {Player} from '../types';
 import {Button} from '@/components/ui/Button';
 import {Input} from '@/components/ui/Input';
 import {Label} from '@/components/ui/Label';
@@ -77,21 +77,21 @@ function generateLibraryPlayers(participantCount: number, teamSize: number): Pla
   });
 }
 
-function samplePlayers(participantCount: number, teamSize: number, useLib: boolean): Player[] {
+async function samplePlayers(participantCount: number, teamSize: number, useLib: boolean): Promise<Player[]> {
   const totalNeeded = participantCount * teamSize;
 
   if (!useLib) {
     return generateLibraryPlayers(participantCount, teamSize);
   }
 
-  const lib = loadLibrary();
-  const libPlayers = shuffle(lib.players).slice(0, totalNeeded);
+  const libPlayers = shuffle(await listPlayersApi()).slice(0, totalNeeded);
 
   const fromLib: Player[] = libPlayers.map((entry, i) => ({
     id: entry.id,
     name: entry.name,
     seed: i + 1,
     elo: entry.elo ?? randomElo(),
+    libraryId: entry.id,
   }));
 
   if (fromLib.length >= totalNeeded) {
@@ -121,106 +121,62 @@ function samplePlayers(participantCount: number, teamSize: number, useLib: boole
   return all;
 }
 
-function generateRandomLibrary(): string {
+async function generateRandomLibrary(): Promise<string> {
   const usedNames = shuffle([...PLAYER_NAMES]);
   let nameIdx = 0;
 
-  const groups = GROUP_NAMES.map((groupName) => ({
-    id: crypto.randomUUID(),
-    name: groupName,
-  }));
+  const createdGroups = await Promise.all(
+    GROUP_NAMES.map((name) => createPlayerGroupApi({name}))
+  );
 
-  const players = groups.flatMap((group) => {
+  const playerDefs: Array<{name: string; elo: number; groupIds: string[]}> = [];
+  for (const group of createdGroups) {
     const count = randomInt(3, 5);
-    return Array.from({length: count}, () => {
+    for (let i = 0; i < count; i++) {
       const name = usedNames[nameIdx] ?? `Player${nameIdx}`;
       nameIdx++;
-      return {
-        id: crypto.randomUUID(),
-        name,
-        elo: randomElo(),
-        groupIds: [group.id],
-      };
-    });
-  });
+      playerDefs.push({name, elo: randomElo(), groupIds: [group.id]});
+    }
+  }
 
-  saveLibrary({groups, players});
-  return `Generated ${groups.length} groups with ${players.length} players.`;
+  const players = await Promise.all(playerDefs.map((p) => createPlayerApi(p)));
+  return `Generated ${createdGroups.length} groups with ${players.length} players.`;
 }
 
-function buildTournament(
+function buildRequest(
   players: Player[],
-  participants: Participant[],
-  participantPlayers: Player[],
   teamSize: number,
+  n: number,
   format: Format,
   scoringMode: ScoreMode,
   groupCount: number,
   qualifiersPerGroup: number,
   bracketType: BracketType,
-): Tournament {
+): CreateTournamentRequest {
   const label = teamSize >= 2 ? ` (${teamSize}v${teamSize})` : '';
-  const base = {
-    id: crypto.randomUUID(),
-    name: `${FORMAT_LABELS[format]} - ${participantPlayers.length} participants${label}`,
+  const req: CreateTournamentRequest = {
+    name: `${FORMAT_LABELS[format]} - ${n} participants${label}`,
+    format,
+    players: players.map((p) => ({
+      name: p.name,
+      ...(p.seed !== undefined && { seed: p.seed }),
+      ...(p.elo !== undefined && { elo: p.elo }),
+      ...(p.libraryId !== undefined && { libraryId: p.libraryId }),
+    })),
+    teamSize,
     scoringMode,
     maxSets: DEFAULT_MAX_SETS,
-    groupStageMaxSets: DEFAULT_MAX_SETS,
-    bracketMaxSets: DEFAULT_MAX_SETS,
-    players: players.map((p) => ({...p})),
-    teamSize,
-    participants: participants.map((p) => ({...p})),
-    createdAt: new Date().toISOString(),
-    completedAt: null,
-    winnerId: null,
   };
-
-  switch (format) {
-    case Format.SINGLE_ELIM: {
-      return {
-        ...base,
-        format: Format.SINGLE_ELIM,
-        bracket: generateBracket(participantPlayers),
-      };
-    }
-    case Format.DOUBLE_ELIM: {
-      return {
-        ...base,
-        format: Format.DOUBLE_ELIM,
-        doubleElim: generateDoubleElim(participantPlayers),
-      };
-    }
-    case Format.ROUND_ROBIN: {
-      return {
-        ...base,
-        format: Format.ROUND_ROBIN,
-        schedule: generateSchedule(participantPlayers),
-      };
-    }
-    case Format.GROUPS_TO_BRACKET: {
-      const qualifiers = Array.from({length: groupCount}, () => qualifiersPerGroup);
-      const groupStage = createGroupStage(participantPlayers, {
-        groupCount,
-        qualifiers,
-        consolation: false,
-        bracketType,
-      });
-      return {
-        ...base,
-        format: Format.GROUPS_TO_BRACKET,
-        groupStage,
-        groupStagePlayoffs: null,
-      };
-    }
-    case Format.SWISS: {
-      return {
-        ...base,
-        format: Format.SWISS,
-        schedule: generateSwissInitialSchedule(participantPlayers),
-        totalRounds: computeMinTotalRounds(participantPlayers.length),
-      };
-    }
+  if (format === Format.GROUPS_TO_BRACKET) {
+    req.groupCount = groupCount;
+    req.qualifiers = Array.from({length: groupCount}, () => qualifiersPerGroup);
+    req.consolation = false;
+    req.bracketType = bracketType;
   }
+  if (format === Format.SWISS) {
+    req.swissRounds = computeMinTotalRounds(n);
+  }
+  return req;
 }
 
 export const TestPage = (): ReactElement => {
@@ -240,8 +196,7 @@ export const TestPage = (): ReactElement => {
   const [libraryMsg, setLibraryMsg] = useState<string | null>(null);
 
   function handleGenerateLibrary(): void {
-    const msg = generateRandomLibrary();
-    setLibraryMsg(msg);
+    void generateRandomLibrary().then((msg) => { setLibraryMsg(msg); });
   }
 
   function handleGenerate(): void {
@@ -261,40 +216,31 @@ export const TestPage = (): ReactElement => {
       return;
     }
 
-    const created: string[] = [];
     const formats = format === 'ALL' ? Object.values(Format) : [format];
 
-    for (const fmt of formats) {
-      for (let n = minPlayers; n <= maxPlayers; n++) {
-        if (fmt === Format.GROUPS_TO_BRACKET && n < groupCount * 2) {
-          continue;
+    const generate = async (): Promise<void> => {
+      const created: string[] = [];
+      for (const fmt of formats) {
+        for (let n = minPlayers; n <= maxPlayers; n++) {
+          if (fmt === Format.GROUPS_TO_BRACKET && n < groupCount * 2) {
+            continue;
+          }
+          const players = await samplePlayers(n, teamSize, useLibraryPlayers);
+          const req = buildRequest(players, teamSize, n, fmt, scoringMode, groupCount, qualifiersPerGroup, bracketType);
+          const tournament = await createTournamentApi(req);
+          created.push(tournament.name);
         }
-        const players = samplePlayers(n, teamSize, useLibraryPlayers);
-        const participants = buildParticipants(players, teamSize, []);
-        const participantPlayers = getParticipantPlayers(players, participants);
-        const tournament = buildTournament(
-          players,
-          participants,
-          participantPlayers,
-          teamSize,
-          fmt,
-          scoringMode,
-          groupCount,
-          qualifiersPerGroup,
-          bracketType,
-        );
-        persistence.save(tournament);
-        created.push(tournament.name);
       }
-    }
 
-    if (created.length === 0) {
-      setError('No tournaments were created. Check your settings (e.g. min participants vs group count).');
-      return;
-    }
+      if (created.length === 0) {
+        setError('No tournaments were created. Check your settings (e.g. min participants vs group count).');
+        return;
+      }
 
-    setSuccess(created);
-    void navigate('/');
+      setSuccess(created);
+      void navigate('/');
+    };
+    void generate();
   }
 
   return (

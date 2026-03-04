@@ -71,9 +71,9 @@ describe('TournamentProvider persistence integration', () => {
   it('persistence.load is callable with tournamentId', async () => {
     const { persistence } = await import('../services/persistence');
     const tournament = makeSingleElimTournament('test-id', 'Test');
-    mockPersistence.load.mockReturnValue(tournament);
+    mockPersistence.load.mockResolvedValue(tournament);
 
-    const result = persistence.load('test-id');
+    const result = await persistence.load('test-id');
 
     expect(mockPersistence.load).toHaveBeenCalledWith('test-id');
     expect(result).toEqual(tournament);
@@ -82,17 +82,19 @@ describe('TournamentProvider persistence integration', () => {
   it('persistence.save is callable with updated tournament', async () => {
     const { persistence } = await import('../services/persistence');
     const tournament = makeSingleElimTournament('test-id', 'Test');
+    // eslint-disable-next-line unicorn/no-useless-undefined
+    mockPersistence.save.mockResolvedValue(undefined);
 
-    persistence.save(tournament);
+    await persistence.save(tournament);
 
     expect(mockPersistence.save).toHaveBeenCalledWith(tournament);
   });
 
   it('persistence.load returns null for non-existent tournament', async () => {
     const { persistence } = await import('../services/persistence');
-    mockPersistence.load.mockReturnValue(null);
+    mockPersistence.load.mockResolvedValue(null);
 
-    const result = persistence.load('non-existent');
+    const result = await persistence.load('non-existent');
 
     expect(result).toBeNull();
   });
@@ -101,7 +103,7 @@ describe('TournamentProvider persistence integration', () => {
 describe('TournamentContext hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPersistence.load.mockReturnValue(null);
+    mockPersistence.load.mockResolvedValue(null);
   });
 
   it('exports useTournament hook', async () => {

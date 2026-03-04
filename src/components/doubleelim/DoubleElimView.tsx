@@ -6,9 +6,7 @@ import { WinnerBanner } from '../common/WinnerBanner';
 import { TabBar } from '../common/TabBar';
 import { FinalResultsTable } from '../common/FinalResultsTable';
 import {
-  advanceDoubleElim,
   canEditDoubleElimMatch,
-  clearDoubleElimMatch,
   getDoubleElimWinner,
 } from '../../utils/doubleElimUtils';
 import { buildDoubleElimResults } from '../../utils/resultsUtils';
@@ -16,6 +14,7 @@ import { ensureParticipants, getParticipantPlayers } from '../../utils/participa
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
+import { recordScore, clearScore } from '../../api/client';
 import { ScoreMode, Format } from '../../types';
 import type { DoubleElimTournament, Match, SetScore } from '../../types';
 
@@ -29,7 +28,7 @@ function shouldShowFinal(match?: Match | null): boolean {
 }
 
 export const DoubleElimView = (): ReactElement | null => {
-  const { tournament, updateTournament } = useTypedTournament<DoubleElimTournament>(Format.DOUBLE_ELIM);
+  const { tournament, reloadTournament } = useTypedTournament<DoubleElimTournament>(Format.DOUBLE_ELIM);
   const { t } = useTranslation();
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [tab, setTab] = useState<DoubleElimTab>('playoff');
@@ -60,27 +59,11 @@ export const DoubleElimView = (): ReactElement | null => {
   const finalsRoundIndex = doubleElim?.winners.rounds.length ?? 0;
 
   function handleSave(matchId: string, winnerIdValue: string | null, scores: SetScore[], walkover = false): void {
-    if (!doubleElim) return;
-    updateTournament((prev) => {
-      const updatedDoubleElim = winnerIdValue
-        ? advanceDoubleElim(
-            structuredClone(prev.doubleElim),
-            matchId,
-            winnerIdValue,
-            scores,
-            walkover
-          )
-        : clearDoubleElimMatch(structuredClone(prev.doubleElim), matchId);
-
-      const bracketWinner = getDoubleElimWinner(updatedDoubleElim);
-      return {
-        ...prev,
-        doubleElim: updatedDoubleElim,
-        winnerId: bracketWinner,
-        completedAt: bracketWinner ? new Date().toISOString() : null,
-      };
-    });
-    setEditingMatch(null);
+    if (!tournament) return;
+    const scoreOp = winnerIdValue === null
+      ? clearScore(tournament.id, matchId)
+      : recordScore(tournament.id, matchId, { scores, walkover });
+    void scoreOp.then(reloadTournament).then(() => { setEditingMatch(null); });
   }
 
   if (!tournament || !doubleElim) return null;

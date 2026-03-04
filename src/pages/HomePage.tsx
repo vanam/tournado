@@ -1,54 +1,51 @@
 import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
-import {Link, useLocation, useNavigate} from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Plus, Trophy } from 'lucide-react';
-import { persistence } from '../services/persistence';
+import {
+  listTournaments,
+  deleteTournament as deleteTournamentApi,
+  deleteAllTournaments,
+  duplicateTournament as duplicateTournamentApi,
+} from '../api/client';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { TournamentCard } from '../components/TournamentCard';
 import { ConfirmModal } from '../components/ConfirmModal';
-import type { Tournament } from '../types';
+import type { TournamentSummary } from '../api/types';
 import { Button } from '@/components/ui/Button';
-import {useAnalytics} from "@/utils/analytics";
+import { useAnalytics } from '@/utils/analytics';
+
+function sortTournaments(list: TournamentSummary[]): TournamentSummary[] {
+  return list.toSorted((a, b) => {
+    const aFinished = !!a.winnerId;
+    const bFinished = !!b.winnerId;
+    if (aFinished !== bFinished) return aFinished ? 1 : -1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
 
 export const HomePage = (): ReactElement => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { tracker } = useAnalytics();
 
   useEffect(() => {
     tracker.trackPageView({});
   }, [location, tracker]);
 
-  const [tournaments, setTournaments] = useState<Tournament[]>(() =>
-    persistence.loadAll().toSorted((a, b) => {
-      const aFinished = !!a.winnerId;
-      const bFinished = !!b.winnerId;
-      if (aFinished !== bFinished) return aFinished ? 1 : -1;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    })
-  );
+  const [tournaments, setTournaments] = useState<TournamentSummary[]>([]);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const { t } = useTranslation();
 
   useEffect(() => {
-    return persistence.subscribe(() => {
-      setTournaments(
-        persistence.loadAll().toSorted((a, b) => {
-          const aFinished = !!a.winnerId;
-          const bFinished = !!b.winnerId;
-          if (aFinished !== bFinished) return aFinished ? 1 : -1;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        })
-      );
-    });
+    void listTournaments().then((all) => { setTournaments(sortTournaments(all)); });
   }, []);
 
   usePageTitle(t('home.title'));
 
   function getTournamentName(id: string): string {
-    const tournament = tournaments.find((t) => t.id === id);
+    const tournament = tournaments.find((tr) => tr.id === id);
     return tournament?.name ?? '';
   }
 
@@ -57,15 +54,17 @@ export const HomePage = (): ReactElement => {
   }
 
   function handleDuplicate(id: string): void {
-    const tournament = tournaments.find((t) => t.id === id);
-    if (tournament === undefined) return;
-    void navigate('/create', { state: { duplicate: tournament } });
+    void duplicateTournamentApi(id).then(() => {
+      void listTournaments().then((all) => { setTournaments(sortTournaments(all)); });
+    });
   }
 
   function handleConfirmDelete(): void {
     if (!deleteTargetId) return;
-    persistence.delete(deleteTargetId);
+    const id = deleteTargetId;
     setDeleteTargetId(null);
+    setTournaments((prev) => prev.filter((tr) => tr.id !== id));
+    void deleteTournamentApi(id);
   }
 
   function handleCancelDelete(): void {
@@ -73,7 +72,9 @@ export const HomePage = (): ReactElement => {
   }
 
   function handleDeleteAll(): void {
-    persistence.deleteAll();
+    void deleteAllTournaments().then(() => {
+      setTournaments([]);
+    });
     setShowDeleteAll(false);
   }
 
@@ -86,7 +87,7 @@ export const HomePage = (): ReactElement => {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {tournaments.length > 1 && (
-<Button
+            <Button
               onClick={() => { setShowDeleteAll(true); }}
               variant="secondary-outlined"
             >
@@ -155,4 +156,4 @@ export const HomePage = (): ReactElement => {
       )}
     </div>
   );
-}
+};

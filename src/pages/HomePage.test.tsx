@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
 import { HomePage } from './HomePage';
 import { Format } from '../types';
@@ -92,25 +92,35 @@ describe('HomePage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders tournament cards', () => {
+  it('renders tournament cards', async () => {
     renderHomePage();
-    expect(screen.getByText('Tournament 1')).toBeDefined();
-    expect(screen.getByText('Tournament 2')).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText('Tournament 1')).toBeDefined();
+      expect(screen.getByText('Tournament 2')).toBeDefined();
+    });
   });
 
-  it('shows delete all button when there are multiple tournaments', () => {
+  it('shows delete all button when there are multiple tournaments', async () => {
     renderHomePage();
-    expect(screen.getByText('Delete All')).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText('Delete All')).toBeDefined();
+    });
   });
 
-  it('does not show delete all button when there is only one tournament', () => {
+  it('does not show delete all button when there is only one tournament', async () => {
     localStorageMock.getItem.mockReturnValue(JSON.stringify([mockTournaments[0]]));
     renderHomePage();
+    await waitFor(() => {
+      expect(screen.getByText('Tournament 1')).toBeDefined();
+    });
     expect(screen.queryByText('Delete All')).toBeNull();
   });
 
-  it('shows delete confirmation modal when delete is clicked', () => {
+  it('shows delete confirmation modal when delete is clicked', async () => {
     renderHomePage();
+    await waitFor(() => {
+      expect(screen.getByText('Tournament 1')).toBeDefined();
+    });
 
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
     const firstDeleteButton = deleteButtons[0];
@@ -123,8 +133,11 @@ describe('HomePage', () => {
     expect(tournamentNamesInModal.length).toBeGreaterThan(0);
   });
 
-  it('closes delete modal when cancel is clicked', () => {
+  it('closes delete modal when cancel is clicked', async () => {
     renderHomePage();
+    await waitFor(() => {
+      expect(screen.getByText('Tournament 1')).toBeDefined();
+    });
 
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
     const firstDeleteButton = deleteButtons[0];
@@ -140,8 +153,11 @@ describe('HomePage', () => {
     expect(screen.queryByText('Delete this tournament?')).toBeNull();
   });
 
-  it('shows delete all confirmation modal when delete all is clicked', () => {
+  it('shows delete all confirmation modal when delete all is clicked', async () => {
     renderHomePage();
+    await waitFor(() => {
+      expect(screen.getByText('Delete All')).toBeDefined();
+    });
 
     const deleteAllButton = screen.getByText('Delete All');
     fireEvent.click(deleteAllButton);
@@ -150,8 +166,11 @@ describe('HomePage', () => {
     expect(screen.getByText(/This will permanently delete all 2 tournaments/)).toBeDefined();
   });
 
-  it('closes delete all modal when cancel is clicked', () => {
+  it('closes delete all modal when cancel is clicked', async () => {
     renderHomePage();
+    await waitFor(() => {
+      expect(screen.getByText('Delete All')).toBeDefined();
+    });
 
     const deleteAllButton = screen.getByText('Delete All');
     fireEvent.click(deleteAllButton);
@@ -164,8 +183,11 @@ describe('HomePage', () => {
     expect(screen.queryByText('Delete all tournaments?')).toBeNull();
   });
 
-  it('calls persistence.delete when confirming single delete', () => {
+  it('calls persistence.delete when confirming single delete', async () => {
     renderHomePage();
+    await waitFor(() => {
+      expect(screen.getByText('Tournament 1')).toBeDefined();
+    });
 
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
     const firstDeleteButton = deleteButtons[0];
@@ -181,11 +203,16 @@ describe('HomePage', () => {
       fireEvent.click(confirmButton);
     }
 
-    expect(localStorageMock.setItem).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(localStorageMock.setItem).toHaveBeenCalled();
+    });
   });
 
-  it('calls persistence.deleteAll when confirming delete all', () => {
+  it('calls persistence.deleteAll when confirming delete all', async () => {
     renderHomePage();
+    await waitFor(() => {
+      expect(screen.getByText('Delete All')).toBeDefined();
+    });
 
     const deleteAllButton = screen.getByText('Delete All');
     fireEvent.click(deleteAllButton);
@@ -198,6 +225,8 @@ describe('HomePage', () => {
       fireEvent.click(confirmButton);
     }
 
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('tournado', '[]');
+    await waitFor(() => {
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('tournado', '[]');
+    });
   });
 });

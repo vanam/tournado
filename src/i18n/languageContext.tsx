@@ -5,7 +5,7 @@ import { en, cs, de, es } from './translations';
 import { LanguageContext } from './context';
 
 const translations: Record<LanguageKey, TranslationMap> = { en, cs, de, es };
-const STORAGE_KEY = 'tt-lang';
+const STORAGE_KEY = 'tournado-lang';
 
 function detectLanguage(): LanguageKey {
   const stored = localStorage.getItem(STORAGE_KEY);

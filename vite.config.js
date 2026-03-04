@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, build } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -15,7 +15,15 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        'sw-api': path.resolve(__dirname, 'src/swApi.ts'),
+      },
       output: {
+        entryFileNames(chunkInfo) {
+          if (chunkInfo.name === 'sw-api') return 'sw-api.js';
+          return 'assets/[name]-[hash].js';
+        },
         manualChunks(id) {
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
             return 'react-vendor';
@@ -37,6 +45,50 @@ export default defineConfig({
     }
   },
   plugins: [
+    {
+      name: 'sw-api-dev',
+      apply: 'serve',
+      configureServer(server) {
+        let cache = null
+
+        server.watcher.on('change', () => { cache = null })
+
+        server.middlewares.use('/sw-api.js', async (_req, res) => {
+          try {
+            if (!cache) {
+              const result = await build({
+                configFile: false,
+                resolve: {
+                  alias: { '@': path.resolve(__dirname, './src') },
+                },
+                define: {
+                  'process.env.NODE_ENV': JSON.stringify('development'),
+                },
+                build: {
+                  write: false,
+                  lib: {
+                    entry: path.resolve(__dirname, 'src/swApi.ts'),
+                    formats: ['iife'],
+                    name: 'SwApi',
+                  },
+                  rollupOptions: {
+                    output: { inlineDynamicImports: true },
+                  },
+                },
+              })
+              const output = Array.isArray(result) ? result[0] : result
+              cache = output.output[0].code
+            }
+            res.setHeader('Content-Type', 'application/javascript')
+            res.end(cache)
+          } catch (err) {
+            console.error('[sw-api-dev]', err)
+            res.statusCode = 500
+            res.end('// build error — see terminal')
+          }
+        })
+      },
+    },
     react(),
     tailwindcss(),
     {
@@ -64,6 +116,7 @@ export default defineConfig({
       manifest: false,
       workbox: {
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],

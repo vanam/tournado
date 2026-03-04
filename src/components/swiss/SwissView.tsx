@@ -9,13 +9,13 @@ import {
   computeSwissStandings,
   isCurrentRoundComplete,
   isSwissTournamentComplete,
-  generateNextSwissRound,
   buildSwissResults,
 } from '../../utils/swissUtils';
 import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
+import { recordScore, clearScore, swissNextRound } from '../../api/client';
 import { Format, ScoreMode } from '../../types';
 import type { Match, SwissTournament, SetScore } from '../../types';
 import { Button } from '@/components/ui/Button';
@@ -25,7 +25,7 @@ type SwissTab = 'standings' | 'schedule' | 'results';
 // ─── Main view ────────────────────────────────────────────────────────────────
 
 export const SwissView = (): ReactElement | null => {
-  const { tournament, updateTournament } = useTypedTournament<SwissTournament>(Format.SWISS);
+  const { tournament, reloadTournament } = useTypedTournament<SwissTournament>(Format.SWISS);
   const [tab, setTab] = useState<SwissTab>('standings');
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const { t } = useTranslation();
@@ -44,6 +44,7 @@ export const SwissView = (): ReactElement | null => {
   const complete = isSwissTournamentComplete(tournament);
   const currentRound = schedule.rounds.length;
   const totalRounds = tournament.totalRounds;
+  const { id: tournamentId } = tournament;
 
   const tabs: { id: SwissTab; label: string }[] = [
     { id: 'standings', label: t('swiss.standings') },
@@ -52,40 +53,14 @@ export const SwissView = (): ReactElement | null => {
   ];
 
   function handleSave(matchId: string, winnerId: string | null, scores: SetScore[], walkover = false): void {
-    updateTournament((prev) => {
-      const updatedSchedule = structuredClone(prev.schedule);
-      for (const round of updatedSchedule.rounds) {
-        const match = round.matches.find((m) => m.id === matchId);
-        if (match) {
-          match.winnerId = winnerId;
-          match.scores = scores;
-          match.walkover = walkover;
-          break;
-        }
-      }
-
-      const nowComplete = isSwissTournamentComplete({ ...prev, schedule: updatedSchedule });
-      const prevStoredParticipants = ensureParticipants(prev.players, prev.participants);
-      const prevParticipantPlayers = getParticipantPlayers(prev.players, prevStoredParticipants);
-      const newStandings = nowComplete
-        ? computeSwissStandings(updatedSchedule, prevParticipantPlayers, { scoringMode, maxSets })
-        : null;
-
-      return {
-        ...prev,
-        schedule: updatedSchedule,
-        winnerId: nowComplete ? (newStandings?.[0]?.playerId ?? null) : null,
-        completedAt: nowComplete ? new Date().toISOString() : null,
-      };
-    });
-    setEditingMatch(null);
+    const scoreOp = winnerId === null
+      ? clearScore(tournamentId, matchId)
+      : recordScore(tournamentId, matchId, { scores, walkover });
+    void scoreOp.then(reloadTournament).then(() => { setEditingMatch(null); });
   }
 
   function handleGenerateNextRound(): void {
-    updateTournament((prev) => ({
-      ...prev,
-      schedule: { rounds: [...prev.schedule.rounds, generateNextSwissRound(prev)] },
-    }));
+    void swissNextRound(tournamentId).then(reloadTournament);
   }
 
   return (

@@ -4,29 +4,32 @@ export function createMemoryStorageAdapter(initialData: Tournament[] = []): Tour
   let tournaments: Tournament[] = [...initialData];
 
   return {
-    loadAll(): Tournament[] {
-      return [...tournaments];
+    loadAll(): Promise<Tournament[]> {
+      return Promise.resolve([...tournaments]);
     },
 
-    load(id: string): Tournament | null {
-      return tournaments.find((t) => t.id === id) ?? null;
+    load(id: string): Promise<Tournament | null> {
+      return Promise.resolve(tournaments.find((t) => t.id === id) ?? null);
     },
 
-    save(tournament: Tournament): void {
+    save(tournament: Tournament): Promise<void> {
       const index = tournaments.findIndex((t) => t.id === tournament.id);
       if (index === -1) {
         tournaments.push(tournament);
       } else {
         tournaments[index] = tournament;
       }
+      return Promise.resolve();
     },
 
-    delete(id: string): void {
+    delete(id: string): Promise<void> {
       tournaments = tournaments.filter((t) => t.id !== id);
+      return Promise.resolve();
     },
 
-    deleteAll(): void {
+    deleteAll(): Promise<void> {
       tournaments = [];
+      return Promise.resolve();
     },
   };
 }

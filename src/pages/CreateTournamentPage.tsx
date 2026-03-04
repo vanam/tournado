@@ -5,14 +5,12 @@ import {useNavigate, useLocation} from 'react-router-dom';
 import {DEFAULT_MAX_SETS, MIN_PLAYERS} from '../constants';
 import {useTranslation} from '../i18n/useTranslation';
 import {usePageTitle} from '../hooks/usePageTitle';
-import {persistence} from '../services/persistence';
+import {createTournament as createTournamentApi} from '../api/client';
+import type {CreateTournamentRequest} from '../api/types';
 import {useAnalytics} from '../utils/analytics';
-import {generateBracket} from '../utils/bracketUtils';
-import {generateSchedule} from '../utils/roundRobinUtils';
-import {generateSwissInitialSchedule, computeMinTotalRounds} from '../utils/swissUtils';
-import {createGroupStage, distributePlayersToGroups, indexToGroupLabel} from '../utils/groupStageUtils';
+import {computeMinTotalRounds} from '../utils/swissUtils';
+import {distributePlayersToGroups, indexToGroupLabel} from '../utils/groupStageUtils';
 import type {BaseGroup} from '../utils/groupStageUtils';
-import {generateDoubleElim} from '../utils/doubleElimUtils';
 import {allParticipantsComplete, buildParticipants, getParticipantPlayers} from '../utils/participantUtils';
 import {PlayerInput} from '../components/PlayerInput';
 import {ParticipantPlayerInput} from '../components/common/ParticipantPlayerInput';
@@ -270,75 +268,6 @@ export const CreateTournamentPage = (): ReactElement => {
       }
     }
 
-    const base = {
-      id: crypto.randomUUID(),
-      name: data.name.trim(),
-      scoringMode: data.scoringMode,
-      maxSets: data.maxSets,
-      groupStageMaxSets: data.groupStageMaxSets,
-      bracketMaxSets: data.bracketMaxSets,
-      players: players.map((p) => ({ ...p })),
-      teamSize,
-      participants: participants.map((p) => ({ ...p })),
-      createdAt: new Date().toISOString(),
-      completedAt: null,
-      winnerId: null,
-    };
-
-    let tournament: Tournament;
-
-    switch (data.format) {
-      case Format.SINGLE_ELIM: {
-        tournament = {
-          ...base,
-          format: Format.SINGLE_ELIM,
-          bracket: generateBracket(participantPlayers),
-        };
-        break;
-      }
-      case Format.ROUND_ROBIN: {
-        tournament = {
-          ...base,
-          format: Format.ROUND_ROBIN,
-          schedule: generateSchedule(participantPlayers),
-        };
-        break;
-      }
-      case Format.DOUBLE_ELIM: {
-        tournament = {
-          ...base,
-          format: Format.DOUBLE_ELIM,
-          doubleElim: generateDoubleElim(participantPlayers),
-        };
-        break;
-      }
-      case Format.GROUPS_TO_BRACKET: {
-        const groups = customGroups ?? distributePlayersToGroups(participantPlayers, data.groupCount);
-        const groupStage = createGroupStage(participantPlayers, {
-          groupCount: data.groupCount,
-          qualifiers,
-          consolation: data.consolation,
-          bracketType: data.bracketType,
-        }, groups);
-        tournament = {
-          ...base,
-          format: Format.GROUPS_TO_BRACKET,
-          groupStage,
-          groupStagePlayoffs: null,
-        };
-        break;
-      }
-      case Format.SWISS: {
-        tournament = {
-          ...base,
-          format: Format.SWISS,
-          schedule: generateSwissInitialSchedule(participantPlayers),
-          totalRounds: data.swissRounds,
-        };
-        break;
-      }
-    }
-
     const playoffTypeMap: Record<string, string> = {
       [Format.SINGLE_ELIM]: BracketType.SINGLE_ELIM,
       [Format.DOUBLE_ELIM]: BracketType.DOUBLE_ELIM,
@@ -353,8 +282,34 @@ export const CreateTournamentPage = (): ReactElement => {
       player_count: participantPlayers.length,
       playoff_type: playoffTypeMap[data.format] ?? 'none',
     });
-    persistence.save(tournament);
-    void navigate(`/tournament/${tournament.id}`);
+
+    const req: CreateTournamentRequest = {
+      name: data.name.trim(),
+      format: data.format,
+      players: players.map((p) => ({
+        name: p.name,
+        ...(p.seed !== undefined && { seed: p.seed }),
+        ...(p.elo !== undefined && { elo: p.elo }),
+        ...(p.libraryId !== undefined && { libraryId: p.libraryId }),
+      })),
+      teamSize,
+      scoringMode: data.scoringMode,
+      maxSets: data.maxSets,
+      groupStageMaxSets: data.groupStageMaxSets,
+      bracketMaxSets: data.bracketMaxSets,
+    };
+    if (data.format === Format.GROUPS_TO_BRACKET) {
+      req.groupCount = data.groupCount;
+      req.qualifiers = qualifiers;
+      req.consolation = data.consolation;
+      req.bracketType = data.bracketType;
+    }
+    if (data.format === Format.SWISS) {
+      req.swissRounds = data.swissRounds;
+    }
+    void createTournamentApi(req).then((created) => {
+      void navigate(`/tournament/${created.id}`);
+    });
   });
 
   return (

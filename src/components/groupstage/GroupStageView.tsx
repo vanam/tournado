@@ -9,20 +9,15 @@ import { PlayoffSection } from './PlayoffSection';
 import { ScoreModalWrapper } from './ScoreModalWrapper';
 import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import {
-  buildGroupStagePlayoffs,
   getGroupPlayers,
-  isGroupStageComplete,
 } from '../../utils/groupStageUtils';
 import { findGroupMatch, findBracketMatch, findDoubleElimMatch } from '../../utils/matchFinders';
-import { advanceWinner, getBracketWinner, clearMatchResult } from '../../utils/bracketUtils';
-import { advanceDoubleElim, clearDoubleElimMatch, getDoubleElimWinner } from '../../utils/doubleElimUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
+import { recordScore, clearScore, recordGroupScore, clearGroupScore, generateGroupPlayoffs } from '../../api/client';
 import { BracketType, ScoreMode } from '../../types';
 import type {
-  Bracket,
-  DoubleElim,
   GroupStagePlayoffs,
   SetScore,
 } from '../../types';
@@ -44,38 +39,6 @@ interface EditingState {
   matchId: string;
 }
 
-function bracketHasResults(bracket: Bracket | null | undefined): boolean {
-  if (!bracket) return false;
-  return bracket.rounds.some((round) =>
-    round.some((match) => match.scores.length > 0 || match.winnerId)
-  );
-}
-
-function doubleElimHasResults(doubleElim: DoubleElim | null | undefined): boolean {
-  if (!doubleElim) return false;
-  if (bracketHasResults(doubleElim.winners)) return true;
-  if (doubleElim.losers.rounds.some((round) =>
-    round.some((match) => match.scores.length > 0 || match.winnerId)
-  )) return true;
-  if (doubleElim.finals.grandFinal.winnerId) return true;
-  if (doubleElim.finals.resetFinal.winnerId) return true;
-  return false;
-}
-
-function playoffsEqual(
-  left: GroupStagePlayoffs | null | undefined,
-  right: GroupStagePlayoffs | null | undefined
-): boolean {
-  if (left === right) return true;
-  if (!left || !right) return false;
-  return (
-    left.bracketType === right.bracketType &&
-    JSON.stringify(left.mainBracket) === JSON.stringify(right.mainBracket) &&
-    JSON.stringify(left.mainDoubleElim) === JSON.stringify(right.mainDoubleElim) &&
-    JSON.stringify(left.consolationBracket) === JSON.stringify(right.consolationBracket) &&
-    JSON.stringify(left.consolationDoubleElim) === JSON.stringify(right.consolationDoubleElim)
-  );
-}
 
 function getPlayoffs(tournament: { groupStagePlayoffs?: GroupStagePlayoffs | null; groupStageBrackets?: GroupStagePlayoffs | null }): GroupStagePlayoffs | null {
   const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
@@ -86,10 +49,21 @@ function getPlayoffs(tournament: { groupStagePlayoffs?: GroupStagePlayoffs | nul
 function getMainWinner(playoffs: GroupStagePlayoffs | null, isDoubleElim: boolean): string | null {
   if (!playoffs) return null;
   if (isDoubleElim && playoffs.mainDoubleElim) {
-    return getDoubleElimWinner(playoffs.mainDoubleElim);
+    for (const round of playoffs.mainDoubleElim.winners.rounds) {
+      for (const match of round) {
+        if (match.winnerId && playoffs.mainDoubleElim.winners.rounds.indexOf(round) === playoffs.mainDoubleElim.winners.rounds.length - 1) {
+          return match.winnerId;
+        }
+      }
+    }
+    return playoffs.mainDoubleElim.finals.grandFinal.winnerId ?? playoffs.mainDoubleElim.finals.resetFinal.winnerId ?? null;
   }
   if (playoffs.mainBracket) {
-    return getBracketWinner(playoffs.mainBracket);
+    const lastRound = playoffs.mainBracket.rounds.at(-1);
+    if (lastRound) {
+      const finalMatch = lastRound[0];
+      return finalMatch?.winnerId ?? null;
+    }
   }
   return null;
 }
@@ -102,18 +76,9 @@ function hasAnyBracket(playoffs: GroupStagePlayoffs | null, isDoubleElim: boolea
   return !!playoffs.mainBracket || !!playoffs.consolationBracket;
 }
 
-function hasAnyResults(playoffs: GroupStagePlayoffs | null, isDoubleElim: boolean): boolean {
-  if (!playoffs) return false;
-  if (isDoubleElim) {
-    return doubleElimHasResults(playoffs.mainDoubleElim) ||
-           doubleElimHasResults(playoffs.consolationDoubleElim);
-  }
-  return bracketHasResults(playoffs.mainBracket) ||
-         bracketHasResults(playoffs.consolationBracket);
-}
 
 export const GroupStageView = (): ReactElement | null => {
-  const { tournament, updateTournament } = useGroupsToBracketTournament();
+  const { tournament, reloadTournament } = useGroupsToBracketTournament();
   const { t } = useTranslation();
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [groupTabs, setGroupTabs] = useState<Record<string, GroupTab>>({});
@@ -156,29 +121,9 @@ export const GroupStageView = (): ReactElement | null => {
 
   useEffect(() => {
     if (!groupComplete || !advancers || !groupStage) return;
-
-    const hasBracket = hasAnyBracket(playoffs, isDoubleElim);
-    const shouldSkipForPlayed = hasBracket && hasAnyResults(playoffs, isDoubleElim);
-
-    if (shouldSkipForPlayed) return;
-
-    const nextPlayoffs = buildGroupStagePlayoffs(
-      groupStage,
-      participants,
-      { scoringMode, maxSets: groupStageMaxSets }
-    );
-
-    if (playoffsEqual(playoffs, nextPlayoffs)) return;
-
-    const mainWinner = getMainWinner(nextPlayoffs, isDoubleElim);
-
-    updateTournament((prev) => ({
-      ...prev,
-      groupStagePlayoffs: nextPlayoffs,
-      winnerId: mainWinner ?? null,
-      completedAt: mainWinner ? new Date().toISOString() : null,
-    }));
-  }, [advancers, groupComplete, groupStage, playoffs, participants, scoringMode, groupStageMaxSets, updateTournament, isDoubleElim, tournament]);
+    if (hasAnyBracket(playoffs, isDoubleElim)) return;
+    void generateGroupPlayoffs(tournament.id).then(reloadTournament);
+  }, [advancers, groupComplete, groupStage, playoffs, tournament, isDoubleElim, reloadTournament]);
 
   const activeMatch = useMemo(() => {
     if (!editing || !groupStage) return null;
@@ -233,117 +178,30 @@ export const GroupStageView = (): ReactElement | null => {
     return sortResults([...mainResults, ...consolationResults]);
   }, [mainTab, playoffs, participants, isDoubleElim]);
 
-  function handleSaveGroupMatch(matchId: string, winnerIdValue: string | null, scores: SetScore[], walkover = false): void {
-    if (!groupStage) return;
-    const updatedGroupStage = structuredClone(groupStage);
-    for (const group of updatedGroupStage.groups) {
-      for (const round of group.schedule.rounds) {
-        const match = round.matches.find((m) => m.id === matchId);
-        if (match) {
-          match.winnerId = winnerIdValue;
-          match.scores = scores;
-          match.walkover = walkover;
-          break;
-        }
+  function handleSave(matchId: string, winnerIdValue: string | null, scores: SetScore[], walkover: boolean): void {
+    if (!editing || !tournament) return;
+    const tid = tournament.id;
+    let scoreOp: Promise<void> = Promise.resolve();
+    switch (editing.type) {
+      case 'group': {
+        const { groupId } = editing;
+        if (!groupId) return;
+        scoreOp = winnerIdValue === null
+          ? clearGroupScore(tid, groupId, matchId)
+          : recordGroupScore(tid, groupId, matchId, { scores, walkover });
+        break;
+      }
+      case 'mainBracket':
+      case 'consolationBracket':
+      case 'mainDoubleElim':
+      case 'consolationDoubleElim': {
+        scoreOp = winnerIdValue === null
+          ? clearScore(tid, matchId)
+          : recordScore(tid, matchId, { scores, walkover });
+        break;
       }
     }
-
-    let nextPlayoffs = playoffs;
-    const hasExistingPlayoffs = playoffs && hasAnyBracket(playoffs, isDoubleElim);
-    if (
-      isGroupStageComplete(updatedGroupStage) &&
-      !hasExistingPlayoffs
-    ) {
-      nextPlayoffs = buildGroupStagePlayoffs(updatedGroupStage, participants, { scoringMode, maxSets: groupStageMaxSets });
-    }
-
-    const mainWinner = getMainWinner(nextPlayoffs, isDoubleElim);
-    updateTournament((prev) => ({
-      ...prev,
-      groupStage: updatedGroupStage,
-      groupStagePlayoffs: nextPlayoffs,
-      winnerId: mainWinner ?? null,
-      completedAt: mainWinner ? new Date().toISOString() : null,
-    }));
-    setEditing(null);
-  }
-
-  function handleSaveBracketMatch(
-    matchId: string,
-    winnerIdValue: string | null,
-    scores: SetScore[],
-    bracketKey: 'mainBracket' | 'consolationBracket',
-    walkover = false
-  ): void {
-    if (!playoffs || !groupStage) return;
-    const updatedPlayoffs = structuredClone(playoffs);
-    const target = updatedPlayoffs[bracketKey];
-    if (!target) return;
-    updatedPlayoffs[bracketKey] = winnerIdValue
-      ? advanceWinner(target, matchId, winnerIdValue, scores, walkover)
-      : clearMatchResult(target, matchId);
-
-    const mainWinner = getMainWinner(updatedPlayoffs, isDoubleElim);
-    updateTournament((prev) => ({
-      ...prev,
-      groupStage,
-      groupStagePlayoffs: updatedPlayoffs,
-      winnerId: mainWinner ?? null,
-      completedAt: mainWinner ? new Date().toISOString() : null,
-    }));
-    setEditing(null);
-  }
-
-  function handleSaveDoubleElimMatch(
-    matchId: string,
-    winnerIdValue: string | null,
-    scores: SetScore[],
-    bracketKey: 'mainDoubleElim' | 'consolationDoubleElim',
-    walkover = false
-  ): void {
-    if (!playoffs || !groupStage) return;
-    const updatedPlayoffs = structuredClone(playoffs);
-    const target = updatedPlayoffs[bracketKey];
-    if (!target) return;
-    updatedPlayoffs[bracketKey] = winnerIdValue
-      ? advanceDoubleElim(target, matchId, winnerIdValue, scores, walkover)
-      : clearDoubleElimMatch(target, matchId);
-
-    const mainWinner = getMainWinner(updatedPlayoffs, isDoubleElim);
-    updateTournament((prev) => ({
-      ...prev,
-      groupStage,
-      groupStagePlayoffs: updatedPlayoffs,
-      winnerId: mainWinner ?? null,
-      completedAt: mainWinner ? new Date().toISOString() : null,
-    }));
-    setEditing(null);
-  }
-
-  function handleSave(matchId: string, winnerIdValue: string | null, scores: SetScore[], walkover: boolean): void {
-    if (!editing) return;
-    switch (editing.type) {
-    case 'group': {
-      handleSaveGroupMatch(matchId, winnerIdValue, scores, walkover);
-      break;
-    }
-    case 'mainBracket': {
-      handleSaveBracketMatch(matchId, winnerIdValue, scores, 'mainBracket', walkover);
-      break;
-    }
-    case 'consolationBracket': {
-      handleSaveBracketMatch(matchId, winnerIdValue, scores, 'consolationBracket', walkover);
-      break;
-    }
-    case 'mainDoubleElim': {
-      handleSaveDoubleElimMatch(matchId, winnerIdValue, scores, 'mainDoubleElim', walkover);
-      break;
-    }
-    case 'consolationDoubleElim': {
-      handleSaveDoubleElimMatch(matchId, winnerIdValue, scores, 'consolationDoubleElim', walkover);
-      break;
-    }
-    }
+    void scoreOp.then(reloadTournament).then(() => { setEditing(null); });
   }
 
   function setGroupTab(groupId: string, nextTab: GroupTab): void {

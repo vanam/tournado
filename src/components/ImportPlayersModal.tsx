@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactElement } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import { CustomDialog } from './CustomDialog';
@@ -31,12 +31,20 @@ export const ImportPlayersModal = ({
   const [text, setText] = useState('');
   const [errors, setErrors] = useState<ParseError[]>([]);
   const [activeTab, setActiveTab] = useState<'text' | 'groups'>('text');
-  const [library] = useState<PlayerLibrary>(() => loadLibrary());
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(() => {
-    const lib = loadLibrary();
-    return lib.groups.length > 0 && lib.groups[0] !== undefined ? lib.groups[0].id : '';
-  });
+  const [library, setLibrary] = useState<PlayerLibrary>({ groups: [], players: [] });
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (open) {
+      void loadLibrary().then((lib) => {
+        setLibrary(lib);
+        if (lib.groups.length > 0 && lib.groups[0] !== undefined) {
+          setSelectedGroupId(lib.groups[0].id);
+        }
+      });
+    }
+  }, [open]);
 
   function handleImport(): void {
     const { parsed, errors: parseErrors } = parseBulkInput(text, existingNames);

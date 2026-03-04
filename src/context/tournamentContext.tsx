@@ -1,10 +1,10 @@
-import { createContext, useContext, useCallback } from 'react';
+import { createContext, useContext } from 'react';
 import type { Tournament, GroupsToBracketTournament } from '../types';
 import { Format } from '../types';
 
 export interface TournamentContextValue {
   tournament: Tournament | null;
-  updateTournament: (updater: (prev: Tournament) => Tournament) => void;
+  reloadTournament: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -20,56 +20,18 @@ export function useTournament(): TournamentContextValue {
 
 export function useTypedTournament<T extends Tournament>(
   format: T['format']
-): { tournament: T | null; updateTournament: (updater: (prev: T) => T) => void; isLoading: boolean } {
-  const { tournament, updateTournament, isLoading } = useTournament();
-
+): { tournament: T | null; reloadTournament: () => Promise<void>; isLoading: boolean } {
+  const { tournament, reloadTournament, isLoading } = useTournament();
   const typedTournament = tournament?.format === format ? (tournament as T) : null;
-
-  const typedUpdateTournament = useCallback(
-    (updater: (prev: T) => T) => {
-      updateTournament((prev) => {
-        if (prev.format !== format) return prev;
-        return updater(prev as T);
-      });
-    },
-    [updateTournament, format]
-  );
-
-  return { tournament: typedTournament, updateTournament: typedUpdateTournament, isLoading };
+  return { tournament: typedTournament, reloadTournament, isLoading };
 }
 
 export function useGroupsToBracketTournament(): {
   tournament: GroupsToBracketTournament | null;
-  updateTournament: (
-    updater:
-      | GroupsToBracketTournament
-      | ((prev: GroupsToBracketTournament) => GroupsToBracketTournament)
-  ) => void;
+  reloadTournament: () => Promise<void>;
   isLoading: boolean;
 } {
-  const { tournament, updateTournament, isLoading } = useTournament();
-
-  const typedTournament =
-    tournament?.format === Format.GROUPS_TO_BRACKET
-      ? tournament
-      : null;
-
-  const typedUpdateTournament = useCallback(
-    (
-      updater:
-        | GroupsToBracketTournament
-        | ((prev: GroupsToBracketTournament) => GroupsToBracketTournament)
-    ) => {
-      updateTournament((prev) => {
-        if (prev.format !== Format.GROUPS_TO_BRACKET) return prev;
-        if (typeof updater === 'function') {
-          return updater(prev);
-        }
-        return updater;
-      });
-    },
-    [updateTournament]
-  );
-
-  return { tournament: typedTournament, updateTournament: typedUpdateTournament, isLoading };
+  const { tournament, reloadTournament, isLoading } = useTournament();
+  const typedTournament = tournament?.format === Format.GROUPS_TO_BRACKET ? tournament : null;
+  return { tournament: typedTournament, reloadTournament, isLoading };
 }

@@ -2,10 +2,11 @@ import { useState, type ReactElement } from 'react';
 import { Check, X } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { useTournament } from '../context/tournamentContext';
+import { renameTournamentPlayer } from '../api/client';
 import type { Player } from '../types';
 
 export const PlayerList = (): ReactElement => {
-  const { tournament, updateTournament } = useTournament();
+  const { tournament, reloadTournament } = useTournament();
   const { t } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -29,7 +30,8 @@ export const PlayerList = (): ReactElement => {
     setError('');
   }
 
-  function saveEdit(playerId: string): void {
+  async function saveEdit(playerId: string): Promise<void> {
+    if (!tournament) return;
     const trimmed = editValue.trim();
     if (!trimmed) {
       setError(t('tournament.nameEmpty'));
@@ -44,12 +46,8 @@ export const PlayerList = (): ReactElement => {
       return;
     }
 
-    updateTournament((prev) => ({
-      ...prev,
-      players: prev.players.map((p) =>
-        p.id === playerId ? { ...p, name: trimmed } : p
-      ),
-    }));
+    await renameTournamentPlayer(tournament.id, playerId, trimmed);
+    await reloadTournament();
     setEditingId(null);
     setEditValue('');
     setError('');
@@ -75,7 +73,7 @@ export const PlayerList = (): ReactElement => {
                     setError('');
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveEdit(player.id);
+                    if (e.key === 'Enter') { void saveEdit(player.id); }
                     if (e.key === 'Escape') cancelEdit();
                   }}
                   className={`border rounded px-2 py-1 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-card)] ${
@@ -83,7 +81,7 @@ export const PlayerList = (): ReactElement => {
                   }`}
                 />
                 <button
-                  onClick={() => { saveEdit(player.id); }}
+                  onClick={() => { void saveEdit(player.id); }}
                   className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] text-sm px-1"
                   title={t('tournament.saveName')}
                 >

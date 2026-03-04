@@ -1,0 +1,1210 @@
+openapi: 3.1.1
+info:
+  title: Tournado Tournament API
+  version: 1.0.0
+  description: REST API for the Tournado tournament management application.
+
+servers:
+  - url: /api
+    description: Default server
+
+tags:
+  - name: Tournaments
+    description: Tournament CRUD and operations
+  - name: Matches
+    description: Match scoring and editability
+  - name: Swiss
+    description: Swiss-system specific operations
+  - name: Group Stage
+    description: Group-stage specific operations
+  - name: Standings
+    description: Round-robin and Swiss standings
+  - name: Players
+    description: Player library management
+  - name: Player Groups
+    description: Player group management
+
+paths:
+  /tournaments:
+    get:
+      tags: [Tournaments]
+      summary: List all tournaments
+      operationId: listTournaments
+      parameters:
+        - name: format
+          in: query
+          schema:
+            $ref: "#/components/schemas/Format"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed]
+      responses:
+        "200":
+          description: List of tournament summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TournamentSummary"
+
+    post:
+      tags: [Tournaments]
+      summary: Create a tournament
+      operationId: createTournament
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTournamentRequest"
+      responses:
+        "201":
+          description: Tournament created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tournament"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      tags: [Tournaments]
+      summary: Delete all tournaments
+      operationId: deleteAllTournaments
+      responses:
+        "204":
+          description: All tournaments deleted
+
+  /tournaments/{id}:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    get:
+      tags: [Tournaments]
+      summary: Get full tournament
+      operationId: getTournament
+      responses:
+        "200":
+          description: Full tournament object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tournament"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Tournaments]
+      summary: Delete a tournament
+      operationId: deleteTournament
+      responses:
+        "204":
+          description: Tournament deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tournaments/{id}/duplicate:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    post:
+      tags: [Tournaments]
+      summary: Duplicate a tournament
+      operationId: duplicateTournament
+      responses:
+        "201":
+          description: Duplicated tournament
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tournament"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tournaments/{id}/progress:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    get:
+      tags: [Tournaments]
+      summary: Get tournament progress
+      operationId: getTournamentProgress
+      responses:
+        "200":
+          description: Progress counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Progress"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tournaments/{id}/results:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    get:
+      tags: [Tournaments]
+      summary: Get tournament rankings
+      operationId: getTournamentResults
+      responses:
+        "200":
+          description: Ranked results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankedResult"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tournaments/{id}/matches/{matchId}/score:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+      - $ref: "#/components/parameters/MatchId"
+
+    put:
+      tags: [Matches]
+      summary: Record a match score
+      operationId: recordScore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordScoreRequest"
+      responses:
+        "200":
+          description: Score recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+    delete:
+      tags: [Matches]
+      summary: Clear a match result
+      operationId: clearScore
+      responses:
+        "200":
+          description: Score cleared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /tournaments/{id}/matches/{matchId}/editable:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+      - $ref: "#/components/parameters/MatchId"
+
+    get:
+      tags: [Matches]
+      summary: Check if a match result is editable
+      operationId: checkMatchEditable
+      responses:
+        "200":
+          description: Editability status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [editable]
+                properties:
+                  editable:
+                    type: boolean
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tournaments/{id}/swiss/next-round:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    post:
+      tags: [Swiss]
+      summary: Generate next Swiss round
+      operationId: generateNextSwissRound
+      responses:
+        "200":
+          description: Next round generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tournament"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /tournaments/{id}/swiss/round-complete:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    get:
+      tags: [Swiss]
+      summary: Check if current Swiss round is complete
+      operationId: isSwissRoundComplete
+      responses:
+        "200":
+          description: Round completion status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [complete]
+                properties:
+                  complete:
+                    type: boolean
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tournaments/{id}/groups/{groupId}/standings:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags: [Group Stage]
+      summary: Get standings for a group
+      operationId: getGroupStandings
+      responses:
+        "200":
+          description: Group standings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StandingsRow"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tournaments/{id}/groups/advancers:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    get:
+      tags: [Group Stage]
+      summary: Get players advancing from group stage
+      operationId: getAdvancers
+      responses:
+        "200":
+          description: List of advancing player IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tournaments/{id}/groups/playoffs:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    post:
+      tags: [Group Stage]
+      summary: Generate playoff bracket from group stage
+      operationId: generatePlayoffs
+      responses:
+        "200":
+          description: Playoffs generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tournament"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /tournaments/{id}/standings:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    get:
+      tags: [Standings]
+      summary: Get round-robin or Swiss standings
+      operationId: getStandings
+      responses:
+        "200":
+          description: Standings table
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/StandingsRow"
+                    - $ref: "#/components/schemas/SwissStandingsRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tournaments/{id}/matrix:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+
+    get:
+      tags: [Standings]
+      summary: Get round-robin head-to-head matrix
+      operationId: getMatrix
+      responses:
+        "200":
+          description: H2H matrix
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/H2HMatrix"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /players:
+    get:
+      tags: [Players]
+      summary: List all players
+      operationId: listPlayers
+      parameters:
+        - name: groupId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerLibraryEntry"
+
+    post:
+      tags: [Players]
+      summary: Add a player
+      operationId: createPlayer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerRequest"
+      responses:
+        "201":
+          description: Player created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerLibraryEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+    delete:
+      tags: [Players]
+      summary: Delete all players
+      operationId: deleteAllPlayers
+      responses:
+        "204":
+          description: All players deleted
+
+  /players/bulk:
+    post:
+      tags: [Players]
+      summary: Bulk import players from text
+      operationId: bulkImportPlayers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkImportRequest"
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [imported]
+                properties:
+                  imported:
+                    type: integer
+                  players:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PlayerLibraryEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /players/{id}:
+    parameters:
+      - $ref: "#/components/parameters/PlayerId"
+
+    put:
+      tags: [Players]
+      summary: Update a player
+      operationId: updatePlayer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlayerRequest"
+      responses:
+        "200":
+          description: Player updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerLibraryEntry"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Players]
+      summary: Delete a player
+      operationId: deletePlayer
+      responses:
+        "204":
+          description: Player deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /players/{id}/profile:
+    parameters:
+      - $ref: "#/components/parameters/PlayerId"
+
+    get:
+      tags: [Players]
+      summary: Get player profile and stats
+      operationId: getPlayerProfile
+      responses:
+        "200":
+          description: Player profile with statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerProfile"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /player-groups:
+    get:
+      tags: [Player Groups]
+      summary: List all player groups
+      operationId: listPlayerGroups
+      responses:
+        "200":
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerGroup"
+
+    post:
+      tags: [Player Groups]
+      summary: Create a player group
+      operationId: createPlayerGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupRequest"
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerGroup"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /player-groups/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    put:
+      tags: [Player Groups]
+      summary: Update a player group
+      operationId: updatePlayerGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGroupRequest"
+      responses:
+        "200":
+          description: Group updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerGroup"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Player Groups]
+      summary: Delete a player group
+      operationId: deletePlayerGroup
+      responses:
+        "204":
+          description: Group deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    TournamentId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+    MatchId:
+      name: matchId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    PlayerId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+
+    UnprocessableEntity:
+      description: Validation failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+
+    Conflict:
+      description: Conflict with current state
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+
+  schemas:
+    # --- Enums ---
+
+    Format:
+      type: string
+      enum:
+        - SINGLE_ELIM
+        - DOUBLE_ELIM
+        - ROUND_ROBIN
+        - GROUPS_TO_BRACKET
+        - SWISS
+
+    BracketType:
+      type: string
+      enum:
+        - single_elim
+        - double_elim
+
+    ScoreMode:
+      type: string
+      enum:
+        - SETS
+        - POINTS
+
+    # --- Core Types ---
+
+    Player:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        seed:
+          type: integer
+        elo:
+          type: number
+        libraryId:
+          type: string
+
+    Participant:
+      type: object
+      required: [id, playerIds]
+      properties:
+        id:
+          type: string
+        playerIds:
+          type: array
+          items:
+            type: string
+        seed:
+          type: integer
+
+    SetScore:
+      type: array
+      items:
+        type: integer
+      minItems: 2
+      maxItems: 2
+
+    Match:
+      type: object
+      required: [id, player1Id, player2Id, scores, winnerId, walkover, dummy]
+      properties:
+        id:
+          type: string
+        player1Id:
+          type: ["string", "null"]
+        player2Id:
+          type: ["string", "null"]
+        scores:
+          type: array
+          items:
+            $ref: "#/components/schemas/SetScore"
+        winnerId:
+          type: ["string", "null"]
+        walkover:
+          type: boolean
+        nextMatchId:
+          type: ["string", "null"]
+        position:
+          type: integer
+        dummy:
+          type: boolean
+
+    RankedResult:
+      type: object
+      required: [playerId, name]
+      properties:
+        playerId:
+          type: string
+        name:
+          type: string
+        libraryId:
+          type: string
+        rankStart:
+          type: integer
+        rankEnd:
+          type: integer
+
+    StandingsRow:
+      type: object
+      required:
+        - playerId
+        - name
+        - played
+        - wins
+        - losses
+        - points
+        - setsWon
+        - setsLost
+        - pointsWon
+        - pointsLost
+      properties:
+        playerId:
+          type: string
+        name:
+          type: string
+        played:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        points:
+          type: number
+        setsWon:
+          type: integer
+        setsLost:
+          type: integer
+        pointsWon:
+          type: integer
+        pointsLost:
+          type: integer
+
+    SwissStandingsRow:
+      allOf:
+        - $ref: "#/components/schemas/StandingsRow"
+        - type: object
+          required: [buchholz]
+          properties:
+            buchholz:
+              type: number
+
+    # --- Tournament Structure Schemas ---
+
+    Round:
+      type: object
+      required: [matches]
+      properties:
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/Match"
+
+    Bracket:
+      type: object
+      required: [rounds]
+      properties:
+        rounds:
+          type: array
+          items:
+            $ref: "#/components/schemas/Round"
+        consolation:
+          $ref: "#/components/schemas/Match"
+
+    DoubleElim:
+      type: object
+      required: [winners, losers, grandFinal]
+      properties:
+        winners:
+          type: array
+          items:
+            $ref: "#/components/schemas/Round"
+        losers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Round"
+        grandFinal:
+          $ref: "#/components/schemas/Match"
+
+    RoundRobinSchedule:
+      type: object
+      required: [rounds]
+      properties:
+        rounds:
+          type: array
+          items:
+            $ref: "#/components/schemas/Round"
+
+    GroupStage:
+      type: object
+      required: [groups]
+      properties:
+        groups:
+          type: array
+          items:
+            type: object
+            required: [id, name, playerIds, schedule]
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              playerIds:
+                type: array
+                items:
+                  type: string
+              schedule:
+                $ref: "#/components/schemas/RoundRobinSchedule"
+
+    # --- Tournament (discriminated union on format) ---
+
+    TournamentBase:
+      type: object
+      required: [id, name, format, players, participants, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        format:
+          $ref: "#/components/schemas/Format"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/Player"
+        teamSize:
+          type: integer
+          minimum: 1
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Participant"
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        winnerId:
+          type: ["string", "null"]
+        scoringMode:
+          $ref: "#/components/schemas/ScoreMode"
+        maxSets:
+          type: integer
+        groupStageMaxSets:
+          type: integer
+        bracketMaxSets:
+          type: integer
+
+    SingleElimTournament:
+      allOf:
+        - $ref: "#/components/schemas/TournamentBase"
+        - type: object
+          required: [bracket]
+          properties:
+            format:
+              type: string
+              const: SINGLE_ELIM
+            bracket:
+              $ref: "#/components/schemas/Bracket"
+
+    DoubleElimTournament:
+      allOf:
+        - $ref: "#/components/schemas/TournamentBase"
+        - type: object
+          required: [doubleElim]
+          properties:
+            format:
+              type: string
+              const: DOUBLE_ELIM
+            doubleElim:
+              $ref: "#/components/schemas/DoubleElim"
+
+    RoundRobinTournament:
+      allOf:
+        - $ref: "#/components/schemas/TournamentBase"
+        - type: object
+          required: [schedule]
+          properties:
+            format:
+              type: string
+              const: ROUND_ROBIN
+            schedule:
+              $ref: "#/components/schemas/RoundRobinSchedule"
+
+    GroupsToBracketTournament:
+      allOf:
+        - $ref: "#/components/schemas/TournamentBase"
+        - type: object
+          required: [groupStage]
+          properties:
+            format:
+              type: string
+              const: GROUPS_TO_BRACKET
+            groupStage:
+              $ref: "#/components/schemas/GroupStage"
+            groupStagePlayoffs:
+              $ref: "#/components/schemas/Bracket"
+
+    SwissTournament:
+      allOf:
+        - $ref: "#/components/schemas/TournamentBase"
+        - type: object
+          required: [schedule, totalRounds]
+          properties:
+            format:
+              type: string
+              const: SWISS
+            schedule:
+              $ref: "#/components/schemas/RoundRobinSchedule"
+            totalRounds:
+              type: integer
+
+    Tournament:
+      oneOf:
+        - $ref: "#/components/schemas/SingleElimTournament"
+        - $ref: "#/components/schemas/DoubleElimTournament"
+        - $ref: "#/components/schemas/RoundRobinTournament"
+        - $ref: "#/components/schemas/GroupsToBracketTournament"
+        - $ref: "#/components/schemas/SwissTournament"
+      discriminator:
+        propertyName: format
+        mapping:
+          SINGLE_ELIM: "#/components/schemas/SingleElimTournament"
+          DOUBLE_ELIM: "#/components/schemas/DoubleElimTournament"
+          ROUND_ROBIN: "#/components/schemas/RoundRobinTournament"
+          GROUPS_TO_BRACKET: "#/components/schemas/GroupsToBracketTournament"
+          SWISS: "#/components/schemas/SwissTournament"
+
+    TournamentSummary:
+      type: object
+      required: [id, name, format, createdAt, playerCount]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        format:
+          $ref: "#/components/schemas/Format"
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        winnerId:
+          type: ["string", "null"]
+        playerCount:
+          type: integer
+        teamSize:
+          type: integer
+          minimum: 1
+
+    Progress:
+      type: object
+      required: [completed, total]
+      properties:
+        completed:
+          type: integer
+        total:
+          type: integer
+
+    H2HMatrix:
+      type: object
+      required: [playerIds, matrix]
+      properties:
+        playerIds:
+          type: array
+          items:
+            type: string
+        matrix:
+          type: array
+          items:
+            type: array
+            items:
+              type: ["string", "null"]
+          description: 2D array indexed by player order; each cell is the match result or null.
+
+    # --- Player Library Types ---
+
+    PlayerGroup:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    PlayerLibraryEntry:
+      type: object
+      required: [id, name, groupIds]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        elo:
+          type: number
+        groupIds:
+          type: array
+          items:
+            type: string
+
+    PlayerProfile:
+      type: object
+      required: [player, tournaments]
+      properties:
+        player:
+          $ref: "#/components/schemas/PlayerLibraryEntry"
+        tournaments:
+          type: array
+          items:
+            type: object
+            required: [tournamentId, tournamentName, format]
+            properties:
+              tournamentId:
+                type: string
+              tournamentName:
+                type: string
+              format:
+                $ref: "#/components/schemas/Format"
+              rank:
+                type: integer
+
+    # --- Request Bodies ---
+
+    CreateTournamentRequest:
+      type: object
+      required: [name, format, players]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        format:
+          $ref: "#/components/schemas/Format"
+        players:
+          type: array
+          items:
+            type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+              seed:
+                type: integer
+              elo:
+                type: number
+              libraryId:
+                type: string
+          minItems: 2
+        teamSize:
+          type: integer
+          minimum: 1
+        scoringMode:
+          $ref: "#/components/schemas/ScoreMode"
+        maxSets:
+          type: integer
+          minimum: 1
+        groupStageMaxSets:
+          type: integer
+          minimum: 1
+        bracketMaxSets:
+          type: integer
+          minimum: 1
+        groupCount:
+          type: integer
+          minimum: 2
+        qualifiers:
+          type: integer
+          minimum: 1
+        consolation:
+          type: boolean
+        bracketType:
+          $ref: "#/components/schemas/BracketType"
+        swissRounds:
+          type: integer
+          minimum: 1
+
+    RecordScoreRequest:
+      type: object
+      required: [scores]
+      properties:
+        scores:
+          type: array
+          items:
+            $ref: "#/components/schemas/SetScore"
+          minItems: 1
+        walkover:
+          type: boolean
+
+    CreatePlayerRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        elo:
+          type: number
+        groupIds:
+          type: array
+          items:
+            type: string
+
+    UpdatePlayerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        elo:
+          type: number
+        groupIds:
+          type: array
+          items:
+            type: string
+
+    BulkImportRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+
+    CreateGroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+
+    UpdateGroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+
+    # --- Error (RFC 9457 Problem Detail) ---
+
+    ProblemDetail:
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: "about:blank"
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        details:
+          description: Extension member for structured validation details
+          type: ["object", "array", "null"]

@@ -15,6 +15,10 @@ if ('trustedTypes' in window) {
   })
 }
 
+if ('serviceWorker' in navigator) {
+  void navigator.serviceWorker.register('/sw-api.js', { scope: '/' })
+}
+
 const rootElement = document.querySelector('#root')
 if (!rootElement) {
   throw new Error('Root element "#root" not found')
