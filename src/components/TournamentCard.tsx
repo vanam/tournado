@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Copy, Trash2 } from 'lucide-react';
+import { Copy, Trash2, User, Users } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import type { Tournament } from '../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -70,8 +70,11 @@ export const TournamentCard = ({ tournament, onDelete, onDuplicate }: Tournament
           </div>
         </div>
         <FormatBadge format={tournament.format} className="mt-2 w-fit" />
-        <CardDescription className="text-sm text-[var(--color-muted)] mt-1">
-          {t('tournament.players', { count: tournament.players.length })}
+        <CardDescription className="text-sm text-[var(--color-muted)] mt-1 flex items-center gap-1.5">
+          {tournament.teamSize === 2 ? <Users className="h-3.5 w-3.5 shrink-0" /> : <User className="h-3.5 w-3.5 shrink-0" />}
+          <span>{tournament.teamSize === 2 ? '2v2' : '1v1'}</span>
+          <span>·</span>
+          <span>{t('tournament.players', { count: tournament.players.length })}</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="p-5 pt-0">

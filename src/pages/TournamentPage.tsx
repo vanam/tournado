@@ -1,6 +1,6 @@
 import {type ReactElement, useEffect, useRef} from 'react';
 import {useParams, Link, useLocation} from 'react-router-dom';
-import { SearchX, CircleHelp, Maximize2 } from 'lucide-react';
+import { SearchX, CircleHelp, Maximize2, User, Users } from 'lucide-react';
 import { Format } from '../types';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -77,7 +77,10 @@ const TournamentContent = (): ReactElement => {
           {tournament.name}
         </h1>
         <div className="flex items-center justify-between mt-1">
-          <p className="text-sm text-[var(--color-muted)]">
+          <p className="flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
+            {tournament.teamSize === 2 ? <Users className="h-3.5 w-3.5 shrink-0" /> : <User className="h-3.5 w-3.5 shrink-0" />}
+            <span>{tournament.teamSize === 2 ? '2v2' : '1v1'}</span>
+            &middot;{' '}
             {t(`format.${tournament.format}`)} &middot;{' '}
             {t('tournament.players', { count: tournament.players.length })}
           </p>

@@ -1,5 +1,6 @@
 import { type ReactElement, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { User, Users } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { loadLibrary } from '../services/playerLibraryService';
@@ -190,23 +191,28 @@ export const PlayerProfilePage = (): ReactElement => {
                     <span className="font-medium text-sm text-[var(--color-text)] flex-1">
                       {tournament.name}
                     </span>
-                    <FormatBadge format={tournament.format} />
-                    <span className="text-xs text-[var(--color-faint)]">
-                      {t('card.created', { date: date.toLocaleDateString() })}
-                    </span>
                     {!isInProgress && rankStart !== undefined && rankEnd !== undefined && (
-                      <RankBadge rankStart={rankStart} rankEnd={rankEnd} />
+                        <RankBadge rankStart={rankStart} rankEnd={rankEnd} />
                     )}
                     {!isInProgress && rankStart === undefined && (
-                      <span className="inline-flex items-center rounded-full border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-muted)]">
+                        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-muted)]">
                         {t('playerProfile.statusCompleted')}
                       </span>
                     )}
                     {isInProgress && (
-                      <span className="inline-flex items-center rounded-full bg-[var(--color-soft)] border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text)]">
+                        <span className="inline-flex items-center rounded-full bg-[var(--color-soft)] border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text)]">
                         {t('playerProfile.statusInProgress')}
                       </span>
                     )}
+                    <FormatBadge format={tournament.format} />
+                    <span className="flex items-center gap-1 text-xs text-[var(--color-faint)]">
+                      {tournament.teamSize === 2 ? <Users className="h-3.5 w-3.5 shrink-0" /> : <User className="h-3.5 w-3.5 shrink-0" />}
+                      <span>{tournament.teamSize === 2 ? '2v2' : '1v1'}</span>
+                      <span>|</span>
+                      <span>{t('tournament.players', { count: tournament.players.length })}</span>
+                      <span>|</span>
+                      <span>{date.toLocaleDateString()}</span>
+                    </span>
                   </Link>
                 );
               })}
