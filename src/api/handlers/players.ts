@@ -50,7 +50,17 @@ export async function updatePlayerHandler(req: Request, params: Record<string, s
   }
 
   const patch: Record<string, unknown> = {};
-  if (body.name !== undefined) patch['name'] = body.name;
+  if (body.name !== undefined) {
+    const trimmedName = body.name.trim();
+    const isDuplicate = library.players.some(
+      (p) => p.id !== id && p.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (isDuplicate) {
+      const t = getTranslator(req);
+      throw badRequest(t('players.errorUnique'));
+    }
+    patch['name'] = trimmedName;
+  }
   if (body.elo !== undefined) patch['elo'] = body.elo;
   if (body.groupIds !== undefined) patch['groupIds'] = body.groupIds;
 

@@ -80,6 +80,7 @@ export const PlayerLibraryPage = (): ReactElement => {
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editingPlayerName, setEditingPlayerName] = useState('');
   const [editingPlayerElo, setEditingPlayerElo] = useState('');
+  const [editingPlayerError, setEditingPlayerError] = useState('');
   const [addingGroupForPlayerId, setAddingGroupForPlayerId] = useState<string | null>(null);
 
   // Delete-all state
@@ -243,6 +244,7 @@ export const PlayerLibraryPage = (): ReactElement => {
     setEditingPlayerId(player.id);
     setEditingPlayerName(player.name);
     setEditingPlayerElo(player.elo === undefined ? '' : String(player.elo));
+    setEditingPlayerError('');
     setTimeout(() => { editPlayerNameRef.current?.focus(); }, 0);
   }
 
@@ -251,6 +253,14 @@ export const PlayerLibraryPage = (): ReactElement => {
     const trimmed = editingPlayerName.trim();
     if (trimmed.length === 0) {
       setEditingPlayerId(null);
+      setEditingPlayerError('');
+      return;
+    }
+    const isDuplicate = library.players.some(
+      (p) => p.id !== editingPlayerId && p.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (isDuplicate) {
+      setEditingPlayerError(t('players.errorUnique'));
       return;
     }
     const eloRaw = editingPlayerElo.trim();
@@ -264,6 +274,7 @@ export const PlayerLibraryPage = (): ReactElement => {
     setEditingPlayerId(null);
     setEditingPlayerName('');
     setEditingPlayerElo('');
+    setEditingPlayerError('');
   }
 
   function handleEditPlayerKeyDown(e: KeyboardEvent<HTMLInputElement>): void {
@@ -273,6 +284,7 @@ export const PlayerLibraryPage = (): ReactElement => {
       setEditingPlayerId(null);
       setEditingPlayerName('');
       setEditingPlayerElo('');
+      setEditingPlayerError('');
     }
   }
 
@@ -595,10 +607,10 @@ export const PlayerLibraryPage = (): ReactElement => {
                       <Input
                         ref={editPlayerNameRef}
                         value={editingPlayerName}
-                        onChange={(e) => { setEditingPlayerName(e.target.value); }}
+                        onChange={(e) => { setEditingPlayerName(e.target.value); setEditingPlayerError(''); }}
                         onBlur={handleSaveEditPlayer}
                         onKeyDown={handleEditPlayerKeyDown}
-                        className="h-7 text-sm w-40"
+                        className={`h-7 text-sm w-40 ${editingPlayerError ? 'border-red-500' : ''}`}
                       />
                       <Input
                         value={editingPlayerElo}
@@ -611,6 +623,9 @@ export const PlayerLibraryPage = (): ReactElement => {
                         max={9999}
                         className="h-7 text-sm w-20"
                       />
+                      {editingPlayerError && (
+                        <span className="basis-full text-xs text-red-500">{editingPlayerError}</span>
+                      )}
                     </>
                   ) : (
                     <>
