@@ -7,6 +7,7 @@ import type {
   UpdatePlayerRequest,
   CreateGroupRequest,
   UpdateGroupRequest,
+  ReorderGroupsRequest,
   PlayerProfile,
   MatrixResponse,
 } from './types';
@@ -65,6 +66,7 @@ export const importPlayers = (text: string): Promise<{ imported: number }> => ap
 // Player groups
 export const listPlayerGroups = (): Promise<PlayerGroup[]> => apiCall('GET', '/api/player-groups');
 export const createPlayerGroup = (req: CreateGroupRequest): Promise<PlayerGroup> => apiCall('POST', '/api/player-groups', req);
+export const reorderPlayerGroups = (req: ReorderGroupsRequest): Promise<PlayerGroup[]> => apiCall('PUT', '/api/player-groups/reorder', req);
 export const updatePlayerGroup = (id: string, req: UpdateGroupRequest): Promise<PlayerGroup> => apiCall('PUT', `/api/player-groups/${id}`, req);
 export const deletePlayerGroup = (id: string): Promise<void> => apiCall('DELETE', `/api/player-groups/${id}`);
 

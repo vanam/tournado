@@ -48,6 +48,16 @@ export function createPlayerLibraryService(
       });
     },
 
+    async reorderGroups(ids: string[]): Promise<PlayerLibrary> {
+      const lib = await getCache();
+      const groupMap = new Map(lib.groups.map((g) => [g.id, g]));
+      const reordered = ids.flatMap((id) => {
+        const g = groupMap.get(id);
+        return g === undefined ? [] : [g];
+      });
+      return persist({ ...lib, groups: reordered });
+    },
+
     async deleteGroup(id: string): Promise<PlayerLibrary> {
       const lib = await getCache();
       return persist({
@@ -110,6 +120,7 @@ export const saveLibrary = (lib: PlayerLibrary): Promise<void> => _service.saveL
 export const addGroup = (name: string): Promise<PlayerLibrary> => _service.addGroup(name);
 export const updateGroup = (id: string, name: string): Promise<PlayerLibrary> => _service.updateGroup(id, name);
 export const deleteGroup = (id: string): Promise<PlayerLibrary> => _service.deleteGroup(id);
+export const reorderGroups = (ids: string[]): Promise<PlayerLibrary> => _service.reorderGroups(ids);
 export const addPlayer = (name: string, elo?: number, groupIds?: string[]): Promise<PlayerLibrary> => _service.addPlayer(name, elo, groupIds);
 export const updatePlayer = (id: string, patch: Partial<PlayerLibraryEntry>): Promise<PlayerLibrary> => _service.updatePlayer(id, patch);
 export const deletePlayer = (id: string): Promise<PlayerLibrary> => _service.deletePlayer(id);

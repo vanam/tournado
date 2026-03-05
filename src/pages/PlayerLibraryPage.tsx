@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import type { ReactElement, KeyboardEvent } from 'react';
+import type { DragEvent, ReactElement, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Pencil, Trash2, Plus, X, Upload } from 'lucide-react';
+import { GripVertical, Pencil, Trash2, Plus, X, Upload } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import {
@@ -14,9 +14,11 @@ import {
   createPlayerGroup,
   updatePlayerGroup,
   deletePlayerGroup,
+  reorderPlayerGroups,
 } from '../api/client';
 import type { PlayerLibrary, PlayerGroup, PlayerLibraryEntry } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { PlayerMoveButtons } from '../components/common/PlayerMoveButtons';
 import { CustomDialog } from '../components/CustomDialog';
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +35,12 @@ const GROUP_COLORS = [
 
 function getGroupColor(index: number): string {
   return GROUP_COLORS[index % GROUP_COLORS.length] ?? 'bg-gray-100 text-gray-800';
+}
+
+function getGroupItemClass(isDragged: boolean, isOver: boolean): string {
+  if (isDragged) return 'opacity-40 border border-transparent';
+  if (isOver) return 'bg-[var(--color-soft)] border border-[var(--color-primary)]';
+  return 'border border-transparent';
 }
 
 export const PlayerLibraryPage = (): ReactElement => {
@@ -61,6 +69,8 @@ export const PlayerLibraryPage = (): ReactElement => {
   const [editingGroupName, setEditingGroupName] = useState('');
   const [deleteGroupTarget, setDeleteGroupTarget] = useState<PlayerGroup | null>(null);
   const [showDeleteAllGroupsConfirm, setShowDeleteAllGroupsConfirm] = useState(false);
+  const [groupDragIndex, setGroupDragIndex] = useState<number | null>(null);
+  const [groupOverIndex, setGroupOverIndex] = useState<number | null>(null);
 
   // Player form state
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -115,6 +125,55 @@ export const PlayerLibraryPage = (): ReactElement => {
       setShowAddGroup(false);
       setNewGroupName('');
     }
+  }
+
+  function handleGroupDragStart(index: number): void {
+    setGroupDragIndex(index);
+  }
+
+  function handleGroupDragOver(e: DragEvent<HTMLDivElement>, index: number): void {
+    e.preventDefault();
+    if (groupOverIndex !== index) setGroupOverIndex(index);
+  }
+
+  function handleGroupDrop(toIndex: number): void {
+    if (groupDragIndex === null || groupDragIndex === toIndex) {
+      setGroupDragIndex(null);
+      setGroupOverIndex(null);
+      return;
+    }
+    const updated = [...library.groups];
+    const [moved] = updated.splice(groupDragIndex, 1);
+    if (moved === undefined) { setGroupDragIndex(null); setGroupOverIndex(null); return; }
+    updated.splice(toIndex, 0, moved);
+    setLibrary((prev) => ({ ...prev, groups: updated }));
+    void reorderPlayerGroups({ ids: updated.map((g) => g.id) });
+    setGroupDragIndex(null);
+    setGroupOverIndex(null);
+  }
+
+  function handleGroupDragEnd(): void {
+    setGroupDragIndex(null);
+    setGroupOverIndex(null);
+  }
+
+  function moveGroupByIndex(fromIndex: number, toIndex: number): void {
+    const updated = [...library.groups];
+    const [moved] = updated.splice(fromIndex, 1);
+    if (moved === undefined) return;
+    updated.splice(toIndex, 0, moved);
+    setLibrary((prev) => ({ ...prev, groups: updated }));
+    void reorderPlayerGroups({ ids: updated.map((g) => g.id) });
+  }
+
+  function handleGroupMoveUp(index: number): void {
+    if (index === 0) return;
+    moveGroupByIndex(index, index - 1);
+  }
+
+  function handleGroupMoveDown(index: number): void {
+    if (index === library.groups.length - 1) return;
+    moveGroupByIndex(index, index + 1);
   }
 
   function handleStartEditGroup(group: PlayerGroup): void {
@@ -378,10 +437,15 @@ export const PlayerLibraryPage = (): ReactElement => {
             )}
           </div>
 
-          {library.groups.map((group) => (
+          {library.groups.map((group, idx) => (
             <div
               key={group.id}
-              className="flex items-center gap-1 rounded px-1 py-0.5"
+              draggable={editingGroupId !== group.id}
+              onDragStart={() => { handleGroupDragStart(idx); }}
+              onDragOver={(e) => { handleGroupDragOver(e, idx); }}
+              onDrop={() => { handleGroupDrop(idx); }}
+              onDragEnd={handleGroupDragEnd}
+              className={`flex items-center gap-1 rounded px-1 py-0.5 transition-colors ${getGroupItemClass(groupDragIndex === idx, groupOverIndex === idx)}`}
             >
               {editingGroupId === group.id ? (
                 <Input
@@ -394,9 +458,16 @@ export const PlayerLibraryPage = (): ReactElement => {
                 />
               ) : (
                 <>
+                  <GripVertical className="h-4 w-4 text-[var(--color-faint)] cursor-grab shrink-0" />
                   <span className="flex-1 text-sm text-[var(--color-text)] truncate px-1">
                     {group.name}
                   </span>
+                  <PlayerMoveButtons
+                    index={idx}
+                    total={library.groups.length}
+                    onMoveUp={handleGroupMoveUp}
+                    onMoveDown={handleGroupMoveDown}
+                  />
                   <Button
                     variant="primary-ghost"
                     size="icon"

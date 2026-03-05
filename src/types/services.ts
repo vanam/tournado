@@ -33,6 +33,7 @@ export interface PlayerLibraryService {
   addGroup: (name: string) => Promise<PlayerLibrary>;
   updateGroup: (id: string, name: string) => Promise<PlayerLibrary>;
   deleteGroup: (id: string) => Promise<PlayerLibrary>;
+  reorderGroups: (ids: string[]) => Promise<PlayerLibrary>;
   addPlayer: (name: string, elo?: number, groupIds?: string[]) => Promise<PlayerLibrary>;
   updatePlayer: (id: string, patch: Partial<PlayerLibraryEntry>) => Promise<PlayerLibrary>;
   deletePlayer: (id: string) => Promise<PlayerLibrary>;

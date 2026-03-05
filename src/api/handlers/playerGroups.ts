@@ -3,8 +3,9 @@ import {
   addGroup,
   updateGroup,
   deleteGroup,
+  reorderGroups,
 } from '../../services/playerLibraryService';
-import type { CreateGroupRequest, UpdateGroupRequest } from '../types';
+import type { CreateGroupRequest, UpdateGroupRequest, ReorderGroupsRequest } from '../types';
 import { jsonResponse, noContent, parseJsonBody } from '../helpers';
 import { notFound, badRequest } from '../errors';
 
@@ -48,4 +49,15 @@ export async function deleteGroupHandler(_req: Request, params: Record<string, s
   const id = params['id'] ?? '';
   await deleteGroup(id);
   return noContent();
+}
+
+export async function reorderGroupsHandler(req: Request): Promise<Response> {
+  const body = await parseJsonBody<ReorderGroupsRequest>(req);
+
+  if (!Array.isArray(body.ids)) {
+    throw badRequest('ids must be an array');
+  }
+
+  const library = await reorderGroups(body.ids);
+  return jsonResponse(library.groups);
 }

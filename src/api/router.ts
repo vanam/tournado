@@ -50,6 +50,7 @@ import {
   createGroupHandler,
   updateGroupHandler,
   deleteGroupHandler,
+  reorderGroupsHandler,
 } from './handlers/playerGroups';
 
 interface Route {
@@ -119,6 +120,7 @@ const routes: Route[] = [
   // Player groups
   { method: 'GET', pathPattern: '/api/player-groups', handler: listGroups },
   { method: 'POST', pathPattern: '/api/player-groups', handler: createGroupHandler },
+  { method: 'PUT', pathPattern: '/api/player-groups/reorder', handler: reorderGroupsHandler },
   { method: 'PUT', pathPattern: '/api/player-groups/:id', handler: updateGroupHandler },
   { method: 'DELETE', pathPattern: '/api/player-groups/:id', handler: deleteGroupHandler },
 ];

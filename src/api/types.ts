@@ -56,6 +56,10 @@ export interface UpdateGroupRequest {
   name: string;
 }
 
+export interface ReorderGroupsRequest {
+  ids: string[];
+}
+
 export interface ProgressResponse {
   completed: number;
   total: number;
