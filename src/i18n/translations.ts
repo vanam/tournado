@@ -60,6 +60,7 @@ export const en: TranslationMap = {
   'players.importErrorDuplicate': 'Duplicate name',
   'players.importErrorExists': 'Player already added',
   'players.importErrorNone': 'No players to import',
+  'players.importErrorApi': 'Import failed: {{msg}}',
   'players.importConfirm': 'Import',
   'players.importCancel': 'Cancel',
 
@@ -421,6 +422,7 @@ export const cs: TranslationMap = {
   'players.importErrorDuplicate': 'Duplicitní jméno',
   'players.importErrorExists': 'Hráč již byl přidán',
   'players.importErrorNone': 'Žádní hráči k importu',
+  'players.importErrorApi': 'Import selhal: {{msg}}',
   'players.importConfirm': 'Importovat',
   'players.importCancel': 'Zrušit',
 
@@ -783,6 +785,7 @@ export const de: TranslationMap = {
   'players.importErrorDuplicate': 'Doppelter Name',
   'players.importErrorExists': 'Spieler bereits hinzugefügt',
   'players.importErrorNone': 'Keine Spieler zum Importieren',
+  'players.importErrorApi': 'Import fehlgeschlagen: {{msg}}',
   'players.importConfirm': 'Importieren',
   'players.importCancel': 'Abbrechen',
 
@@ -1143,6 +1146,7 @@ export const es: TranslationMap = {
   'players.importErrorDuplicate': 'Nombre duplicado',
   'players.importErrorExists': 'Jugador ya añadido',
   'players.importErrorNone': 'No hay jugadores para importar',
+  'players.importErrorApi': 'Error al importar: {{msg}}',
   'players.importConfirm': 'Importar',
   'players.importCancel': 'Cancelar',
 

@@ -85,7 +85,7 @@ export async function bulkImport(req: Request): Promise<Response> {
   }
 
   for (const entry of parsed) {
-    await addPlayer(entry.name, entry.elo);
+    await addPlayer(entry.name, entry.elo, body.groupIds ?? []);
   }
 
   return jsonResponse({ imported: parsed.length, errors: [] }, 201);

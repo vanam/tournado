@@ -8,6 +8,7 @@ import {
   listPlayers,
   listPlayerGroups,
   createPlayer,
+  importPlayers,
   updatePlayer as updatePlayerApi,
   deletePlayer as deletePlayerApi,
   deleteAllPlayers as deleteAllPlayersApi,
@@ -23,7 +24,6 @@ import { CustomDialog } from '../components/CustomDialog';
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { parseBulkInput } from '../utils/importUtils';
 
 const GROUP_COLORS = [
   'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
@@ -88,6 +88,7 @@ export const PlayerLibraryPage = (): ReactElement => {
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
   const [importText, setImportText] = useState('');
+  const [importGroupIds, setImportGroupIds] = useState<string[]>([]);
   const [importErrors, setImportErrors] = useState<Array<{ line: number; msg: string }>>([]);
 
   const groupInputRef = useRef<HTMLInputElement>(null);
@@ -309,22 +310,30 @@ export const PlayerLibraryPage = (): ReactElement => {
     setShowDeleteAllGroupsConfirm(false);
   }
 
+  function handleImportGroupToggle(groupId: string): void {
+    setImportGroupIds((prev) =>
+      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]
+    );
+  }
+
   // --- Bulk import handler ---
 
   function handleBulkImport(): void {
-    const { parsed, errors: parseErrors } = parseBulkInput(
-      importText,
-      library.players.map((p) => p.name),
-    );
-    const newErrors = parseErrors.map((e) => ({ line: e.line, msg: t(e.msgKey) }));
-    if (newErrors.length > 0) { setImportErrors(newErrors); return; }
-    if (parsed.length === 0) { setImportErrors([{ line: 0, msg: t('players.importErrorNone') }]); return; }
+    if (importText.trim() === '') {
+      setImportErrors([{ line: 0, msg: t('players.importErrorNone') }]);
+      return;
+    }
 
-    const groupIds = selectedGroupId === null ? [] : [selectedGroupId];
-    void Promise.all(parsed.map((p) => createPlayer({ name: p.name, ...(p.elo !== undefined && { elo: p.elo }), groupIds }))).then(reloadLibrary);
-    setShowImportModal(false);
-    setImportText('');
-    setImportErrors([]);
+    void importPlayers(importText, importGroupIds).then(() => {
+      setShowImportModal(false);
+      setImportText('');
+      setImportGroupIds([]);
+      setImportErrors([]);
+      reloadLibrary();
+    }).catch((error: unknown) => {
+      const msg = error instanceof Error ? error.message : String(error);
+      setImportErrors([{ line: 0, msg: t('players.importErrorApi', { msg }) }]);
+    });
   }
 
   return (
@@ -409,7 +418,10 @@ export const PlayerLibraryPage = (): ReactElement => {
             </Button>
             <Button
               variant="ghost"
-              onClick={() => { setShowImportModal(true); }}
+              onClick={() => {
+                setImportGroupIds(selectedGroupId === null ? [] : [selectedGroupId]);
+                setShowImportModal(true);
+              }}
               className="flex items-center gap-1.5 text-sm"
             >
               <Upload className="h-4 w-4" />
@@ -741,6 +753,7 @@ export const PlayerLibraryPage = (): ReactElement => {
             if (!o) {
               setShowImportModal(false);
               setImportText('');
+              setImportGroupIds([]);
               setImportErrors([]);
             }
           }}
@@ -752,10 +765,25 @@ export const PlayerLibraryPage = (): ReactElement => {
               <DialogDescription className="whitespace-pre-line">{t('players.importDesc')}</DialogDescription>
             </DialogHeader>
             <div className="py-2">
-              {selectedGroupId !== null && (
-                <p className="text-xs text-[var(--color-muted)] mb-2">
-                  {t('playerLibrary.assignGroups')}: <strong>{library.groups.find((g) => g.id === selectedGroupId)?.name}</strong>
-                </p>
+              {library.groups.length > 0 && (
+                <div className="mb-3 space-y-1">
+                  <p className="text-xs text-[var(--color-muted)]">{t('playerLibrary.assignGroups')}</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {library.groups.map((g, idx) => (
+                      <label key={g.id} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={importGroupIds.includes(g.id)}
+                          onChange={() => { handleImportGroupToggle(g.id); }}
+                          className="accent-[var(--color-primary)] h-3.5 w-3.5"
+                        />
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${getGroupColor(idx)}`}>
+                          {g.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               )}
               <textarea
                 className="w-full min-h-[160px] rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-y"
@@ -784,6 +812,7 @@ export const PlayerLibraryPage = (): ReactElement => {
                 onClick={() => {
                   setShowImportModal(false);
                   setImportText('');
+                  setImportGroupIds([]);
                   setImportErrors([]);
                 }}
               >

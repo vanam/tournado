@@ -61,7 +61,7 @@ export const createPlayer = (req: CreatePlayerRequest): Promise<PlayerLibraryEnt
 export const updatePlayer = (id: string, req: UpdatePlayerRequest): Promise<PlayerLibraryEntry> => apiCall('PUT', `/api/players/${id}`, req);
 export const deletePlayer = (id: string): Promise<void> => apiCall('DELETE', `/api/players/${id}`);
 export const deleteAllPlayers = (): Promise<void> => apiCall('DELETE', '/api/players');
-export const importPlayers = (text: string): Promise<{ imported: number }> => apiCall('POST', '/api/players/import', { text });
+export const importPlayers = (text: string, groupIds?: string[]): Promise<{ imported: number }> => apiCall('POST', '/api/players/import', { text, ...(groupIds !== undefined && { groupIds }) });
 
 // Player groups
 export const listPlayerGroups = (): Promise<PlayerGroup[]> => apiCall('GET', '/api/player-groups');

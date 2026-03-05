@@ -34,6 +34,7 @@ export interface RecordScoreRequest {
 
 export interface BulkImportRequest {
   text: string;
+  groupIds?: string[];
 }
 
 export interface CreatePlayerRequest {
