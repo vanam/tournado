@@ -272,6 +272,8 @@ export const en: TranslationMap = {
   'footer.formats': 'Formats',
 
   'nav.features': 'Features',
+  'nav.openMenu': 'Open menu',
+  'nav.closeMenu': 'Close menu',
   'features.title': 'Features',
   'features.tier.free': 'Free',
   'features.tier.pro': 'Pro',
@@ -716,6 +718,8 @@ export const cs: TranslationMap = {
   'footer.formats': 'Formáty',
 
   'nav.features': 'Vlastnosti',
+  'nav.openMenu': 'Otevřít menu',
+  'nav.closeMenu': 'Zavřít menu',
   'features.title': 'Vlastnosti',
   'features.tier.free': 'Zdarma',
   'features.tier.pro': 'Pro',
@@ -1157,6 +1161,8 @@ export const de: TranslationMap = {
   'footer.formats': 'Formate',
 
   'nav.features': 'Funktionen',
+  'nav.openMenu': 'Menü öffnen',
+  'nav.closeMenu': 'Menü schließen',
   'features.title': 'Funktionen',
   'features.tier.free': 'Kostenlos',
   'features.tier.pro': 'Pro',
@@ -1598,6 +1604,8 @@ export const es: TranslationMap = {
   'footer.formats': 'Formatos',
 
   'nav.features': 'Características',
+  'nav.openMenu': 'Abrir menú',
+  'nav.closeMenu': 'Cerrar menú',
   'features.title': 'Características',
   'features.tier.free': 'Gratis',
   'features.tier.pro': 'Pro',

@@ -2,8 +2,7 @@ import type { ReactElement } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePwaUpdate } from '../hooks/usePwaUpdate';
-import { LanguageSwitcher } from './LanguageSwitcher';
-import { ThemeToggle } from './ThemeToggle';
+import { Navbar } from './Navbar';
 import { ToastContainer } from './Toast';
 
 export const Layout = (): ReactElement => {
@@ -14,29 +13,7 @@ export const Layout = (): ReactElement => {
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)] app-background flex flex-col">
-      <nav className="bg-[var(--color-primary)] text-[var(--color-nav-text)] shadow-lg border-b border-[var(--color-primary)]/20">
-        <div className="max-w-6xl mx-auto px-4 py-2 sm:py-3 flex items-center gap-4">
-          <Link to="/" className="text-xl font-bold transition-colors flex-1 flex items-center gap-3 min-w-0 truncate">
-            <img
-              src="/assets/icon.svg"
-              alt=""
-              className="h-10 w-10"
-              aria-hidden="true"
-            />
-            {t('nav.title')}
-          </Link>
-          <Link
-            to="/features"
-            className="text-sm font-medium text-[var(--color-nav-text)] opacity-80 hover:opacity-100 transition-opacity whitespace-nowrap"
-          >
-            {t('nav.features')}
-          </Link>
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            <LanguageSwitcher />
-          </div>
-        </div>
-      </nav>
+      <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
         <Outlet />
       </main>
