@@ -25,6 +25,12 @@ export const Layout = (): ReactElement => {
             />
             {t('nav.title')}
           </Link>
+          <Link
+            to="/features"
+            className="text-sm font-medium text-[var(--color-nav-text)] opacity-80 hover:opacity-100 transition-opacity whitespace-nowrap"
+          >
+            {t('nav.features')}
+          </Link>
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <LanguageSwitcher />
