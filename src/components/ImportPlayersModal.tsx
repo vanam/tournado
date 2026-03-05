@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { parseBulkInput } from '../utils/importUtils';
 import { loadLibrary } from '../services/playerLibraryService';
 import type { PlayerLibrary } from '../types';
+import { showToast } from '../utils/toastUtils';
 
 interface ImportPlayersModalProps {
   open: boolean;
@@ -37,14 +38,16 @@ export const ImportPlayersModal = ({
 
   useEffect(() => {
     if (open) {
-      void loadLibrary().then((lib) => {
-        setLibrary(lib);
-        if (lib.groups.length > 0 && lib.groups[0] !== undefined) {
-          setSelectedGroupId(lib.groups[0].id);
-        }
-      });
+      void loadLibrary()
+        .then((lib) => {
+          setLibrary(lib);
+          if (lib.groups.length > 0 && lib.groups[0] !== undefined) {
+            setSelectedGroupId(lib.groups[0].id);
+          }
+        })
+        .catch(() => { showToast({ message: t('api.errorLoad') }); });
     }
-  }, [open]);
+  }, [open, t]);
 
   function handleImport(): void {
     const { parsed, errors: parseErrors } = parseBulkInput(text, existingNames);

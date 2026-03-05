@@ -15,17 +15,27 @@ export const TournamentProvider = ({ tournamentId, children }: TournamentProvide
   });
 
   const reloadTournament = useCallback(async (): Promise<void> => {
-    const t = await getTournament(tournamentId);
-    setState((prev) => ({ ...prev, tournament: t }));
+    try {
+      const t = await getTournament(tournamentId);
+      setState((prev) => ({ ...prev, tournament: t }));
+    } catch {
+      // Reload failures leave existing data in place
+    }
   }, [tournamentId]);
 
   useEffect(() => {
     let active = true;
-    void getTournament(tournamentId).then((t) => {
-      if (active) {
-        setState({ tournament: t, isLoading: false });
-      }
-    });
+    void getTournament(tournamentId)
+      .then((t) => {
+        if (active) {
+          setState({ tournament: t, isLoading: false });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setState({ tournament: null, isLoading: false });
+        }
+      });
     return (): void => { active = false; };
   }, [tournamentId]);
 

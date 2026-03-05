@@ -15,6 +15,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import type { TournamentSummary } from '../api/types';
 import { Button } from '@/components/ui/Button';
 import { useAnalytics } from '@/utils/analytics';
+import { showToast } from '../utils/toastUtils';
 
 function sortTournaments(list: TournamentSummary[]): TournamentSummary[] {
   return list.toSorted((a, b) => {
@@ -39,8 +40,10 @@ export const HomePage = (): ReactElement => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    void listTournaments().then((all) => { setTournaments(sortTournaments(all)); });
-  }, []);
+    void listTournaments()
+      .then((all) => { setTournaments(sortTournaments(all)); })
+      .catch(() => { showToast({ message: t('api.errorLoad') }); });
+  }, [t]);
 
   usePageTitle(t('home.title'));
 
@@ -54,9 +57,11 @@ export const HomePage = (): ReactElement => {
   }
 
   function handleDuplicate(id: string): void {
-    void duplicateTournamentApi(id).then(() => {
-      void listTournaments().then((all) => { setTournaments(sortTournaments(all)); });
-    });
+    void duplicateTournamentApi(id)
+      .then(() => {
+        void listTournaments().then((all) => { setTournaments(sortTournaments(all)); });
+      })
+      .catch(() => { showToast({ message: t('api.errorSave') }); });
   }
 
   function handleConfirmDelete(): void {
@@ -64,7 +69,10 @@ export const HomePage = (): ReactElement => {
     const id = deleteTargetId;
     setDeleteTargetId(null);
     setTournaments((prev) => prev.filter((tr) => tr.id !== id));
-    void deleteTournamentApi(id);
+    void deleteTournamentApi(id).catch(() => {
+      void listTournaments().then((all) => { setTournaments(sortTournaments(all)); });
+      showToast({ message: t('api.errorSave') });
+    });
   }
 
   function handleCancelDelete(): void {
@@ -72,9 +80,9 @@ export const HomePage = (): ReactElement => {
   }
 
   function handleDeleteAll(): void {
-    void deleteAllTournaments().then(() => {
-      setTournaments([]);
-    });
+    void deleteAllTournaments()
+      .then(() => { setTournaments([]); })
+      .catch(() => { showToast({ message: t('api.errorSave') }); });
     setShowDeleteAll(false);
   }
 

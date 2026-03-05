@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import type { Tournament } from '../types';
+import { showToast } from '../utils/toastUtils';
 import type { PlayerLibraryEntry, PlayerGroup } from '../types/playerLibrary';
 
 type ImportState =
@@ -46,12 +47,16 @@ export const DataPage = (): ReactElement => {
   const [players, setPlayers] = useState<PlayerLibraryEntry[]>([]);
 
   useEffect(() => {
-    void persistence.loadAll().then(setTournaments);
-    void loadLibrary().then((lib) => {
-      setGroups(lib.groups);
-      setPlayers(lib.players);
-    });
-  }, []);
+    void persistence.loadAll()
+      .then(setTournaments)
+      .catch(() => { showToast({ message: t('api.errorLoad') }); });
+    void loadLibrary()
+      .then((lib) => {
+        setGroups(lib.groups);
+        setPlayers(lib.players);
+      })
+      .catch(() => { showToast({ message: t('api.errorLoad') }); });
+  }, [t]);
 
   // --- Export selection state ---
   const [selectedTournaments, setSelectedTournaments] = useState<Set<string>>(new Set());

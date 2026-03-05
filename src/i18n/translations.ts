@@ -260,6 +260,9 @@ export const en: TranslationMap = {
   'notFound.message': 'The page you are looking for does not exist.',
   'notFound.backHome': 'Back to Home',
 
+  'api.errorLoad': 'Failed to load data.',
+  'api.errorSave': 'Failed to save. Please try again.',
+
   'toast.newVersion': 'New version available',
   'toast.reload': 'Reload',
   'toast.dismiss': 'Dismiss',
@@ -701,6 +704,9 @@ export const cs: TranslationMap = {
   'notFound.message': 'Stránka, kterou hledáte, neexistuje.',
   'notFound.backHome': 'Zpět na úvod',
 
+  'api.errorLoad': 'Nepodařilo se načíst data.',
+  'api.errorSave': 'Uložení se nezdařilo. Zkuste to prosím znovu.',
+
   'toast.newVersion': 'K dispozici je nová verze',
   'toast.reload': 'Obnovit',
   'toast.dismiss': 'Zavřít',
@@ -1139,6 +1145,9 @@ export const de: TranslationMap = {
   'notFound.message': 'Die gesuchte Seite existiert nicht.',
   'notFound.backHome': 'Zurück zur Startseite',
 
+  'api.errorLoad': 'Daten konnten nicht geladen werden.',
+  'api.errorSave': 'Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.',
+
   'toast.newVersion': 'Neue Version verfügbar',
   'toast.reload': 'Neu laden',
   'toast.dismiss': 'Schließen',
@@ -1576,6 +1585,9 @@ export const es: TranslationMap = {
   'notFound.title': 'Página no encontrada',
   'notFound.message': 'La página que buscas no existe.',
   'notFound.backHome': 'Volver al Inicio',
+
+  'api.errorLoad': 'No se pudieron cargar los datos.',
+  'api.errorSave': 'No se pudo guardar. Por favor, inténtalo de nuevo.',
 
   'toast.newVersion': 'Nueva versión disponible',
   'toast.reload': 'Recargar',

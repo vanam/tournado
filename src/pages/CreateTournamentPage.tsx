@@ -13,6 +13,7 @@ import {distributePlayersToGroups, indexToGroupLabel} from '../utils/groupStageU
 import type {BaseGroup} from '../utils/groupStageUtils';
 import {allParticipantsComplete, buildParticipants, getParticipantPlayers} from '../utils/participantUtils';
 import {PlayerInput} from '../components/PlayerInput';
+import { showToast } from '../utils/toastUtils';
 import {ParticipantPlayerInput} from '../components/common/ParticipantPlayerInput';
 import {TournamentPreview} from '../components/TournamentPreview';
 import {BracketType, Format, ScoreMode} from '../types';
@@ -307,9 +308,11 @@ export const CreateTournamentPage = (): ReactElement => {
     if (data.format === Format.SWISS) {
       req.swissRounds = data.swissRounds;
     }
-    void createTournamentApi(req).then((created) => {
-      void navigate(`/tournament/${created.id}`);
-    });
+    void createTournamentApi(req)
+      .then((created) => {
+        void navigate(`/tournament/${created.id}`);
+      })
+      .catch(() => { showToast({ message: t('api.errorSave') }); });
   });
 
   return (
