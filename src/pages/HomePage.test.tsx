@@ -3,43 +3,42 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
 import { HomePage } from './HomePage';
 import { Format } from '../types';
-import type { Tournament } from '../types';
+import type { TournamentSummary } from '../api/types';
 
-const mockTournaments: Tournament[] = [
+const mockTournaments: TournamentSummary[] = [
   {
     id: 't1',
     name: 'Tournament 1',
-    players: [],
-    createdAt: '2024-01-01',
     format: Format.SINGLE_ELIM,
-    bracket: { rounds: [], thirdPlaceMatch: null },
+    createdAt: '2024-01-01',
+    completedAt: null,
+    winnerId: null,
+    playerCount: 0,
+    teamSize: 1,
   },
   {
     id: 't2',
     name: 'Tournament 2',
-    players: [],
-    createdAt: '2024-01-02',
     format: Format.SINGLE_ELIM,
-    bracket: { rounds: [], thirdPlaceMatch: null },
+    createdAt: '2024-01-02',
+    completedAt: null,
+    winnerId: null,
+    playerCount: 0,
+    teamSize: 1,
   },
 ];
 
-function createLocalStorageMock(): { getItem: ReturnType<typeof vi.fn>; setItem: ReturnType<typeof vi.fn> } {
-  let store: string = JSON.stringify(mockTournaments);
-  return {
-    getItem: vi.fn((): string => store),
-    setItem: vi.fn((_key: string, value: string): void => {
-      store = value;
-    }),
-  };
-}
+const mockListTournaments = vi.fn();
+const mockDeleteTournament = vi.fn();
+const mockDeleteAllTournaments = vi.fn();
+const mockDuplicateTournament = vi.fn();
 
-const localStorageMock = createLocalStorageMock();
-
-Object.defineProperty(globalThis, 'localStorage', {
-  value: localStorageMock,
-  writable: true,
-});
+vi.mock('../api/client', () => ({
+  listTournaments: (...args: unknown[]): unknown => mockListTournaments(...args),
+  deleteTournament: (...args: unknown[]): unknown => mockDeleteTournament(...args),
+  deleteAllTournaments: (...args: unknown[]): unknown => mockDeleteAllTournaments(...args),
+  duplicateTournament: (...args: unknown[]): unknown => mockDuplicateTournament(...args),
+}));
 
 vi.mock('../i18n/useTranslation', () => ({
   useTranslation: (): { t: (key: string, args?: Record<string, unknown>) => string } => ({
@@ -85,7 +84,10 @@ function renderHomePage(): ReturnType<typeof render> {
 describe('HomePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorageMock.getItem.mockReturnValue(JSON.stringify(mockTournaments));
+    mockListTournaments.mockResolvedValue([...mockTournaments]);
+    mockDeleteTournament.mockResolvedValue(null);
+    mockDeleteAllTournaments.mockResolvedValue(null);
+    mockDuplicateTournament.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -108,7 +110,7 @@ describe('HomePage', () => {
   });
 
   it('does not show delete all button when there is only one tournament', async () => {
-    localStorageMock.getItem.mockReturnValue(JSON.stringify([mockTournaments[0]]));
+    mockListTournaments.mockResolvedValue([mockTournaments[0]]);
     renderHomePage();
     await waitFor(() => {
       expect(screen.getByText('Tournament 1')).toBeDefined();
@@ -204,7 +206,7 @@ describe('HomePage', () => {
     }
 
     await waitFor(() => {
-      expect(localStorageMock.setItem).toHaveBeenCalled();
+      expect(mockDeleteTournament).toHaveBeenCalled();
     });
   });
 
@@ -226,7 +228,7 @@ describe('HomePage', () => {
     }
 
     await waitFor(() => {
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('tournado', '[]');
+      expect(mockDeleteAllTournaments).toHaveBeenCalled();
     });
   });
 });
