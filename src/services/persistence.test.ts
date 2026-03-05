@@ -8,6 +8,7 @@ function makeTournament(id: string, name: string): Tournament {
   return {
     id,
     name,
+    version: 1,
     players: [],
     createdAt: '2024-01-01',
     format: Format.SINGLE_ELIM,

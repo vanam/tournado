@@ -4,41 +4,56 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { Link, useLocation } from 'react-router-dom';
 import { useAnalytics } from '@/utils/analytics';
 import { Button } from '@/components/ui/Button';
-import { Check, Info } from 'lucide-react';
+import { AlertTriangle, Check, Info } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableRow } from '@/components/ui/Table';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
 
+type Feature = {
+  key: string;
+  experimental?: boolean;
+};
+
 type Section = {
   titleKey: string;
-  features: string[];
+  features: Feature[];
 };
 
 const SECTIONS: Section[] = [
   {
     titleKey: 'features.section1',
     features: [
-      'format.SINGLE_ELIM',
-      'format.DOUBLE_ELIM',
-      'format.ROUND_ROBIN',
-      'format.GROUPS_TO_BRACKET',
-      'format.SWISS',
+      { key: 'format.SINGLE_ELIM' },
+      { key: 'format.DOUBLE_ELIM' },
+      { key: 'format.ROUND_ROBIN' },
+      { key: 'format.GROUPS_TO_BRACKET' },
+      { key: 'format.SWISS' },
     ],
   },
   {
     titleKey: 'features.section2',
-    features: ['create.singles', 'create.doubles'],
+    features: [{ key: 'create.singles' }, { key: 'create.doubles' }],
   },
   {
     titleKey: 'features.section3',
-    features: ['features.playerLibrary', 'features.playerGroups', 'features.playerDetail'],
+    features: [
+      { key: 'features.playerLibrary' },
+      { key: 'features.playerGroups' },
+      { key: 'features.playerDetail' },
+    ],
   },
   {
     titleKey: 'features.section4',
-    features: ['features.scoringSets', 'features.scoringPoints'],
+    features: [{ key: 'features.scoringSets' }, { key: 'features.scoringPoints' }],
   },
   {
     titleKey: 'features.section5',
-    features: ['features.fullscreen', 'features.tabSync', 'features.offlineMode', 'features.installApp'],
+    features: [
+      { key: 'features.fullscreen' },
+      { key: 'features.tabSync' },
+      { key: 'features.offlineMode' },
+      { key: 'features.installApp' },
+      { key: 'features.dataPortability', experimental: true },
+    ],
   },
 ];
 
@@ -72,10 +87,16 @@ export const FeaturesPage = (): ReactElement => {
                     {t(section.titleKey)}
                   </TableHead>
                 </TableRow>
-                {section.features.map(featureKey => (
-                  <TableRow key={featureKey}>
+                {section.features.map(feature => (
+                  <TableRow key={feature.key}>
                     <TableCell className="py-2.5 pr-3 text-sm text-[var(--color-text)]">
-                      {t(featureKey)}
+                      {t(feature.key)}
+                      {feature.experimental === true && (
+                        <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                          <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+                          {t('data.experimentalBadge')}
+                        </span>
+                      )}
                       <Popover>
                         <PopoverTrigger asChild>
                           <button className="ml-1.5 inline-flex align-middle text-[var(--color-muted)] hover:text-[var(--color-text)] focus:outline-none">
@@ -83,7 +104,7 @@ export const FeaturesPage = (): ReactElement => {
                           </button>
                         </PopoverTrigger>
                         <PopoverContent side="top">
-                          {t(`${featureKey}.info`)}
+                          {t(`${feature.key}.info`)}
                         </PopoverContent>
                       </Popover>
                     </TableCell>

@@ -21,6 +21,7 @@ function makeSingleElimTournament(id: string, name: string): SingleElimTournamen
   return {
     id,
     name,
+    version: 1,
     players: [{ id: 'p1', name: 'Player 1' }],
     createdAt: '2024-01-01',
     format: Format.SINGLE_ELIM,
@@ -32,6 +33,7 @@ function makeGroupsToBracketTournament(id: string, name: string): GroupsToBracke
   return {
     id,
     name,
+    version: 1,
     players: [{ id: 'p1', name: 'Player 1' }],
     createdAt: '2024-01-01',
     format: Format.GROUPS_TO_BRACKET,

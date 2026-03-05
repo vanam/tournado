@@ -38,6 +38,7 @@ export type GroupStageBrackets = GroupStagePlayoffs;
 interface TournamentBase {
   id: string;
   name: string;
+  version: number;
   players: Player[];
   teamSize?: number;
   participants?: Participant[];

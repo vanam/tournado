@@ -29,6 +29,7 @@ const TestPage = lazy(() => import('./pages/TestPage').then(m => ({ default: m.T
 const PlayerLibraryPage = lazy(() => import('./pages/PlayerLibraryPage').then(m => ({ default: m.PlayerLibraryPage })));
 const PlayerProfilePage = lazy(() => import('./pages/PlayerProfilePage').then(m => ({ default: m.PlayerProfilePage })));
 const FeaturesPage = lazy(() => import('./pages/FeaturesPage').then(m => ({ default: m.FeaturesPage })));
+const DataPage = lazy(() => import('./pages/DataPage').then(m => ({ default: m.DataPage })));
 
 export const App = (): ReactElement => {
   return (
@@ -103,6 +104,13 @@ export const App = (): ReactElement => {
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
                   <FeaturesPage />
+                </Suspense>
+              </ErrorBoundary>
+            } />
+            <Route path="/data" element={
+              <ErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <DataPage />
                 </Suspense>
               </ErrorBoundary>
             } />

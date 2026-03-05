@@ -8,6 +8,7 @@ import { computeTournamentProgress } from '../../utils/progressUtils';
 import { getTournamentResults } from '../../utils/resultsUtils';
 import { persistence } from '../../services/persistence';
 import { Format } from '../../types';
+import { TOURNAMENT_VERSION } from '../../utils/dataPortability';
 import type {
   Player, Tournament,
   SingleElimTournament, DoubleElimTournament, RoundRobinTournament,
@@ -83,6 +84,7 @@ export async function createTournament(req: Request): Promise<Response> {
   const shared = {
     id: crypto.randomUUID(),
     name,
+    version: TOURNAMENT_VERSION,
     players,
     teamSize,
     participants,

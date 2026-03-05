@@ -75,6 +75,12 @@ export const Layout = (): ReactElement => {
               {t('footer.faq')}
             </Link>
             <Link
+                to="/data"
+                className="text-[var(--color-primary-dark)] hover:text-[var(--color-primary)] transition-colors"
+            >
+              {t('data.footer')}
+            </Link>
+            <Link
               to="/credits"
               className="text-[var(--color-primary-dark)] hover:text-[var(--color-primary)] transition-colors"
             >

@@ -1,11 +1,11 @@
 import type { PlayerLibrary, PlayerLibraryEntry, PlayerGroup, PlayerLibraryStorageAdapter, PlayerLibraryService } from '../types';
 import { createIndexedDbPlayerLibraryAdapter } from './indexedDbPlayerLibraryAdapter';
+import { PLAYER_VERSION, GROUP_VERSION } from '../utils/dataPortability';
 
 export function createPlayerLibraryService(
   adapter: PlayerLibraryStorageAdapter = createIndexedDbPlayerLibraryAdapter()
 ): PlayerLibraryService {
   const subscribers = new Set<() => void>();
-  let cache: PlayerLibrary | null = null;
 
   function notify(): void {
     for (const cb of subscribers) {
@@ -13,13 +13,7 @@ export function createPlayerLibraryService(
     }
   }
 
-  async function getCache(): Promise<PlayerLibrary> {
-    cache ??= await adapter.load();
-    return cache;
-  }
-
   async function persist(lib: PlayerLibrary): Promise<PlayerLibrary> {
-    cache = lib;
     await adapter.save(lib);
     notify();
     return lib;
@@ -27,7 +21,7 @@ export function createPlayerLibraryService(
 
   return {
     async loadLibrary(): Promise<PlayerLibrary> {
-      return getCache();
+      return adapter.load();
     },
 
     async saveLibrary(lib: PlayerLibrary): Promise<void> {
@@ -35,13 +29,13 @@ export function createPlayerLibraryService(
     },
 
     async addGroup(name: string): Promise<PlayerLibrary> {
-      const lib = await getCache();
-      const group: PlayerGroup = { id: crypto.randomUUID(), name };
+      const lib = await adapter.load();
+      const group: PlayerGroup = { id: crypto.randomUUID(), name, version: GROUP_VERSION };
       return persist({ ...lib, groups: [...lib.groups, group] });
     },
 
     async updateGroup(id: string, name: string): Promise<PlayerLibrary> {
-      const lib = await getCache();
+      const lib = await adapter.load();
       return persist({
         ...lib,
         groups: lib.groups.map((g) => (g.id === id ? { ...g, name } : g)),
@@ -49,7 +43,7 @@ export function createPlayerLibraryService(
     },
 
     async reorderGroups(ids: string[]): Promise<PlayerLibrary> {
-      const lib = await getCache();
+      const lib = await adapter.load();
       const groupMap = new Map(lib.groups.map((g) => [g.id, g]));
       const reordered = ids.flatMap((id) => {
         const g = groupMap.get(id);
@@ -59,7 +53,7 @@ export function createPlayerLibraryService(
     },
 
     async deleteGroup(id: string): Promise<PlayerLibrary> {
-      const lib = await getCache();
+      const lib = await adapter.load();
       return persist({
         groups: lib.groups.filter((g) => g.id !== id),
         players: lib.players.map((p) => ({
@@ -70,8 +64,8 @@ export function createPlayerLibraryService(
     },
 
     async addPlayer(name: string, elo?: number, groupIds: string[] = []): Promise<PlayerLibrary> {
-      const lib = await getCache();
-      const player: PlayerLibraryEntry = { id: crypto.randomUUID(), name, groupIds };
+      const lib = await adapter.load();
+      const player: PlayerLibraryEntry = { id: crypto.randomUUID(), name, version: PLAYER_VERSION, groupIds };
       if (elo !== undefined) {
         player.elo = elo;
       }
@@ -79,7 +73,7 @@ export function createPlayerLibraryService(
     },
 
     async updatePlayer(id: string, patch: Partial<PlayerLibraryEntry>): Promise<PlayerLibrary> {
-      const lib = await getCache();
+      const lib = await adapter.load();
       return persist({
         ...lib,
         players: lib.players.map((p) =>
@@ -89,17 +83,17 @@ export function createPlayerLibraryService(
     },
 
     async deletePlayer(id: string): Promise<PlayerLibrary> {
-      const lib = await getCache();
+      const lib = await adapter.load();
       return persist({ ...lib, players: lib.players.filter((p) => p.id !== id) });
     },
 
     async deleteAllPlayers(): Promise<PlayerLibrary> {
-      const lib = await getCache();
+      const lib = await adapter.load();
       return persist({ ...lib, players: [] });
     },
 
     async deleteAllGroups(): Promise<PlayerLibrary> {
-      const lib = await getCache();
+      const lib = await adapter.load();
       return persist({
         groups: [],
         players: lib.players.map((p) => ({ ...p, groupIds: [] })),

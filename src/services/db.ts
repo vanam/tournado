@@ -1,5 +1,5 @@
 const DB_NAME = 'tournado';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 export function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -18,6 +18,9 @@ export function openDb(): Promise<IDBDatabase> {
       const tx = request.transaction;
       if (db.objectStoreNames.contains('playerLibrary') && tx !== null) {
         migratePlayerLibrary(db, tx, event.oldVersion);
+      }
+      if (event.oldVersion < 5 && tx !== null) {
+        migrateVersionStamps(tx);
       }
     };
     request.onsuccess = (): void => { resolve(request.result); };
@@ -58,6 +61,26 @@ function migratePlayerLibrary(db: IDBDatabase, tx: IDBTransaction, oldVersion: n
       const players = Array.isArray(rawPlayers) ? (rawPlayers as Record<string, unknown>[]) : [];
       for (const p of players) playersStore.add(p);
       db.deleteObjectStore('playerLibrary');
+    };
+  }
+}
+
+function migrateVersionStamps(tx: IDBTransaction): void {
+  const storeVersions: Array<[string, number]> = [
+    ['tournaments', 1],
+    ['players', 1],
+    ['groups', 1],
+  ];
+  for (const [storeName, version] of storeVersions) {
+    const store = tx.objectStore(storeName);
+    const getAllReq = store.getAll();
+    getAllReq.onsuccess = (): void => {
+      for (const item of getAllReq.result as Array<Record<string, unknown>>) {
+        if (item['version'] === undefined) {
+          item['version'] = version;
+          store.put(item);
+        }
+      }
     };
   }
 }

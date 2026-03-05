@@ -215,7 +215,7 @@ describe('PlayerLibraryService', () => {
     it('replaces the library and notifies', async () => {
       const callback = vi.fn();
       service.subscribe(callback);
-      await service.saveLibrary({ groups: [{ id: 'g1', name: 'G' }], players: [] });
+      await service.saveLibrary({ groups: [{ id: 'g1', name: 'G', version: 1 }], players: [] });
       const lib = await service.loadLibrary();
       expect(lib.groups).toHaveLength(1);
       expect(callback).toHaveBeenCalledTimes(1);
