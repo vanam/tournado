@@ -37,6 +37,16 @@ export interface BulkImportRequest {
   groupIds?: string[];
 }
 
+export interface BulkImportError {
+  line: number;
+  message: string;
+}
+
+export interface BulkImportResult {
+  imported: number;
+  errors: BulkImportError[];
+}
+
 export interface CreatePlayerRequest {
   name: string;
   elo?: number;

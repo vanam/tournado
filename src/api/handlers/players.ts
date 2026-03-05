@@ -11,6 +11,7 @@ import { parseBulkInput } from '../../utils/importUtils';
 import type { CreatePlayerRequest, UpdatePlayerRequest, BulkImportRequest, PlayerProfile } from '../types';
 import { jsonResponse, noContent, parseJsonBody } from '../helpers';
 import { notFound, badRequest } from '../errors';
+import { getTranslator } from '../i18n';
 
 export async function listPlayers(req: Request): Promise<Response> {
   const url = new URL(req.url);
@@ -71,6 +72,7 @@ export async function deleteAllPlayersHandler(): Promise<Response> {
 
 export async function bulkImport(req: Request): Promise<Response> {
   const body = await parseJsonBody<BulkImportRequest>(req);
+  const t = getTranslator(req);
 
   if (!body.text || body.text.trim() === '') {
     throw badRequest('Import text is required');
@@ -81,7 +83,8 @@ export async function bulkImport(req: Request): Promise<Response> {
   const { parsed, errors } = parseBulkInput(body.text, existingNames);
 
   if (errors.length > 0) {
-    return jsonResponse({ imported: 0, errors }, 422);
+    const translatedErrors = errors.map((e) => ({ line: e.line, message: t(e.msgKey) }));
+    return jsonResponse({ imported: 0, errors: translatedErrors });
   }
 
   for (const entry of parsed) {

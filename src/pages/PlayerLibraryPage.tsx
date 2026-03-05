@@ -324,7 +324,11 @@ export const PlayerLibraryPage = (): ReactElement => {
       return;
     }
 
-    void importPlayers(importText, importGroupIds).then(() => {
+    void importPlayers(importText, importGroupIds).then((result) => {
+      if (result.errors.length > 0) {
+        setImportErrors(result.errors.map((e) => ({ line: e.line, msg: e.message })));
+        return;
+      }
       setShowImportModal(false);
       setImportText('');
       setImportGroupIds([]);
