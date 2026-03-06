@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
 import { HomePage } from './HomePage';
 import { Format } from '../types';
-import type { TournamentSummary } from '../api/types';
+import type { TournamentSummary } from '../services/tournamentService';
 
 const mockTournaments: TournamentSummary[] = [
   {
@@ -33,11 +33,17 @@ const mockDeleteTournament = vi.fn();
 const mockDeleteAllTournaments = vi.fn();
 const mockDuplicateTournament = vi.fn();
 
-vi.mock('../api/client', () => ({
-  listTournaments: (...args: unknown[]): unknown => mockListTournaments(...args),
+vi.mock('../services/tournamentService', () => ({
   deleteTournament: (...args: unknown[]): unknown => mockDeleteTournament(...args),
   deleteAllTournaments: (...args: unknown[]): unknown => mockDeleteAllTournaments(...args),
   duplicateTournament: (...args: unknown[]): unknown => mockDuplicateTournament(...args),
+}));
+
+vi.mock('../hooks/useTournaments', () => ({
+  useTournaments: (): { tournaments: TournamentSummary[]; isLoading: boolean } => ({
+    tournaments: mockListTournaments() as TournamentSummary[],
+    isLoading: false,
+  }),
 }));
 
 vi.mock('../i18n/useTranslation', () => ({
@@ -67,6 +73,10 @@ vi.mock('../hooks/usePageTitle', () => ({
   usePageTitle: vi.fn(),
 }));
 
+vi.mock('../hooks/useDatabase', () => ({
+  useDatabase: (): unknown => ({}),
+}));
+
 vi.mock('../utils/analytics', () => ({
   useAnalytics: (): { tracker: { trackPageView: () => void } } => ({
     tracker: { trackPageView: vi.fn() },
@@ -84,7 +94,7 @@ function renderHomePage(): ReturnType<typeof render> {
 describe('HomePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockListTournaments.mockResolvedValue([...mockTournaments]);
+    mockListTournaments.mockReturnValue([...mockTournaments]);
     mockDeleteTournament.mockResolvedValue(null);
     mockDeleteAllTournaments.mockResolvedValue(null);
     mockDuplicateTournament.mockResolvedValue(null);
@@ -110,7 +120,7 @@ describe('HomePage', () => {
   });
 
   it('does not show delete all button when there is only one tournament', async () => {
-    mockListTournaments.mockResolvedValue([mockTournaments[0]]);
+    mockListTournaments.mockReturnValue([mockTournaments[0]]);
     renderHomePage();
     await waitFor(() => {
       expect(screen.getByText('Tournament 1')).toBeDefined();

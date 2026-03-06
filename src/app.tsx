@@ -3,6 +3,7 @@ import {HashRouter, Routes, Route} from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PageLoader } from './components/PageLoader';
+import { DatabaseProvider } from './hooks/useDatabase';
 import { AnalyticsProvider, type AnalyticsProviderConfig } from './utils/analytics';
 import {GA_ID} from "@/constants";
 
@@ -33,11 +34,12 @@ const DataPage = lazy(() => import('./pages/DataPage').then(m => ({ default: m.D
 
 export const App = (): ReactElement => {
   return (
-    <AnalyticsProvider config={config}>
-      <HashRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={
+    <DatabaseProvider>
+      <AnalyticsProvider config={config}>
+        <HashRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
                   <HomePage />
@@ -125,5 +127,6 @@ export const App = (): ReactElement => {
         </Routes>
       </HashRouter>
     </AnalyticsProvider>
+  </DatabaseProvider>
   );
 }

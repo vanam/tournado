@@ -4,11 +4,15 @@ import {useNavigate} from 'react-router-dom';
 import {DEFAULT_MAX_SETS} from '../constants';
 import {
   createTournament as createTournamentApi,
+} from '../services/tournamentService';
+import type {CreateTournamentRequest} from '../services/tournamentService';
+import {
   listPlayers as listPlayersApi,
   createPlayer as createPlayerApi,
+} from '../services/playerService';
+import {
   createPlayerGroup as createPlayerGroupApi,
-} from '../api/client';
-import type {CreateTournamentRequest} from '../api/types';
+} from '../services/playerGroupService';
 import {computeMinTotalRounds} from '../utils/swissUtils';
 import {BracketType, Format, ScoreMode} from '../types';
 import type {Player} from '../types';
@@ -126,7 +130,7 @@ async function generateRandomLibrary(): Promise<string> {
   let nameIdx = 0;
 
   const createdGroups = await Promise.all(
-    GROUP_NAMES.map((name) => createPlayerGroupApi({name}))
+    GROUP_NAMES.map((name) => createPlayerGroupApi(name))
   );
 
   const playerDefs: Array<{name: string; elo: number; groupIds: string[]}> = [];
@@ -139,7 +143,7 @@ async function generateRandomLibrary(): Promise<string> {
     }
   }
 
-  const players = await Promise.all(playerDefs.map((p) => createPlayerApi(p)));
+  const players = await Promise.all(playerDefs.map((p) => createPlayerApi(p.name, p.elo, p.groupIds)));
   return `Generated ${createdGroups.length} groups with ${players.length} players.`;
 }
 

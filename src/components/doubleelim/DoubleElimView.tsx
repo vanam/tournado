@@ -14,7 +14,7 @@ import { ensureParticipants, getParticipantPlayers } from '../../utils/participa
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
-import { recordScore, clearScore } from '../../api/client';
+import { recordScore, clearScore } from '../../services/matchService';
 import { ScoreMode, Format } from '../../types';
 import type { DoubleElimTournament, Match, SetScore } from '../../types';
 
@@ -62,7 +62,7 @@ export const DoubleElimView = (): ReactElement | null => {
     if (!tournament) return;
     const scoreOp = winnerIdValue === null
       ? clearScore(tournament.id, matchId)
-      : recordScore(tournament.id, matchId, { scores, walkover });
+      : recordScore(tournament.id, matchId, scores, walkover);
     void scoreOp.then(reloadTournament).then(() => { setEditingMatch(null); });
   }
 

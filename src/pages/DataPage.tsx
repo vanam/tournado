@@ -4,8 +4,7 @@ import { AlertTriangle, Download, Upload } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useAnalytics } from '@/utils/analytics';
-import { persistence } from '../services/persistence';
-import { loadLibrary } from '../services/playerLibraryService';
+import { getDatabase } from '../db';
 import {
   buildExportPayload,
   downloadJson,
@@ -47,15 +46,20 @@ export const DataPage = (): ReactElement => {
   const [players, setPlayers] = useState<PlayerLibraryEntry[]>([]);
 
   useEffect(() => {
-    void persistence.loadAll()
-      .then(setTournaments)
-      .catch(() => { showToast({ message: t('api.errorLoad') }); });
-    void loadLibrary()
-      .then((lib) => {
-        setGroups(lib.groups);
-        setPlayers(lib.players);
-      })
-      .catch(() => { showToast({ message: t('api.errorLoad') }); });
+    async function loadData(): Promise<void> {
+      try {
+        const db = await getDatabase();
+        const tournamentDocs = await db.tournaments.find().exec();
+        setTournaments(tournamentDocs.map(d => d.toMutableJSON()));
+        const playerDocs = await db.players.find().exec();
+        setPlayers(playerDocs.map(d => d.toJSON() as PlayerLibraryEntry));
+        const groupDocs = await db.playerGroups.find().exec();
+        setGroups(groupDocs.map(d => d.toJSON() as PlayerGroup));
+      } catch {
+        showToast({ message: t('api.errorLoad') });
+      }
+    }
+    void loadData();
   }, [t]);
 
   // --- Export selection state ---
@@ -155,12 +159,14 @@ export const DataPage = (): ReactElement => {
     try {
       const result = await importPayload(importState.payload);
       setImportState({ status: 'success', result });
-      // Reload tournaments and library after import
-      const updated = await persistence.loadAll();
-      setTournaments(updated);
-      const lib = await loadLibrary();
-      setGroups(lib.groups);
-      setPlayers(lib.players);
+      // Reload from RxDB after import
+      const db = await getDatabase();
+      const tournamentDocs = await db.tournaments.find().exec();
+      setTournaments(tournamentDocs.map(d => d.toMutableJSON()));
+      const playerDocs = await db.players.find().exec();
+      setPlayers(playerDocs.map(d => d.toJSON() as PlayerLibraryEntry));
+      const groupDocs = await db.playerGroups.find().exec();
+      setGroups(groupDocs.map(d => d.toJSON() as PlayerGroup));
     } catch (error) {
       setImportState({ status: 'error', msg: error instanceof Error ? error.message : String(error) });
     }

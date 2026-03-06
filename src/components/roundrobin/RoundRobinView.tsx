@@ -13,7 +13,7 @@ import { ensureParticipants, getParticipantPlayers } from '../../utils/participa
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
-import { recordScore, clearScore } from '../../api/client';
+import { recordScore, clearScore } from '../../services/matchService';
 import { ScoreMode, Format } from '../../types';
 import type { Match, RoundRobinTournament, SetScore } from '../../types';
 import { RoundSchedule } from './RoundSchedule';
@@ -72,7 +72,7 @@ export const RoundRobinView = (): ReactElement | null => {
   function handleSave(matchId: string, winnerId: string | null, scores: SetScore[], walkover = false): void {
     const scoreOp = winnerId === null
       ? clearScore(tournamentId, matchId)
-      : recordScore(tournamentId, matchId, { scores, walkover });
+      : recordScore(tournamentId, matchId, scores, walkover);
     void scoreOp.then(reloadTournament).then(() => { setEditingMatch(null); });
   }
 

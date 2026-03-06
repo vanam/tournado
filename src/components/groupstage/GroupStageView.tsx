@@ -15,7 +15,8 @@ import { findGroupMatch, findBracketMatch, findDoubleElimMatch } from '../../uti
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
-import { recordScore, clearScore, recordGroupScore, clearGroupScore, generateGroupPlayoffs } from '../../api/client';
+import { recordScore, clearScore } from '../../services/matchService';
+import { generatePlayoffs } from '../../services/groupStageService';
 import { BracketType, ScoreMode } from '../../types';
 import type {
   GroupStagePlayoffs,
@@ -122,7 +123,7 @@ export const GroupStageView = (): ReactElement | null => {
   useEffect(() => {
     if (!groupComplete || !advancers || !groupStage) return;
     if (hasAnyBracket(playoffs, isDoubleElim)) return;
-    void generateGroupPlayoffs(tournament.id).then(reloadTournament);
+    void generatePlayoffs(tournament.id).then(reloadTournament);
   }, [advancers, groupComplete, groupStage, playoffs, tournament, isDoubleElim, reloadTournament]);
 
   const activeMatch = useMemo(() => {
@@ -187,8 +188,8 @@ export const GroupStageView = (): ReactElement | null => {
         const { groupId } = editing;
         if (!groupId) return;
         scoreOp = winnerIdValue === null
-          ? clearGroupScore(tid, groupId, matchId)
-          : recordGroupScore(tid, groupId, matchId, { scores, walkover });
+          ? clearScore(tid, matchId, groupId).then(() => {})
+          : recordScore(tid, matchId, scores, walkover, groupId).then(() => {});
         break;
       }
       case 'mainBracket':
@@ -196,8 +197,8 @@ export const GroupStageView = (): ReactElement | null => {
       case 'mainDoubleElim':
       case 'consolationDoubleElim': {
         scoreOp = winnerIdValue === null
-          ? clearScore(tid, matchId)
-          : recordScore(tid, matchId, { scores, walkover });
+          ? clearScore(tid, matchId).then(() => {})
+          : recordScore(tid, matchId, scores, walkover).then(() => {});
         break;
       }
     }

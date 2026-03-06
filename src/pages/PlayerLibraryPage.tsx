@@ -6,17 +6,19 @@ import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import {
   listPlayers,
-  listPlayerGroups,
   createPlayer,
-  importPlayers,
+  bulkImportPlayers,
   updatePlayer as updatePlayerApi,
   deletePlayer as deletePlayerApi,
   deleteAllPlayers as deleteAllPlayersApi,
+} from '../services/playerService';
+import {
+  listPlayerGroups,
   createPlayerGroup,
   updatePlayerGroup,
   deletePlayerGroup,
   reorderPlayerGroups,
-} from '../api/client';
+} from '../services/playerGroupService';
 import type { PlayerLibrary, PlayerGroup, PlayerLibraryEntry } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PlayerMoveButtons } from '../components/common/PlayerMoveButtons';
@@ -115,7 +117,7 @@ export const PlayerLibraryPage = (): ReactElement => {
       setShowAddGroup(false);
       return;
     }
-    void createPlayerGroup({ name: trimmed }).then(reloadLibrary);
+    void createPlayerGroup(trimmed).then(reloadLibrary);
     setNewGroupName('');
     setShowAddGroup(false);
   }
@@ -149,7 +151,7 @@ export const PlayerLibraryPage = (): ReactElement => {
     if (moved === undefined) { setGroupDragIndex(null); setGroupOverIndex(null); return; }
     updated.splice(toIndex, 0, moved);
     setLibrary((prev) => ({ ...prev, groups: updated }));
-    void reorderPlayerGroups({ ids: updated.map((g) => g.id) });
+    void reorderPlayerGroups(updated.map((g) => g.id));
     setGroupDragIndex(null);
     setGroupOverIndex(null);
   }
@@ -165,7 +167,7 @@ export const PlayerLibraryPage = (): ReactElement => {
     if (moved === undefined) return;
     updated.splice(toIndex, 0, moved);
     setLibrary((prev) => ({ ...prev, groups: updated }));
-    void reorderPlayerGroups({ ids: updated.map((g) => g.id) });
+    void reorderPlayerGroups(updated.map((g) => g.id));
   }
 
   function handleGroupMoveUp(index: number): void {
@@ -188,7 +190,7 @@ export const PlayerLibraryPage = (): ReactElement => {
     const trimmed = editingGroupName.trim();
     if (editingGroupId === null) return;
     if (trimmed.length > 0) {
-      void updatePlayerGroup(editingGroupId, { name: trimmed }).then(reloadLibrary);
+      void updatePlayerGroup(editingGroupId, trimmed).then(reloadLibrary);
     }
     setEditingGroupId(null);
     setEditingGroupName('');
@@ -224,10 +226,7 @@ export const PlayerLibraryPage = (): ReactElement => {
       setNewPlayerEloError(true);
       return;
     }
-    const req = eloNum === undefined
-      ? { name: trimmed, groupIds: newPlayerGroupIds }
-      : { name: trimmed, elo: eloNum, groupIds: newPlayerGroupIds };
-    void createPlayer(req).then(reloadLibrary);
+    void createPlayer(trimmed, eloNum, newPlayerGroupIds).then(reloadLibrary);
     setNewPlayerName('');
     setNewPlayerElo('');
     setNewPlayerEloError(false);
@@ -336,7 +335,7 @@ export const PlayerLibraryPage = (): ReactElement => {
       return;
     }
 
-    void importPlayers(importText, importGroupIds).then((result) => {
+    void bulkImportPlayers(importText, importGroupIds, t).then((result) => {
       if (result.errors.length > 0) {
         setImportErrors(result.errors.map((e) => ({ line: e.line, msg: e.message })));
         return;

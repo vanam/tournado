@@ -2,7 +2,7 @@ import { useState, type ReactElement } from 'react';
 import { Check, X } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { useTournament } from '../context/tournamentContext';
-import { renameTournamentPlayer } from '../api/client';
+import { renameTournamentPlayer } from '../services/tournamentService';
 import type { Player } from '../types';
 
 export const PlayerList = (): ReactElement => {

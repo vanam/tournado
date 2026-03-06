@@ -1,7 +1,6 @@
 import type { Tournament } from '../types';
 import type { PlayerLibraryEntry, PlayerGroup } from '../types/playerLibrary';
-import { persistence } from '../services/persistence';
-import { loadLibrary, saveLibrary } from '../services/playerLibraryService';
+import { getDatabase } from '../db';
 
 export const DATA_VERSION = 4;
 
@@ -28,12 +27,17 @@ export async function buildExportPayload(
   playerIds: Set<string>,
   groupIds: Set<string>,
 ): Promise<ExportPayload> {
-  const allTournaments = await persistence.loadAll();
-  const library = await loadLibrary();
+  const db = await getDatabase();
+  const tournamentDocs = await db.tournaments.find().exec();
+  const allTournaments = tournamentDocs.map(d => d.toMutableJSON());
+  const playerDocs = await db.players.find().exec();
+  const allPlayers = playerDocs.map(d => d.toJSON() as PlayerLibraryEntry);
+  const groupDocs = await db.playerGroups.find().exec();
+  const allGroups = groupDocs.map(d => d.toJSON() as PlayerGroup);
 
   const tournaments = allTournaments.filter((t) => tournamentIds.has(t.id));
-  const groups = library.groups.filter((g) => groupIds.has(g.id));
-  const players = library.players.filter((p) => playerIds.has(p.id));
+  const groups = allGroups.filter((g) => groupIds.has(g.id));
+  const players = allPlayers.filter((p) => playerIds.has(p.id));
 
   return {
     version: DATA_VERSION,
@@ -88,30 +92,22 @@ export async function importPayload(payload: ExportPayload): Promise<ImportResul
     skippedGroups: payload.groups.length - compatGroups.length,
   };
 
+  const db = await getDatabase();
+
   for (const tournament of compatTournaments) {
-    await persistence.save(tournament);
+    await db.tournaments.upsert(tournament);
   }
 
-  if (compatPlayers.length > 0 || compatGroups.length > 0) {
-    const library = await loadLibrary();
+  if (compatGroups.length > 0) {
+    for (const group of compatGroups) {
+      await db.playerGroups.upsert(group);
+    }
+  }
 
-    const existingGroupIds = new Set(library.groups.map((g) => g.id));
-    const newGroups = compatGroups.filter((g) => !existingGroupIds.has(g.id));
-    const updatedGroups = library.groups.map((g) => {
-      const incoming = compatGroups.find((ig) => ig.id === g.id);
-      return incoming ?? g;
-    });
-    const mergedGroups = [...updatedGroups, ...newGroups];
-
-    const existingPlayerIds = new Set(library.players.map((p) => p.id));
-    const newPlayers = compatPlayers.filter((p) => !existingPlayerIds.has(p.id));
-    const updatedPlayers = library.players.map((p) => {
-      const incoming = compatPlayers.find((ip) => ip.id === p.id);
-      return incoming ?? p;
-    });
-    const mergedPlayers = [...updatedPlayers, ...newPlayers];
-
-    await saveLibrary({ groups: mergedGroups, players: mergedPlayers });
+  if (compatPlayers.length > 0) {
+    for (const player of compatPlayers) {
+      await db.players.upsert(player);
+    }
   }
 
   return result;

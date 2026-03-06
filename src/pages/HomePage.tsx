@@ -1,18 +1,18 @@
 import type { ReactElement } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus, Trophy } from 'lucide-react';
 import {
-  listTournaments,
   deleteTournament as deleteTournamentApi,
   deleteAllTournaments,
   duplicateTournament as duplicateTournamentApi,
-} from '../api/client';
+} from '../services/tournamentService';
+import { useTournaments } from '../hooks/useTournaments';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { TournamentCard } from '../components/TournamentCard';
 import { ConfirmModal } from '../components/ConfirmModal';
-import type { TournamentSummary } from '../api/types';
+import type { TournamentSummary } from '../services/tournamentService';
 import { Button } from '@/components/ui/Button';
 import { useAnalytics } from '@/utils/analytics';
 import { showToast } from '../utils/toastUtils';
@@ -34,16 +34,11 @@ export const HomePage = (): ReactElement => {
     tracker.trackPageView({});
   }, [location, tracker]);
 
-  const [tournaments, setTournaments] = useState<TournamentSummary[]>([]);
+  const { tournaments: rawTournaments } = useTournaments();
+  const tournaments = useMemo(() => sortTournaments(rawTournaments), [rawTournaments]);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const { t } = useTranslation();
-
-  useEffect(() => {
-    void listTournaments()
-      .then((all) => { setTournaments(sortTournaments(all)); })
-      .catch(() => { showToast({ message: t('api.errorLoad') }); });
-  }, [t]);
 
   usePageTitle(t('home.title'));
 
@@ -58,9 +53,6 @@ export const HomePage = (): ReactElement => {
 
   function handleDuplicate(id: string): void {
     void duplicateTournamentApi(id)
-      .then(() => {
-        void listTournaments().then((all) => { setTournaments(sortTournaments(all)); });
-      })
       .catch(() => { showToast({ message: t('api.errorSave') }); });
   }
 
@@ -68,9 +60,7 @@ export const HomePage = (): ReactElement => {
     if (!deleteTargetId) return;
     const id = deleteTargetId;
     setDeleteTargetId(null);
-    setTournaments((prev) => prev.filter((tr) => tr.id !== id));
     void deleteTournamentApi(id).catch(() => {
-      void listTournaments().then((all) => { setTournaments(sortTournaments(all)); });
       showToast({ message: t('api.errorSave') });
     });
   }
@@ -81,7 +71,6 @@ export const HomePage = (): ReactElement => {
 
   function handleDeleteAll(): void {
     void deleteAllTournaments()
-      .then(() => { setTournaments([]); })
       .catch(() => { showToast({ message: t('api.errorSave') }); });
     setShowDeleteAll(false);
   }

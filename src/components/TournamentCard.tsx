@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Copy, Trash2, User, Users } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
-import type { TournamentSummary } from '../api/types';
+import type { TournamentSummary } from '../services/tournamentService';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { FormatBadge } from '@/components/ui/FormatBadge';
