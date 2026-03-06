@@ -236,3 +236,29 @@ export async function renameTournamentPlayer(tournamentId: string, playerId: str
   player.name = trimmedName;
   await doc.incrementalModify(() => tournament);
 }
+
+export async function updateTournamentPlayer(
+  tournamentId: string,
+  playerId: string,
+  name: string,
+  elo: number | undefined,
+): Promise<void> {
+  const trimmedName = name.trim();
+  if (!trimmedName) throw new Error('Name is required');
+
+  const db = await getDatabase();
+  const doc = await db.tournaments.findOne(tournamentId).exec();
+  if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
+
+  const tournament = doc.toMutableJSON();
+  const player = tournament.players.find((p) => p.id === playerId);
+  if (player === undefined) throw new Error(`Player ${playerId} not found`);
+
+  player.name = trimmedName;
+  if (elo === undefined) {
+    delete player.elo;
+  } else {
+    player.elo = elo;
+  }
+  await doc.incrementalModify(() => tournament);
+}

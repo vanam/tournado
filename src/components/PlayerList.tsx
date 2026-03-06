@@ -2,7 +2,7 @@ import { useState, type ReactElement } from 'react';
 import { Check, X } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { useTournament } from '../context/tournamentContext';
-import { renameTournamentPlayer } from '../services/tournamentService';
+import { updateTournamentPlayer } from '../services/tournamentService';
 import type { Player } from '../types';
 
 export const PlayerList = (): ReactElement => {
@@ -10,6 +10,7 @@ export const PlayerList = (): ReactElement => {
   const { t } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [editEloValue, setEditEloValue] = useState('');
   const [error, setError] = useState('');
 
   if (!tournament) {
@@ -21,12 +22,14 @@ export const PlayerList = (): ReactElement => {
   function startEdit(player: Player): void {
     setEditingId(player.id);
     setEditValue(player.name);
+    setEditEloValue(player.elo == null ? '' : String(player.elo));
     setError('');
   }
 
   function cancelEdit(): void {
     setEditingId(null);
     setEditValue('');
+    setEditEloValue('');
     setError('');
   }
 
@@ -46,10 +49,22 @@ export const PlayerList = (): ReactElement => {
       return;
     }
 
-    await renameTournamentPlayer(tournament.id, playerId, trimmed);
+    let elo: number | undefined;
+    const eloTrimmed = editEloValue.trim();
+    if (eloTrimmed !== '') {
+      const parsed = Number(eloTrimmed);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 9999) {
+        setError(t('tournament.eloInvalid'));
+        return;
+      }
+      elo = parsed;
+    }
+
+    await updateTournamentPlayer(tournament.id, playerId, trimmed, elo);
     await reloadTournament();
     setEditingId(null);
     setEditValue('');
+    setEditEloValue('');
     setError('');
   }
 
@@ -77,6 +92,25 @@ export const PlayerList = (): ReactElement => {
                     if (e.key === 'Escape') cancelEdit();
                   }}
                   className={`border rounded px-2 py-1 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-card)] ${
+                    error ? 'border-[var(--color-accent-border)]' : 'border-[var(--color-border)]'
+                  }`}
+                />
+                <input
+                  type="number"
+                  aria-label={t('players.eloPlaceholder')}
+                  placeholder={t('players.eloPlaceholder')}
+                  value={editEloValue}
+                  min={1}
+                  max={9999}
+                  onChange={(e) => {
+                    setEditEloValue(e.target.value);
+                    setError('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { void saveEdit(player.id); }
+                    if (e.key === 'Escape') cancelEdit();
+                  }}
+                  className={`border rounded px-2 py-1 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-card)] ${
                     error ? 'border-[var(--color-accent-border)]' : 'border-[var(--color-border)]'
                   }`}
                 />

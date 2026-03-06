@@ -134,6 +134,7 @@ export const en: TranslationMap = {
   'tournament.cancelEdit': 'Cancel',
   'tournament.nameEmpty': 'Name cannot be empty',
   'tournament.nameDuplicate': 'Name already exists',
+  'tournament.eloInvalid': 'ELO must be a whole number between 1 and 9999',
   'tournament.fullscreen': 'Enter fullscreen',
   'tournament.exitFullscreen': 'Exit fullscreen',
 
@@ -591,7 +592,7 @@ export const cs: TranslationMap = {
   'tournament.cancelEdit': 'Zrušit',
   'tournament.nameEmpty': 'Jméno nemůže být prázdné',
   'tournament.nameDuplicate': 'Jméno již existuje',
-  'tournament.fullscreen': 'Celá obrazovka',
+  'tournament.eloInvalid': 'ELO musí být celé číslo mezi 1 a 9999',
   'tournament.exitFullscreen': 'Zavřít celou obrazovku',
 
   'format.SINGLE_ELIM': 'Systém na jednu porážku',
@@ -1045,7 +1046,7 @@ export const de: TranslationMap = {
   'tournament.cancelEdit': 'Abbrechen',
   'tournament.nameEmpty': 'Name darf nicht leer sein',
   'tournament.nameDuplicate': 'Name existiert bereits',
-  'tournament.fullscreen': 'Vollbild',
+  'tournament.eloInvalid': 'ELO muss eine ganze Zahl zwischen 1 und 9999 sein',
   'tournament.exitFullscreen': 'Vollbild beenden',
 
   'format.SINGLE_ELIM': 'K.O.-System',
@@ -1499,7 +1500,7 @@ export const es: TranslationMap = {
   'tournament.cancelEdit': 'Cancelar',
   'tournament.nameEmpty': 'El nombre no puede estar vacío',
   'tournament.nameDuplicate': 'El nombre ya existe',
-  'tournament.fullscreen': 'Pantalla completa',
+  'tournament.eloInvalid': 'El ELO debe ser un número entero entre 1 y 9999',
   'tournament.exitFullscreen': 'Salir de pantalla completa',
 
   'format.SINGLE_ELIM': 'Eliminación Simple',
