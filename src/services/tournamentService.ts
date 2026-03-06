@@ -208,6 +208,19 @@ export async function getTournamentResultsById(id: string): Promise<RankedResult
   return getTournamentResults(tournament);
 }
 
+export async function renameTournament(tournamentId: string, newName: string): Promise<void> {
+  const trimmedName = newName.trim();
+  if (!trimmedName) throw new Error('Name is required');
+
+  const db = await getDatabase();
+  const doc = await db.tournaments.findOne(tournamentId).exec();
+  if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
+
+  const tournament = doc.toMutableJSON();
+  tournament.name = trimmedName;
+  await doc.incrementalModify(() => tournament);
+}
+
 export async function renameTournamentPlayer(tournamentId: string, playerId: string, name: string): Promise<void> {
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error('Name is required');
