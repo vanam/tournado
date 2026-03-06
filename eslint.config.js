@@ -11,7 +11,7 @@ import sonarjs from 'eslint-plugin-sonarjs'
 import unicorn from 'eslint-plugin-unicorn'
 
 export default defineConfig([
-  globalIgnores(['dist', 'dev-dist']),
+  globalIgnores(['dist', 'dev-dist', 'src/swApi.ts']),
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {
@@ -35,7 +35,7 @@ export default defineConfig([
       globals: globals.browser,
       parser: tseslint.parser,
       parserOptions: {
-        project: true,
+        project: ['./tsconfig.json', './tsconfig.sw.json'],
         tsconfigRootDir: import.meta.dirname,
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },

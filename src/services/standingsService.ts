@@ -1,21 +1,28 @@
-import { computeStandings } from '../../utils/roundRobinUtils';
-import { computeSwissStandings } from '../../utils/swissUtils';
-import { persistence } from '../../services/persistence';
-import { Format } from '../../types';
-import type { ScoreMode } from '../../types';
+import { getDatabase } from '../db';
+import { computeStandings } from '../utils/roundRobinUtils';
+import { computeSwissStandings } from '../utils/swissUtils';
+import { ensureParticipants, getParticipantPlayers } from '../utils/participantUtils';
+import { Format } from '../types';
+import type { ScoreMode, StandingsRow, SwissStandingsRow } from '../types';
 
-import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
-import type { MatrixCell, MatrixResponse } from '../types';
-import { jsonResponse } from '../helpers';
-import { notFound, badRequest } from '../errors';
+export interface MatrixCell {
+  player1Id: string;
+  player2Id: string;
+  scores: [number, number][];
+  winnerId: string | null;
+}
 
-export async function getStandings(_req: Request, params: Record<string, string>): Promise<Response> {
-  const id = params['id'] ?? '';
-  const tournament = await persistence.load(id);
-  if (tournament === null) {
-    throw notFound(`Tournament ${id} not found`);
-  }
+export interface MatrixResponse {
+  playerIds: string[];
+  cells: MatrixCell[];
+}
 
+export async function getStandings(tournamentId: string): Promise<StandingsRow[] | SwissStandingsRow[]> {
+  const db = await getDatabase();
+  const doc = await db.tournaments.findOne(tournamentId).exec();
+  if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
+
+  const tournament = doc.toMutableJSON();
   const storedParticipants = ensureParticipants(tournament.players, tournament.participants);
   const participantPlayers = getParticipantPlayers(tournament.players, storedParticipants);
 
@@ -24,32 +31,30 @@ export async function getStandings(_req: Request, params: Record<string, string>
       const rrOptions: { scoringMode?: ScoreMode; maxSets?: number } = {};
       if (tournament.scoringMode !== undefined) rrOptions.scoringMode = tournament.scoringMode;
       if (tournament.maxSets !== undefined) rrOptions.maxSets = tournament.maxSets;
-      const standings = computeStandings(tournament.schedule, participantPlayers, rrOptions);
-      return jsonResponse(standings);
+      return computeStandings(tournament.schedule, participantPlayers, rrOptions);
     }
     case Format.SWISS: {
       const swOptions: { scoringMode?: ScoreMode; maxSets?: number } = {};
       if (tournament.scoringMode !== undefined) swOptions.scoringMode = tournament.scoringMode;
       if (tournament.maxSets !== undefined) swOptions.maxSets = tournament.maxSets;
-      const standings = computeSwissStandings(tournament.schedule, participantPlayers, swOptions);
-      return jsonResponse(standings);
+      return computeSwissStandings(tournament.schedule, participantPlayers, swOptions);
     }
     case Format.SINGLE_ELIM:
     case Format.DOUBLE_ELIM:
     case Format.GROUPS_TO_BRACKET: {
-      throw badRequest('Standings are only available for Round Robin and Swiss formats');
+      throw new Error('Standings are only available for Round Robin and Swiss formats');
     }
   }
 }
 
-export async function getMatrix(_req: Request, params: Record<string, string>): Promise<Response> {
-  const id = params['id'] ?? '';
-  const tournament = await persistence.load(id);
-  if (tournament === null) {
-    throw notFound(`Tournament ${id} not found`);
-  }
+export async function getMatrix(tournamentId: string): Promise<MatrixResponse> {
+  const db = await getDatabase();
+  const doc = await db.tournaments.findOne(tournamentId).exec();
+  if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
+
+  const tournament = doc.toMutableJSON();
   if (tournament.format !== Format.ROUND_ROBIN) {
-    throw badRequest('Matrix is only available for Round Robin format');
+    throw new Error('Matrix is only available for Round Robin format');
   }
 
   const storedParticipants = ensureParticipants(tournament.players, tournament.participants);
@@ -70,6 +75,5 @@ export async function getMatrix(_req: Request, params: Record<string, string>): 
     }
   }
 
-  const response: MatrixResponse = { playerIds, cells };
-  return jsonResponse(response);
+  return { playerIds, cells };
 }

@@ -1,19 +1,11 @@
 /// <reference lib="webworker" />
-import { routeRequest } from './api/router';
 
-declare const self: ServiceWorkerGlobalScope;
+const sw = self as unknown as ServiceWorkerGlobalScope;
 
-self.addEventListener('install', () => {
-  void self.skipWaiting();
+sw.addEventListener('install', () => {
+  void sw.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
-
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(routeRequest(event.request));
-  }
+sw.addEventListener('activate', (event) => {
+  event.waitUntil(sw.clients.claim());
 });

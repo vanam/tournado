@@ -1,12 +1,9 @@
-import { findBracketMatch, findDoubleElimMatch, findGroupMatch } from '../../utils/matchFinders';
-import { advanceWinner, canEditMatch, clearMatchResult } from '../../utils/bracketUtils';
-import { advanceDoubleElim, canEditDoubleElimMatch, clearDoubleElimMatch } from '../../utils/doubleElimUtils';
-import { persistence } from '../../services/persistence';
-import { Format } from '../../types';
-import type { Match, SetScore, GroupStagePlayoffs } from '../../types';
-import type { RecordScoreRequest } from '../types';
-import { jsonResponse, parseJsonBody } from '../helpers';
-import { notFound, badRequest } from '../errors';
+import { getDatabase } from '../db';
+import { findBracketMatch, findDoubleElimMatch, findGroupMatch } from '../utils/matchFinders';
+import { advanceWinner, canEditMatch, clearMatchResult } from '../utils/bracketUtils';
+import { advanceDoubleElim, canEditDoubleElimMatch, clearDoubleElimMatch } from '../utils/doubleElimUtils';
+import { Format } from '../types';
+import type { Match, SetScore, GroupStagePlayoffs, Tournament } from '../types';
 
 function findMatchInSchedule(
   schedule: { rounds: Array<{ matches: Match[] }> },
@@ -36,9 +33,9 @@ function applyScheduleScore(
   walkover: boolean
 ): void {
   const match = findMatchInSchedule(schedule, matchId);
-  if (match === null) throw notFound(`Match ${matchId} not found`);
+  if (match === null) throw new Error(`Match ${matchId} not found`);
   if (match.player1Id === null || match.player2Id === null) {
-    throw badRequest('Match does not have both players assigned');
+    throw new Error('Match does not have both players assigned');
   }
   match.scores = setScores;
   match.walkover = walkover;
@@ -50,7 +47,7 @@ function clearScheduleScore(
   matchId: string
 ): void {
   const match = findMatchInSchedule(schedule, matchId);
-  if (match === null) throw notFound(`Match ${matchId} not found`);
+  if (match === null) throw new Error(`Match ${matchId} not found`);
   match.winnerId = null;
   match.scores = [];
   match.walkover = false;
@@ -94,7 +91,7 @@ function recordPlayoffScore(
       return;
     }
   }
-  throw notFound(`Match ${matchId} not found in playoffs`);
+  throw new Error(`Match ${matchId} not found in playoffs`);
 }
 
 function clearPlayoffScore(playoffs: GroupStagePlayoffs, matchId: string): void {
@@ -114,163 +111,7 @@ function clearPlayoffScore(playoffs: GroupStagePlayoffs, matchId: string): void 
     clearDoubleElimMatch(playoffs.consolationDoubleElim, matchId);
     return;
   }
-  throw notFound(`Match ${matchId} not found in playoffs`);
-}
-
-export async function recordScore(req: Request, params: Record<string, string>): Promise<Response> {
-  const tournamentId = params['id'] ?? '';
-  const matchId = params['matchId'] ?? '';
-  const groupId = params['groupId'];
-
-  const tournament = await persistence.load(tournamentId);
-  if (tournament === null) {
-    throw notFound(`Tournament ${tournamentId} not found`);
-  }
-
-  const body = await parseJsonBody<RecordScoreRequest>(req);
-  const { scores, walkover = false } = body;
-
-  if (!Array.isArray(scores) || scores.length === 0) {
-    throw badRequest('Scores array is required');
-  }
-
-  const setScores: SetScore[] = scores.map(([a, b]) => [a, b]);
-
-  switch (tournament.format) {
-    case Format.SINGLE_ELIM: {
-      const match = findBracketMatch(tournament.bracket, matchId);
-      if (match === null) throw notFound(`Match ${matchId} not found`);
-      if (match.player1Id === null || match.player2Id === null) {
-        throw badRequest('Match does not have both players assigned');
-      }
-      const winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
-      advanceWinner(tournament.bracket, matchId, winnerId, setScores, walkover);
-      break;
-    }
-    case Format.DOUBLE_ELIM: {
-      const match = findDoubleElimMatch(tournament.doubleElim, matchId);
-      if (match === null) throw notFound(`Match ${matchId} not found`);
-      if (match.player1Id === null || match.player2Id === null) {
-        throw badRequest('Match does not have both players assigned');
-      }
-      const winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
-      advanceDoubleElim(tournament.doubleElim, matchId, winnerId, setScores, walkover);
-      break;
-    }
-    case Format.ROUND_ROBIN: {
-      applyScheduleScore(tournament.schedule, matchId, setScores, walkover);
-      break;
-    }
-    case Format.SWISS: {
-      applyScheduleScore(tournament.schedule, matchId, setScores, walkover);
-      break;
-    }
-    case Format.GROUPS_TO_BRACKET: {
-      if (groupId) {
-        const match = findGroupMatch(tournament.groupStage, groupId, matchId);
-        if (match === null) throw notFound(`Match ${matchId} not found in group ${groupId}`);
-        if (match.player1Id === null || match.player2Id === null) {
-          throw badRequest('Match does not have both players assigned');
-        }
-        match.scores = setScores;
-        match.walkover = walkover;
-        match.winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
-      } else {
-        const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
-        if (playoffs == null) {
-          throw badRequest('Playoffs not yet generated');
-        }
-        recordPlayoffScore(playoffs, matchId, setScores, walkover);
-      }
-      break;
-    }
-  }
-
-  await persistence.save(tournament);
-  return jsonResponse(tournament);
-}
-
-export async function clearScore(_req: Request, params: Record<string, string>): Promise<Response> {
-  const tournamentId = params['id'] ?? '';
-  const matchId = params['matchId'] ?? '';
-  const groupId = params['groupId'];
-
-  const tournament = await persistence.load(tournamentId);
-  if (tournament === null) {
-    throw notFound(`Tournament ${tournamentId} not found`);
-  }
-
-  switch (tournament.format) {
-    case Format.SINGLE_ELIM: {
-      clearMatchResult(tournament.bracket, matchId);
-      break;
-    }
-    case Format.DOUBLE_ELIM: {
-      clearDoubleElimMatch(tournament.doubleElim, matchId);
-      break;
-    }
-    case Format.ROUND_ROBIN: {
-      clearScheduleScore(tournament.schedule, matchId);
-      break;
-    }
-    case Format.SWISS: {
-      clearScheduleScore(tournament.schedule, matchId);
-      break;
-    }
-    case Format.GROUPS_TO_BRACKET: {
-      if (groupId) {
-        const match = findGroupMatch(tournament.groupStage, groupId, matchId);
-        if (match === null) throw notFound(`Match ${matchId} not found in group ${groupId}`);
-        match.winnerId = null;
-        match.scores = [];
-        match.walkover = false;
-      } else {
-        const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
-        if (playoffs == null) {
-          throw badRequest('Playoffs not yet generated');
-        }
-        clearPlayoffScore(playoffs, matchId);
-      }
-      break;
-    }
-  }
-
-  await persistence.save(tournament);
-  return jsonResponse(tournament);
-}
-
-export async function checkEditable(_req: Request, params: Record<string, string>): Promise<Response> {
-  const tournamentId = params['id'] ?? '';
-  const matchId = params['matchId'] ?? '';
-
-  const tournament = await persistence.load(tournamentId);
-  if (tournament === null) {
-    throw notFound(`Tournament ${tournamentId} not found`);
-  }
-
-  let editable = false;
-
-  switch (tournament.format) {
-    case Format.SINGLE_ELIM: {
-      editable = canEditMatch(tournament.bracket, matchId);
-      break;
-    }
-    case Format.DOUBLE_ELIM: {
-      editable = canEditDoubleElimMatch(tournament.doubleElim, matchId);
-      break;
-    }
-    case Format.ROUND_ROBIN:
-    case Format.SWISS: {
-      editable = true;
-      break;
-    }
-    case Format.GROUPS_TO_BRACKET: {
-      editable = checkGroupStageEditable(tournament, matchId);
-      break;
-    }
-  }
-
-  return jsonResponse({ editable });
+  throw new Error(`Match ${matchId} not found in playoffs`);
 }
 
 function checkGroupStageEditable(
@@ -294,4 +135,161 @@ function checkGroupStageEditable(
     return canEditDoubleElimMatch(playoffs.consolationDoubleElim, matchId);
   }
   return true;
+}
+
+export async function recordScore(
+  tournamentId: string,
+  matchId: string,
+  scores: SetScore[],
+  walkover: boolean = false,
+  groupId?: string
+): Promise<Tournament> {
+  const db = await getDatabase();
+  const doc = await db.tournaments.findOne(tournamentId).exec();
+  if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
+
+  const tournament = doc.toMutableJSON();
+
+  if (!Array.isArray(scores) || scores.length === 0) {
+    throw new Error('Scores array is required');
+  }
+
+  const setScores: SetScore[] = scores.map(([a, b]) => [a, b]);
+
+  switch (tournament.format) {
+    case Format.SINGLE_ELIM: {
+      const match = findBracketMatch(tournament.bracket, matchId);
+      if (match === null) throw new Error(`Match ${matchId} not found`);
+      if (match.player1Id === null || match.player2Id === null) {
+        throw new Error('Match does not have both players assigned');
+      }
+      const winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
+      advanceWinner(tournament.bracket, matchId, winnerId, setScores, walkover);
+      break;
+    }
+    case Format.DOUBLE_ELIM: {
+      const match = findDoubleElimMatch(tournament.doubleElim, matchId);
+      if (match === null) throw new Error(`Match ${matchId} not found`);
+      if (match.player1Id === null || match.player2Id === null) {
+        throw new Error('Match does not have both players assigned');
+      }
+      const winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
+      advanceDoubleElim(tournament.doubleElim, matchId, winnerId, setScores, walkover);
+      break;
+    }
+    case Format.ROUND_ROBIN: {
+      applyScheduleScore(tournament.schedule, matchId, setScores, walkover);
+      break;
+    }
+    case Format.SWISS: {
+      applyScheduleScore(tournament.schedule, matchId, setScores, walkover);
+      break;
+    }
+    case Format.GROUPS_TO_BRACKET: {
+      if (groupId) {
+        const match = findGroupMatch(tournament.groupStage, groupId, matchId);
+        if (match === null) throw new Error(`Match ${matchId} not found in group ${groupId}`);
+        if (match.player1Id === null || match.player2Id === null) {
+          throw new Error('Match does not have both players assigned');
+        }
+        match.scores = setScores;
+        match.walkover = walkover;
+        match.winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
+      } else {
+        const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
+        if (playoffs == null) {
+          throw new Error('Playoffs not yet generated');
+        }
+        recordPlayoffScore(playoffs, matchId, setScores, walkover);
+      }
+      break;
+    }
+  }
+
+  await doc.incrementalModify(() => tournament);
+  return tournament;
+}
+
+export async function clearScore(
+  tournamentId: string,
+  matchId: string,
+  groupId?: string
+): Promise<Tournament> {
+  const db = await getDatabase();
+  const doc = await db.tournaments.findOne(tournamentId).exec();
+  if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
+
+  const tournament = doc.toMutableJSON();
+
+  switch (tournament.format) {
+    case Format.SINGLE_ELIM: {
+      clearMatchResult(tournament.bracket, matchId);
+      break;
+    }
+    case Format.DOUBLE_ELIM: {
+      clearDoubleElimMatch(tournament.doubleElim, matchId);
+      break;
+    }
+    case Format.ROUND_ROBIN: {
+      clearScheduleScore(tournament.schedule, matchId);
+      break;
+    }
+    case Format.SWISS: {
+      clearScheduleScore(tournament.schedule, matchId);
+      break;
+    }
+    case Format.GROUPS_TO_BRACKET: {
+      if (groupId) {
+        const match = findGroupMatch(tournament.groupStage, groupId, matchId);
+        if (match === null) throw new Error(`Match ${matchId} not found in group ${groupId}`);
+        match.winnerId = null;
+        match.scores = [];
+        match.walkover = false;
+      } else {
+        const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
+        if (playoffs == null) {
+          throw new Error('Playoffs not yet generated');
+        }
+        clearPlayoffScore(playoffs, matchId);
+      }
+      break;
+    }
+  }
+
+  await doc.incrementalModify(() => tournament);
+  return tournament;
+}
+
+export async function isMatchEditable(
+  tournamentId: string,
+  matchId: string
+): Promise<boolean> {
+  const db = await getDatabase();
+  const doc = await db.tournaments.findOne(tournamentId).exec();
+  if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
+
+  const tournament = doc.toMutableJSON();
+  let editable = false;
+
+  switch (tournament.format) {
+    case Format.SINGLE_ELIM: {
+      editable = canEditMatch(tournament.bracket, matchId);
+      break;
+    }
+    case Format.DOUBLE_ELIM: {
+      editable = canEditDoubleElimMatch(tournament.doubleElim, matchId);
+      break;
+    }
+    case Format.ROUND_ROBIN:
+    case Format.SWISS: {
+      editable = true;
+      break;
+    }
+    case Format.GROUPS_TO_BRACKET: {
+      editable = checkGroupStageEditable(tournament, matchId);
+      break;
+    }
+  }
+
+  return editable;
 }

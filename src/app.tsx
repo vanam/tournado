@@ -3,7 +3,7 @@ import {HashRouter, Routes, Route} from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PageLoader } from './components/PageLoader';
-import { DatabaseProvider } from './hooks/useDatabase';
+import { DatabaseProvider } from './context/databaseProvider';
 import { AnalyticsProvider, type AnalyticsProviderConfig } from './utils/analytics';
 import {GA_ID} from "@/constants";
 

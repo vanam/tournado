@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
-import type { Tournament } from '../types';
-import { getTournament } from '../api/client';
+import { useCallback, useMemo, type ReactElement, type ReactNode } from 'react';
+import { useTournamentById } from '../hooks/useTournaments';
 import { TournamentContext } from './tournamentContext';
 
 interface TournamentProviderProps {
@@ -9,41 +8,16 @@ interface TournamentProviderProps {
 }
 
 export const TournamentProvider = ({ tournamentId, children }: TournamentProviderProps): ReactElement => {
-  const [state, setState] = useState<{ tournament: Tournament | null; isLoading: boolean }>({
-    tournament: null,
-    isLoading: true,
-  });
+  const { tournament, isLoading } = useTournamentById(tournamentId);
 
-  const reloadTournament = useCallback(async (): Promise<void> => {
-    try {
-      const t = await getTournament(tournamentId);
-      setState((prev) => ({ ...prev, tournament: t }));
-    } catch {
-      // Reload failures leave existing data in place
-    }
-  }, [tournamentId]);
-
-  useEffect(() => {
-    let active = true;
-    void getTournament(tournamentId)
-      .then((t) => {
-        if (active) {
-          setState({ tournament: t, isLoading: false });
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setState({ tournament: null, isLoading: false });
-        }
-      });
-    return (): void => { active = false; };
-  }, [tournamentId]);
+  // No-op: RxDB subscriptions handle reactivity automatically
+  const reloadTournament = useCallback(async (): Promise<void> => {}, []);
 
   const contextValue = useMemo(() => ({
-    tournament: state.tournament,
+    tournament,
     reloadTournament,
-    isLoading: state.isLoading,
-  }), [state.tournament, state.isLoading, reloadTournament]);
+    isLoading,
+  }), [tournament, isLoading, reloadTournament]);
 
   return (
     <TournamentContext.Provider value={contextValue}>

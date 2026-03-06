@@ -6,7 +6,8 @@ import { DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFoot
 import { Button } from '@/components/ui/Button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { parseBulkInput } from '../utils/importUtils';
-import { loadLibrary } from '../services/playerLibraryService';
+import { listPlayers } from '../services/playerService';
+import { listPlayerGroups } from '../services/playerGroupService';
 import type { PlayerLibrary } from '../types';
 import { showToast } from '../utils/toastUtils';
 
@@ -38,8 +39,9 @@ export const ImportPlayersModal = ({
 
   useEffect(() => {
     if (open) {
-      void loadLibrary()
-        .then((lib) => {
+      void Promise.all([listPlayerGroups(), listPlayers()])
+        .then(([groups, players]) => {
+          const lib: PlayerLibrary = { groups, players };
           setLibrary(lib);
           if (lib.groups.length > 0 && lib.groups[0] !== undefined) {
             setSelectedGroupId(lib.groups[0].id);
