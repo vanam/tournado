@@ -89,6 +89,16 @@ export default defineConfig({
         })
       },
     },
+    {
+      name: 'dev-csp-frame-src',
+      apply: 'serve',
+      transformIndexHtml(html) {
+        return html.replace(
+          /(content="[\s\S]*?)(worker-src 'self';)/,
+          "$1worker-src 'self';\n      frame-src https://rxdb.info;",
+        );
+      },
+    },
     react(),
     tailwindcss(),
     {
