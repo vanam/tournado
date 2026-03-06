@@ -542,7 +542,7 @@ export const CreateTournamentPage = (): ReactElement => {
               <FieldGroupLabel>
                 {t('create.teamSize')}
               </FieldGroupLabel>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 {([1, 2] as const).map((size) => (
                   <label
                     key={size}

@@ -19,13 +19,13 @@ export const PlayerOrderActions = ({
 }: PlayerOrderActionsProps): ReactElement => {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3">
       <Button
         type="button"
         variant="link"
         onClick={onSortByElo}
         disabled={!useElo || !canReorder}
-        className="text-sm p-0 h-auto mb-1"
+        className="text-sm p-0 h-auto"
       >
         {t('players.sortByElo')}
       </Button>
@@ -34,7 +34,7 @@ export const PlayerOrderActions = ({
         variant="link"
         onClick={onShuffle}
         disabled={!canReorder}
-        className="text-sm p-0 h-auto mb-1"
+        className="text-sm p-0 h-auto"
       >
         {t('players.shuffle')}
       </Button>
@@ -42,7 +42,7 @@ export const PlayerOrderActions = ({
         type="button"
         variant="link"
         onClick={onImport}
-        className="text-sm p-0 h-auto mb-1"
+        className="text-sm p-0 h-auto"
       >
         {t('players.import')}
       </Button>
