@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.sw.json",
+    "typecheck": "tsc -p tsconfig.json",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
