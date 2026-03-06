@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DragEvent, ReactElement, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Pencil, Trash2, Plus, X, Upload } from 'lucide-react';
+import { GripVertical, Pencil, Trash2, Plus, X, Upload, Check } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import {
@@ -525,16 +525,35 @@ export const PlayerLibraryPage = (): ReactElement => {
           )}
 
           {showAddGroup ? (
-            <div className="pt-1">
+            <div className="pt-1 flex items-center gap-1">
               <Input
                 ref={groupInputRef}
                 value={newGroupName}
                 onChange={(e) => { setNewGroupName(e.target.value); }}
-                onBlur={handleSaveNewGroup}
                 onKeyDown={handleNewGroupKeyDown}
                 placeholder={t('playerLibrary.groupName')}
-                className="h-7 text-sm w-full"
+                className="h-7 text-sm flex-1"
               />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 shrink-0"
+                onClick={handleSaveNewGroup}
+                aria-label={t('playerLibrary.save')}
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 shrink-0"
+                onClick={() => { setShowAddGroup(false); setNewGroupName(''); }}
+                aria-label={t('playerLibrary.cancel')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           ) : (
             <Button
