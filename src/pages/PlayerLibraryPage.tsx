@@ -602,19 +602,24 @@ export const PlayerLibraryPage = (): ReactElement => {
                   className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--color-border-soft)] px-3 py-2 bg-[var(--color-surface-alt,var(--color-surface))]"
                 >
                   {isEditing ? (
-                    <>
+                    <div
+                      className="contents"
+                      onBlur={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                          handleSaveEditPlayer();
+                        }
+                      }}
+                    >
                       <Input
                         ref={editPlayerNameRef}
                         value={editingPlayerName}
                         onChange={(e) => { setEditingPlayerName(e.target.value); setEditingPlayerError(''); }}
-                        onBlur={handleSaveEditPlayer}
                         onKeyDown={handleEditPlayerKeyDown}
                         className={`h-7 text-sm w-40 ${editingPlayerError ? 'border-red-500' : ''}`}
                       />
                       <Input
                         value={editingPlayerElo}
                         onChange={(e) => { setEditingPlayerElo(e.target.value); }}
-                        onBlur={handleSaveEditPlayer}
                         onKeyDown={handleEditPlayerKeyDown}
                         placeholder={t('playerLibrary.elo')}
                         type="number"
@@ -625,7 +630,7 @@ export const PlayerLibraryPage = (): ReactElement => {
                       {editingPlayerError && (
                         <span className="basis-full text-xs text-red-500">{editingPlayerError}</span>
                       )}
-                    </>
+                    </div>
                   ) : (
                     <>
                       <Link
