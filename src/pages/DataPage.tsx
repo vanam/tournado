@@ -1,6 +1,6 @@
 import { type ReactElement, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { AlertTriangle, Download, Upload } from 'lucide-react';
+import { AlertTriangle, Download, Trash2, Upload } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useAnalytics } from '@/utils/analytics';
@@ -16,9 +16,14 @@ import {
 } from '../utils/dataPortability';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { CustomDialog } from '@/components/CustomDialog';
+import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import type { Tournament } from '../types';
 import { showToast } from '../utils/toastUtils';
 import type { PlayerLibraryEntry, PlayerGroup } from '../types/playerLibrary';
+import { deleteAllTournaments } from '../services/tournamentService';
+import { deleteAllPlayers } from '../services/playerService';
+import { deleteAllPlayerGroups } from '../services/playerGroupService';
 
 type ImportState =
   | { status: 'idle' }
@@ -133,6 +138,35 @@ export const DataPage = (): ReactElement => {
   // --- Import state ---
   const [importState, setImportState] = useState<ImportState>({ status: 'idle' });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- Delete state ---
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteSelections, setDeleteSelections] = useState({ tournaments: true, players: true, groups: true });
+  const nothingToDelete = !deleteSelections.tournaments && !deleteSelections.players && !deleteSelections.groups;
+
+  function openDeleteModal(): void {
+    setDeleteSelections({ tournaments: true, players: true, groups: true });
+    setShowDeleteModal(true);
+  }
+
+  async function handleDelete(): Promise<void> {
+    setShowDeleteModal(false);
+    try {
+      if (deleteSelections.groups) await deleteAllPlayerGroups();
+      if (deleteSelections.players) await deleteAllPlayers();
+      if (deleteSelections.tournaments) await deleteAllTournaments();
+      const db = await getDatabase();
+      const tournamentDocs = await db.tournaments.find().exec();
+      setTournaments(tournamentDocs.map(d => d.toMutableJSON()));
+      const playerDocs = await db.players.find().exec();
+      setPlayers(playerDocs.map(d => d.toJSON() as PlayerLibraryEntry));
+      const groupDocs = await db.playerGroups.find().exec();
+      setGroups(groupDocs.map(d => d.toJSON() as PlayerGroup));
+      showToast({ message: t('data.deleteSuccess') });
+    } catch {
+      showToast({ message: t('api.errorLoad') });
+    }
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>): void {
     const file = e.target.files?.[0];
@@ -477,6 +511,101 @@ export const DataPage = (): ReactElement => {
           <p className="text-sm text-[var(--color-muted)]">…</p>
         )}
       </section>
+
+      {/* Divider */}
+      <hr className="border-[var(--color-border-soft)]" />
+
+      {/* Delete section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Trash2 className="h-5 w-5 text-[var(--color-primary)]" aria-hidden="true" />
+          <h2 className="text-lg font-semibold text-[var(--color-text)]">{t('data.deleteTitle')}</h2>
+        </div>
+        <p className="text-sm text-[var(--color-muted)]">{t('data.deleteDesc')}</p>
+        <Button
+          variant="secondary-outlined"
+          onClick={openDeleteModal}
+          className="flex items-center gap-2"
+        >
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
+          {t('data.deleteButton')}
+        </Button>
+      </section>
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <CustomDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setShowDeleteModal(false); }}
+          onPrimaryAction={() => { void handleDelete(); }}
+          primaryActionDisabled={nothingToDelete}
+        >
+          <DialogContent className="z-150">
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-[var(--color-accent)] shrink-0" aria-hidden="true" />
+                <DialogTitle>{t('data.deleteModalTitle')}</DialogTitle>
+              </div>
+              <DialogDescription>{t('data.deleteModalDesc')}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="delete-tournaments"
+                  checked={deleteSelections.tournaments}
+                  onCheckedChange={(checked) => {
+                    if (checked !== 'indeterminate') setDeleteSelections(prev => ({ ...prev, tournaments: checked }));
+                  }}
+                />
+                <label htmlFor="delete-tournaments" className="text-sm text-[var(--color-text)] cursor-pointer select-none">
+                  {t('data.deleteTournaments')}
+                  {tournaments.length > 0 && (
+                    <span className="ml-1 text-xs text-[var(--color-muted)]">({tournaments.length})</span>
+                  )}
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="delete-players"
+                  checked={deleteSelections.players}
+                  onCheckedChange={(checked) => {
+                    if (checked !== 'indeterminate') setDeleteSelections(prev => ({ ...prev, players: checked }));
+                  }}
+                />
+                <label htmlFor="delete-players" className="text-sm text-[var(--color-text)] cursor-pointer select-none">
+                  {t('data.deletePlayers')}
+                  {players.length > 0 && (
+                    <span className="ml-1 text-xs text-[var(--color-muted)]">({players.length})</span>
+                  )}
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="delete-groups"
+                  checked={deleteSelections.groups}
+                  onCheckedChange={(checked) => {
+                    if (checked !== 'indeterminate') setDeleteSelections(prev => ({ ...prev, groups: checked }));
+                  }}
+                />
+                <label htmlFor="delete-groups" className="text-sm text-[var(--color-text)] cursor-pointer select-none">
+                  {t('data.deleteGroups')}
+                  {groups.length > 0 && (
+                    <span className="ml-1 text-xs text-[var(--color-muted)]">({groups.length})</span>
+                  )}
+                </label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="primary-ghost" onClick={() => { setShowDeleteModal(false); }}>
+                {t('data.deleteCancel')}
+              </Button>
+              <Button variant="secondary" onClick={() => { void handleDelete(); }} disabled={nothingToDelete}>
+                {t('data.deleteConfirm')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </CustomDialog>
+      )}
     </div>
   );
 };

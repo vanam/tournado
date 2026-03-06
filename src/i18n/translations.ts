@@ -441,6 +441,17 @@ export const en: TranslationMap = {
   'data.importSuccess': 'Data imported successfully.',
   'data.importSkipped': 'Skipped due to version mismatch: {{tournaments}} tournament(s), {{players}} player(s), {{groups}} group(s).',
   'data.importError': 'Import failed: {{msg}}',
+  'data.deleteTitle': 'Delete',
+  'data.deleteDesc': 'Permanently delete data from the app. This action cannot be undone.',
+  'data.deleteButton': 'Delete data',
+  'data.deleteModalTitle': 'Delete data',
+  'data.deleteModalDesc': 'Select which data to permanently delete. This action cannot be undone.',
+  'data.deleteTournaments': 'Tournaments',
+  'data.deletePlayers': 'Players',
+  'data.deleteGroups': 'Groups',
+  'data.deleteConfirm': 'Delete',
+  'data.deleteCancel': 'Cancel',
+  'data.deleteSuccess': 'Data deleted successfully.',
 };
 
 export const cs: TranslationMap = {
@@ -887,6 +898,17 @@ export const cs: TranslationMap = {
   'data.importSuccess': 'Data byla úspěšně importována.',
   'data.importSkipped': 'Přeskočeno kvůli neshodě verzí: {{tournaments}} turnaj(ů), {{players}} hráč(ů), {{groups}} skupina(skupin).',
   'data.importError': 'Import selhal: {{msg}}',
+  'data.deleteTitle': 'Smazat',
+  'data.deleteDesc': 'Trvale smazat data z aplikace. Tuto akci nelze vrátit zpět.',
+  'data.deleteButton': 'Smazat data',
+  'data.deleteModalTitle': 'Smazat data',
+  'data.deleteModalDesc': 'Vyberte, která data chcete trvale smazat. Tuto akci nelze vrátit zpět.',
+  'data.deleteTournaments': 'Turnaje',
+  'data.deletePlayers': 'Hráči',
+  'data.deleteGroups': 'Skupiny',
+  'data.deleteConfirm': 'Smazat',
+  'data.deleteCancel': 'Zrušit',
+  'data.deleteSuccess': 'Data byla úspěšně smazána.',
 };
 
 export const de: TranslationMap = {
@@ -1330,6 +1352,17 @@ export const de: TranslationMap = {
   'data.importSuccess': 'Daten erfolgreich importiert.',
   'data.importSkipped': 'Übersprungen wegen Versionskonflikt: {{tournaments}} Turnier(e), {{players}} Spieler, {{groups}} Gruppe(n).',
   'data.importError': 'Import fehlgeschlagen: {{msg}}',
+  'data.deleteTitle': 'Löschen',
+  'data.deleteDesc': 'Daten dauerhaft aus der App löschen. Diese Aktion kann nicht rückgängig gemacht werden.',
+  'data.deleteButton': 'Daten löschen',
+  'data.deleteModalTitle': 'Daten löschen',
+  'data.deleteModalDesc': 'Wählen Sie aus, welche Daten dauerhaft gelöscht werden sollen. Diese Aktion kann nicht rückgängig gemacht werden.',
+  'data.deleteTournaments': 'Turniere',
+  'data.deletePlayers': 'Spieler',
+  'data.deleteGroups': 'Gruppen',
+  'data.deleteConfirm': 'Löschen',
+  'data.deleteCancel': 'Abbrechen',
+  'data.deleteSuccess': 'Daten erfolgreich gelöscht.',
 };
 
 export const es: TranslationMap = {
@@ -1773,4 +1806,15 @@ export const es: TranslationMap = {
   'data.importSuccess': 'Datos importados correctamente.',
   'data.importSkipped': 'Omitido por incompatibilidad de versión: {{tournaments}} torneo(s), {{players}} jugador(es), {{groups}} grupo(s).',
   'data.importError': 'Error al importar: {{msg}}',
+  'data.deleteTitle': 'Eliminar',
+  'data.deleteDesc': 'Eliminar permanentemente datos de la aplicación. Esta acción no se puede deshacer.',
+  'data.deleteButton': 'Eliminar datos',
+  'data.deleteModalTitle': 'Eliminar datos',
+  'data.deleteModalDesc': 'Seleccione qué datos desea eliminar permanentemente. Esta acción no se puede deshacer.',
+  'data.deleteTournaments': 'Torneos',
+  'data.deletePlayers': 'Jugadores',
+  'data.deleteGroups': 'Grupos',
+  'data.deleteConfirm': 'Eliminar',
+  'data.deleteCancel': 'Cancelar',
+  'data.deleteSuccess': 'Datos eliminados correctamente.',
 };

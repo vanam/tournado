@@ -39,6 +39,20 @@ export async function deletePlayerGroup(id: string): Promise<void> {
   }
 }
 
+export async function deleteAllPlayerGroups(): Promise<void> {
+  const db = await getDatabase();
+  const groupDocs = await db.playerGroups.find().exec();
+  await Promise.all(groupDocs.map(d => d.remove()));
+  const playerDocs = await db.players.find().exec();
+  for (const pDoc of playerDocs) {
+    const player = pDoc.toMutableJSON();
+    if (player.groupIds.length > 0) {
+      player.groupIds = [];
+      await pDoc.incrementalModify(() => player);
+    }
+  }
+}
+
 export async function reorderPlayerGroups(ids: string[]): Promise<PlayerGroup[]> {
   const db = await getDatabase();
   const docs = await db.playerGroups.find().exec();
