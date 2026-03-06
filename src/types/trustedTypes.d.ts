@@ -4,6 +4,7 @@ interface TrustedTypePolicyFactory {
     policyOptions: {
       createScriptURL?: (input: string) => string
       createHTML?: (input: string) => string
+      createScript?: (input: string) => string
     }
   ): TrustedTypePolicy
 }

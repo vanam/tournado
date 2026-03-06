@@ -1,6 +1,6 @@
 import { createRxDatabase, addRxPlugin } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import { wrappedValidateZSchemaStorage } from 'rxdb/plugins/validate-z-schema';
 import { tournamentSchema } from './schemas/tournament';
 import { playerSchema } from './schemas/player';
 import { playerGroupSchema } from './schemas/playerGroup';
@@ -16,7 +16,7 @@ async function _createDatabase(): Promise<TournadoDatabase> {
 
   const db = await createRxDatabase<DatabaseCollections>({
     name: 'tournado-rxdb',
-    storage: wrappedValidateAjvStorage({
+    storage: wrappedValidateZSchemaStorage({
       storage: getRxStorageDexie(),
     }),
   });

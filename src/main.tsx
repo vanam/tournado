@@ -12,6 +12,7 @@ if ('trustedTypes' in window) {
   ;(window.trustedTypes as TrustedTypePolicyFactory).createPolicy('default', {
     createScriptURL: (input: string) => validateScriptURL(input, ALLOWED_ORIGINS),
     createHTML: (input: string) => DOMPurify.sanitize(input),
+    createScript: () => { throw new Error('TrustedScript creation is not allowed') },
   })
 }
 
