@@ -12,6 +12,8 @@ import {
   getGroupPlayers,
 } from '../../utils/groupStageUtils';
 import { findGroupMatch, findBracketMatch, findDoubleElimMatch } from '../../utils/matchFinders';
+import { hasPlayedDownstreamMatch } from '../../utils/bracketUtils';
+import { hasPlayedDownstreamDoubleElimMatch } from '../../utils/doubleElimUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
@@ -141,6 +143,34 @@ export const GroupStageView = (): ReactElement | null => {
     }
     return null;
   }, [editing, groupStage, playoffs]);
+
+  const lockedWinnerId = useMemo((): string | undefined => {
+    if (!editing || !activeMatch?.winnerId) return;
+    let isLocked = false;
+    switch (editing.type) {
+      case 'group': {
+        break;
+      }
+      case 'mainBracket': {
+        isLocked = !!playoffs?.mainBracket && hasPlayedDownstreamMatch(playoffs.mainBracket, editing.matchId);
+        break;
+      }
+      case 'consolationBracket': {
+        isLocked = !!playoffs?.consolationBracket && hasPlayedDownstreamMatch(playoffs.consolationBracket, editing.matchId);
+        break;
+      }
+      case 'mainDoubleElim': {
+        isLocked = !!playoffs?.mainDoubleElim && hasPlayedDownstreamDoubleElimMatch(playoffs.mainDoubleElim, editing.matchId);
+        break;
+      }
+      case 'consolationDoubleElim': {
+        isLocked = !!playoffs?.consolationDoubleElim && hasPlayedDownstreamDoubleElimMatch(playoffs.consolationDoubleElim, editing.matchId);
+        break;
+      }
+    }
+    if (!isLocked) return;
+    return activeMatch.winnerId;
+  }, [editing, activeMatch, playoffs]);
 
   const activePlayers = useMemo(() => {
     if (!editing || !groupStage) return participants;
@@ -281,6 +311,7 @@ export const GroupStageView = (): ReactElement | null => {
             scoringMode={scoringMode}
             groupStageMaxSets={groupStageMaxSets}
             bracketMaxSets={bracketMaxSets}
+            lockedWinnerId={lockedWinnerId}
             onSave={handleSave}
             onClose={() => { setEditing(null); }}
           />

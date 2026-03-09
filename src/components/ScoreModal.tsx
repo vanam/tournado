@@ -47,6 +47,7 @@ interface ScoreModalProps {
   onClose: () => void;
   scoringMode?: ScoreMode;
   maxSets?: number;
+  lockedWinnerId?: string | undefined;
 }
 
 // Pomocné funkce přesunuty mimo komponentu kvůli linteru
@@ -65,6 +66,7 @@ export const ScoreModal = ({
   onClose,
   scoringMode = ScoreMode.SETS,
   maxSets: maxSetsProp = DEFAULT_MAX_SETS,
+  lockedWinnerId,
 }: ScoreModalProps): ReactElement => {
   const { t } = useTranslation();
   const maxSets = Number.isFinite(maxSetsProp) && maxSetsProp > 0 ? maxSetsProp : DEFAULT_MAX_SETS;
@@ -198,6 +200,7 @@ export const ScoreModal = ({
   function handleSave(): void {
     const winner = getWinner();
     if (!winner) return;
+    if (lockedWinnerId && winner !== lockedWinnerId) return;
     const useWalkover = canUseWalkover && walkover;
     const firstScore: SetScore = scores[0] ?? [0, 0];
     const payloadScores: SetScore[] = isSetOnly
@@ -220,6 +223,7 @@ export const ScoreModal = ({
   }
 
   const winner = getWinner();
+  const canSave = !!winner && (!lockedWinnerId || winner === lockedWinnerId);
   const hasResult =
     !!match.winnerId || match.scores.length > 0 || match.walkover || hasWalkover(match.scores);
 
@@ -235,7 +239,7 @@ export const ScoreModal = ({
           onCancel={cancelClear}
         />
       )}
-      <CustomDialog open={true} onOpenChange={(open) => { if (!open) onClose(); }} onPrimaryAction={handleSave} primaryActionDisabled={!winner}>
+      <CustomDialog open={true} onOpenChange={(open) => { if (!open) onClose(); }} onPrimaryAction={handleSave} primaryActionDisabled={!canSave}>
         <DialogContent className="max-w-md" aria-describedby={undefined}>
           <DialogTitle className="text-lg font-bold mb-5 pb-3 border-b border-[var(--color-border-soft)]">{t('score.title')}</DialogTitle>
           <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-4">
@@ -358,11 +362,18 @@ export const ScoreModal = ({
             </p>
           )}
 
+          {lockedWinnerId && winner && winner !== lockedWinnerId && (
+            <p className="text-sm text-[var(--color-accent)] bg-[var(--color-soft)] rounded-lg px-3 py-2 mb-4">
+              {t('score.cannotChangeWinner')}
+            </p>
+          )}
+
           <div className="flex flex-wrap gap-2 justify-end pt-4 mt-2 border-t border-[var(--color-border-soft)]">
             {hasResult && (
               <Button
                 variant="secondary-ghost"
                 onClick={handleClear}
+                disabled={lockedWinnerId != null}
               >
                 {t('score.clear')}
               </Button>
@@ -376,7 +387,7 @@ export const ScoreModal = ({
             <Button
               variant="primary"
               onClick={handleSave}
-              disabled={!winner}
+              disabled={!canSave}
             >
               {t('score.save')}
             </Button>

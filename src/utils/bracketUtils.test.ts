@@ -5,6 +5,8 @@ import {
   generateBracket,
   advanceWinner,
   canEditMatch,
+  hasPlayedDownstreamMatch,
+  clearMatchResult,
   getBracketWinner,
 } from './bracketUtils';
 import type { Bracket, Match, Player, SetScore } from '../types';
@@ -462,7 +464,7 @@ describe('canEditMatch', () => {
     expect(canEditMatch(bracket, m1.id)).toBe(true);
   });
 
-  it('prevents editing a match if next match already has a winner', () => {
+  it('allows editing a played match even when next match has a winner (score adjustment)', () => {
     const players = makePlayers(4);
     let bracket = generateBracket(players);
     const scores: SetScore[] = [[11, 5], [11, 7], [11, 3]];
@@ -475,9 +477,114 @@ describe('canEditMatch', () => {
     const final = bracket.rounds[1]![0]!;
     bracket = advanceWinner(clone(bracket), final.id, final.player1Id!, scores);
 
-    // Round 1 matches should not be editable
+    // Round 1 matches should still be editable (for score adjustments)
     for (const match of bracket.rounds[0]!) {
-      expect(canEditMatch(bracket, match.id)).toBe(false);
+      expect(canEditMatch(bracket, match.id)).toBe(true);
+    }
+  });
+});
+
+describe('hasPlayedDownstreamMatch', () => {
+  it('returns false for unplayed matches', () => {
+    const players = makePlayers(4);
+    const bracket = generateBracket(players);
+    for (const match of bracket.rounds[0]!) {
+      expect(hasPlayedDownstreamMatch(bracket, match.id)).toBe(false);
+    }
+  });
+
+  it('returns false when next match exists but has no result', () => {
+    const players = makePlayers(4);
+    let bracket = generateBracket(players);
+    const m1 = bracket.rounds[0]![0]!;
+    bracket = advanceWinner(clone(bracket), m1.id, m1.player1Id!, [[11, 5]] as SetScore[]);
+    expect(hasPlayedDownstreamMatch(bracket, m1.id)).toBe(false);
+  });
+
+  it('returns true when next match has winnerId', () => {
+    const players = makePlayers(4);
+    let bracket = generateBracket(players);
+    const scores: SetScore[] = [[11, 5], [11, 7], [11, 3]];
+
+    for (const match of bracket.rounds[0]!) {
+      bracket = advanceWinner(clone(bracket), match.id, match.player1Id!, scores);
+    }
+    const final = bracket.rounds[1]![0]!;
+    bracket = advanceWinner(clone(bracket), final.id, final.player1Id!, scores);
+
+    for (const match of bracket.rounds[0]!) {
+      expect(hasPlayedDownstreamMatch(bracket, match.id)).toBe(true);
+    }
+  });
+
+  it('returns false for 3rd place match (terminal)', () => {
+    const players = makePlayers(8);
+    let bracket = generateBracket(players);
+    const scores: SetScore[] = [[11, 5]];
+
+    // Play all round 1 and round 2
+    for (const match of bracket.rounds[0]!) {
+      bracket = advanceWinner(clone(bracket), match.id, match.player1Id!, scores);
+    }
+    for (const match of bracket.rounds[1]!) {
+      bracket = advanceWinner(clone(bracket), match.id, match.player1Id!, scores);
+    }
+
+    // Play 3rd place match
+    const tpm = bracket.thirdPlaceMatch!;
+    tpm.winnerId = tpm.player1Id;
+    tpm.scores = scores;
+    expect(hasPlayedDownstreamMatch(bracket, tpm.id)).toBe(false);
+  });
+
+  it('returns true for semifinal when 3rd place match has result', () => {
+    const players = makePlayers(8);
+    let bracket = generateBracket(players);
+    const scores: SetScore[] = [[11, 5]];
+
+    // Play all round 1
+    for (const match of bracket.rounds[0]!) {
+      bracket = advanceWinner(clone(bracket), match.id, match.player1Id!, scores);
+    }
+    // Play both semis
+    for (const match of bracket.rounds[1]!) {
+      bracket = advanceWinner(clone(bracket), match.id, match.player1Id!, scores);
+    }
+
+    // Play 3rd place match
+    const tpm = bracket.thirdPlaceMatch!;
+    tpm.winnerId = tpm.player1Id;
+    tpm.scores = scores;
+
+    // Semifinal matches should report downstream played (3rd place)
+    for (const match of bracket.rounds[1]!) {
+      expect(hasPlayedDownstreamMatch(bracket, match.id)).toBe(true);
+    }
+  });
+
+  it('returns false for semifinal after clearing final when 3rd place match was played', () => {
+    const players = makePlayers(4);
+    let bracket = generateBracket(players);
+    const scores: SetScore[] = [[11, 5]];
+
+    // Play both semis
+    for (const match of bracket.rounds[0]!) {
+      bracket = advanceWinner(clone(bracket), match.id, match.player1Id!, scores);
+    }
+    // Play final
+    const final = bracket.rounds[1]![0]!;
+    bracket = advanceWinner(clone(bracket), final.id, final.player1Id!, scores);
+
+    // Manually play 3rd place match (thirdPlaceMatch has players from semi losers)
+    const tpm = bracket.thirdPlaceMatch!;
+    bracket = { ...bracket, thirdPlaceMatch: { ...tpm, winnerId: tpm.player1Id!, scores } };
+
+    // Clear final
+    bracket = clearMatchResult(clone(bracket), final.id);
+
+    // Semis should now be unlocked (no downstream match with results)
+    for (const match of bracket.rounds[0]!) {
+      expect(hasPlayedDownstreamMatch(bracket, match.id)).toBe(false);
     }
   });
 });

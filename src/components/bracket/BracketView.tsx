@@ -5,7 +5,7 @@ import { WinnerBanner } from '../common/WinnerBanner';
 import { TabBar } from '../common/TabBar';
 import { FinalResultsTable } from '../common/FinalResultsTable';
 import { MatchCard } from './MatchCard';
-import { getBracketWinner, canEditMatch } from '../../utils/bracketUtils';
+import { getBracketWinner, canEditMatch, hasPlayedDownstreamMatch } from '../../utils/bracketUtils';
 import { buildBracketResults } from '../../utils/resultsUtils';
 import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -95,6 +95,7 @@ export const BracketView = (): ReactElement | null => {
               maxSets={maxSets}
               onSave={handleSave}
               onClose={() => { setEditingMatch(null); }}
+              lockedWinnerId={editingMatch.winnerId && hasPlayedDownstreamMatch(bracket, editingMatch.id) ? editingMatch.winnerId : undefined}
             />
           )}
         </>

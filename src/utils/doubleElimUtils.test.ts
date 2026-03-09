@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateDoubleElim, advanceDoubleElim, getDoubleElimWinner, canEditDoubleElimMatch } from './doubleElimUtils';
+import { generateDoubleElim, advanceDoubleElim, clearDoubleElimMatch, getDoubleElimWinner, canEditDoubleElimMatch, hasPlayedDownstreamDoubleElimMatch } from './doubleElimUtils';
 import type { Player, DoubleElim } from '../types';
 
 function makePlayers(n: number): Player[] {
@@ -342,5 +342,178 @@ describe('double elimination with 8 players - losers semifinal editability', () 
     const matchHD = findMatchInRounds(de.losers.rounds, 'H', 'D')!;
     expect(matchHD).toBeTruthy();
     expect(canEditDoubleElimMatch(de, matchHD.id)).toBe(true);
+  });
+});
+
+describe('hasPlayedDownstreamDoubleElimMatch', () => {
+  it('returns false for fresh double elim', () => {
+    const de = generateDoubleElim(makePlayers(4));
+    const match = de.winners.rounds[0]![0]!;
+    expect(hasPlayedDownstreamDoubleElimMatch(de, match.id)).toBe(false);
+  });
+
+  it('returns true for winners match when next winners match has result', () => {
+    let de = generateDoubleElim(makePlayers(4));
+    const matchA = de.winners.rounds[0]![0]!;
+    const matchB = de.winners.rounds[0]![1]!;
+
+    de = advanceDoubleElim(clone(de), matchA.id, matchA.player1Id!, [[11, 7]]);
+    de = advanceDoubleElim(clone(de), matchB.id, matchB.player2Id!, [[9, 11]]);
+
+    const winnersFinal = de.winners.rounds[1]![0]!;
+    de = advanceDoubleElim(clone(de), winnersFinal.id, winnersFinal.player1Id!, [[11, 9]]);
+
+    // matchA and matchB feed into winnersFinal which now has a result
+    expect(hasPlayedDownstreamDoubleElimMatch(de, matchA.id)).toBe(true);
+    expect(hasPlayedDownstreamDoubleElimMatch(de, matchB.id)).toBe(true);
+  });
+
+  it('returns true for winners match when corresponding losers entry has result (bug fix)', () => {
+    let de = generateDoubleElim(makePlayers(4));
+    const matchA = de.winners.rounds[0]![0]!;
+    const matchB = de.winners.rounds[0]![1]!;
+
+    de = advanceDoubleElim(clone(de), matchA.id, matchA.player1Id!, [[11, 7]]);
+    de = advanceDoubleElim(clone(de), matchB.id, matchB.player2Id!, [[9, 11]]);
+
+    // Both losers entered losers bracket R0. Play the losers R0 match.
+    const losersR0 = de.losers.rounds[0]![0]!;
+    de = advanceDoubleElim(clone(de), losersR0.id, losersR0.player1Id!, [[11, 5]]);
+
+    // matchA's loser entry match has been played → downstream is played
+    expect(hasPlayedDownstreamDoubleElimMatch(de, matchA.id)).toBe(true);
+    expect(hasPlayedDownstreamDoubleElimMatch(de, matchB.id)).toBe(true);
+  });
+
+  it('returns true when tournament has a final winner', () => {
+    let de = generateDoubleElim(makePlayers(4));
+    const matchA = de.winners.rounds[0]![0]!;
+    const matchB = de.winners.rounds[0]![1]!;
+
+    de = advanceDoubleElim(clone(de), matchA.id, matchA.player1Id!, [[11, 7]]);
+    de = advanceDoubleElim(clone(de), matchB.id, matchB.player2Id!, [[9, 11]]);
+
+    const winnersFinal = de.winners.rounds[1]![0]!;
+    de = advanceDoubleElim(clone(de), winnersFinal.id, winnersFinal.player1Id!, [[11, 9]]);
+
+    const losersR0 = de.losers.rounds[0]![0]!;
+    de = advanceDoubleElim(clone(de), losersR0.id, losersR0.player1Id!, [[11, 5]]);
+
+    const losersFinal = de.losers.rounds[1]![0]!;
+    de = advanceDoubleElim(clone(de), losersFinal.id, losersFinal.player2Id!, [[7, 11]]);
+
+    const grandFinal = de.finals.grandFinal;
+    de = advanceDoubleElim(clone(de), grandFinal.id, grandFinal.player1Id!, [[11, 6]]);
+
+    // All non-final matches should report downstream played
+    expect(hasPlayedDownstreamDoubleElimMatch(de, matchA.id)).toBe(true);
+    expect(hasPlayedDownstreamDoubleElimMatch(de, losersR0.id)).toBe(true);
+  });
+
+  it('returns false for reset final (terminal)', () => {
+    let de = generateDoubleElim(makePlayers(4));
+    const matchA = de.winners.rounds[0]![0]!;
+    const matchB = de.winners.rounds[0]![1]!;
+
+    de = advanceDoubleElim(clone(de), matchA.id, matchA.player1Id!, [[11, 7]]);
+    de = advanceDoubleElim(clone(de), matchB.id, matchB.player2Id!, [[9, 11]]);
+
+    const winnersFinal = de.winners.rounds[1]![0]!;
+    de = advanceDoubleElim(clone(de), winnersFinal.id, winnersFinal.player1Id!, [[11, 9]]);
+
+    const losersR0 = de.losers.rounds[0]![0]!;
+    de = advanceDoubleElim(clone(de), losersR0.id, losersR0.player1Id!, [[11, 5]]);
+
+    const losersFinal = de.losers.rounds[1]![0]!;
+    de = advanceDoubleElim(clone(de), losersFinal.id, losersFinal.player2Id!, [[7, 11]]);
+
+    // Losers champion wins grand final → reset final
+    const grandFinal = de.finals.grandFinal;
+    de = advanceDoubleElim(clone(de), grandFinal.id, grandFinal.player2Id!, [[9, 11]]);
+
+    const resetFinal = de.finals.resetFinal;
+    de = advanceDoubleElim(clone(de), resetFinal.id, resetFinal.player1Id!, [[11, 6]]);
+
+    // Reset final is terminal
+    expect(hasPlayedDownstreamDoubleElimMatch(de, resetFinal.id)).toBe(false);
+  });
+
+  it('returns true for grand final when reset final has result', () => {
+    let de = generateDoubleElim(makePlayers(4));
+    const matchA = de.winners.rounds[0]![0]!;
+    const matchB = de.winners.rounds[0]![1]!;
+
+    de = advanceDoubleElim(clone(de), matchA.id, matchA.player1Id!, [[11, 7]]);
+    de = advanceDoubleElim(clone(de), matchB.id, matchB.player2Id!, [[9, 11]]);
+
+    const winnersFinal = de.winners.rounds[1]![0]!;
+    de = advanceDoubleElim(clone(de), winnersFinal.id, winnersFinal.player1Id!, [[11, 9]]);
+
+    const losersR0 = de.losers.rounds[0]![0]!;
+    de = advanceDoubleElim(clone(de), losersR0.id, losersR0.player1Id!, [[11, 5]]);
+
+    const losersFinal = de.losers.rounds[1]![0]!;
+    de = advanceDoubleElim(clone(de), losersFinal.id, losersFinal.player2Id!, [[7, 11]]);
+
+    // Losers champion wins grand final → reset final
+    const grandFinal = de.finals.grandFinal;
+    de = advanceDoubleElim(clone(de), grandFinal.id, grandFinal.player2Id!, [[9, 11]]);
+
+    const resetFinal = de.finals.resetFinal;
+    de = advanceDoubleElim(clone(de), resetFinal.id, resetFinal.player1Id!, [[11, 6]]);
+
+    // Grand final has downstream (reset final has winner)
+    expect(hasPlayedDownstreamDoubleElimMatch(de, grandFinal.id)).toBe(true);
+  });
+
+  it('allows editing winners semifinal after clearing winners final when losers entry was only auto-advanced (BYE)', () => {
+    // 3 players: A has a BYE in W-R0, B vs C is the contested W-SF match.
+    // After playing B vs C, the losers entry (L-R0) is auto-advanced for C (only one real player due to BYE).
+    // After playing and then clearing the winners final, W-SF (matchBC) should be editable.
+    const players = [
+      { id: 'A', name: 'A' },
+      { id: 'B', name: 'B' },
+      { id: 'C', name: 'C' },
+    ];
+    let de = generateDoubleElim(players);
+
+    // Find the contested W-R0 match (B vs C)
+    const matchBC = de.winners.rounds[0]!.find(m => m.player1Id && m.player2Id)!;
+    expect(matchBC).toBeTruthy();
+
+    de = advanceDoubleElim(clone(de), matchBC.id, 'B', [[11, 5]]);
+
+    // Play and then clear the winners final
+    const winnersFinal = de.winners.rounds[1]![0]!;
+    de = advanceDoubleElim(clone(de), winnersFinal.id, winnersFinal.player1Id!, [[11, 7]]);
+    de = clearDoubleElimMatch(clone(de), winnersFinal.id);
+
+    // W-SF (matchBC) must be editable — L-R0 was only auto-advanced (BYE slot), not explicitly played
+    expect(hasPlayedDownstreamDoubleElimMatch(de, matchBC.id)).toBe(false);
+  });
+
+  it('still blocks editing winners QF when losers bracket entry was explicitly played (both players)', () => {
+    // 4 players: both W-QF matches produce real losers → L-R0 can be explicitly played.
+    // After L-R0 is played, clearing W-F should not unlock W-QF.
+    let de = generateDoubleElim(makePlayers(4));
+    const matchA = de.winners.rounds[0]![0]!;
+    const matchB = de.winners.rounds[0]![1]!;
+
+    de = advanceDoubleElim(clone(de), matchA.id, matchA.player1Id!, [[11, 7]]);
+    de = advanceDoubleElim(clone(de), matchB.id, matchB.player2Id!, [[9, 11]]);
+
+    // Explicitly play L-R0 (both real losers present)
+    const losersR0 = de.losers.rounds[0]![0]!;
+    expect(losersR0.player1Id).toBeTruthy();
+    expect(losersR0.player2Id).toBeTruthy();
+    de = advanceDoubleElim(clone(de), losersR0.id, losersR0.player1Id!, [[11, 5]]);
+
+    // Play and clear the winners final
+    const winnersFinal = de.winners.rounds[1]![0]!;
+    de = advanceDoubleElim(clone(de), winnersFinal.id, winnersFinal.player1Id!, [[11, 9]]);
+    de = clearDoubleElimMatch(clone(de), winnersFinal.id);
+
+    // W-QF (matchA) must remain locked: L-R0 was explicitly played with both players
+    expect(hasPlayedDownstreamDoubleElimMatch(de, matchA.id)).toBe(true);
   });
 });

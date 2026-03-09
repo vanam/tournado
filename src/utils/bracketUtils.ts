@@ -239,33 +239,44 @@ export function advanceWinner(bracket: Bracket, matchId: string, winnerId: strin
   return bracket;
 }
 
+export function hasPlayedDownstreamMatch(bracket: Bracket, matchId: string): boolean {
+  // 3rd place match is terminal — no downstream
+  if (matchId === bracket.thirdPlaceMatch?.id) {
+    return false;
+  }
+
+  const { match, roundIndex } = findMatchInBracket(bracket.rounds, matchId);
+  if (!match) return false;
+
+  // Check if next match in bracket has been played
+  if (match.nextMatchId) {
+    for (let nr = roundIndex + 1; nr < bracket.rounds.length; nr++) {
+      const roundNr = bracket.rounds[nr];
+      if (!roundNr) continue;
+      const nextMatch = roundNr.find((m) => m.id === match.nextMatchId);
+      if (nextMatch) {
+        if (nextMatch.winnerId) return true;
+        break;
+      }
+    }
+  }
+
+  // Semifinal → also check 3rd place match
+  const semiRoundIndex = bracket.rounds.length - 2;
+  if (roundIndex === semiRoundIndex && bracket.thirdPlaceMatch?.winnerId) {
+    return true;
+  }
+
+  return false;
+}
+
 export function canEditMatch(bracket: Bracket, matchId: string): boolean {
-  // 3rd place match is terminal — always editable if it has both players
   if (matchId === bracket.thirdPlaceMatch?.id) {
     return !!(bracket.thirdPlaceMatch.player1Id && bracket.thirdPlaceMatch.player2Id);
   }
-
-  for (let r = 0; r < bracket.rounds.length; r++) {
-    const roundR = bracket.rounds[r];
-    if (!roundR) continue;
-    const match = roundR.find((m) => m.id === matchId);
-    if (!match) continue;
-
-    // Can edit if the next match hasn't been played yet
-    if (!match.nextMatchId) return true;
-    for (let nr = r + 1; nr < bracket.rounds.length; nr++) {
-      const roundNr = bracket.rounds[nr];
-      if (!roundNr) continue;
-      const nextMatch = roundNr.find(
-        (m) => m.id === match.nextMatchId
-      );
-      if (nextMatch) {
-        return !nextMatch.winnerId;
-      }
-    }
-    return true;
-  }
-  return false;
+  const { match } = findMatchInBracket(bracket.rounds, matchId);
+  if (!match) return false;
+  return !!(match.player1Id && match.player2Id);
 }
 
 export function getBracketWinner(bracket: Bracket): string | null {
@@ -354,6 +365,12 @@ export function clearMatchResult(bracket: Bracket, matchId: string): Bracket {
     } else {
       bracket.thirdPlaceMatch.player2Id = null;
     }
+    resetMatchResult(bracket.thirdPlaceMatch);
+  }
+
+  // When clearing the final, also clear the 3rd place match result
+  const finalRoundIndex = bracket.rounds.length - 1;
+  if (bracket.thirdPlaceMatch && currentRound === finalRoundIndex) {
     resetMatchResult(bracket.thirdPlaceMatch);
   }
 

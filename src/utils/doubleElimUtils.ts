@@ -12,10 +12,10 @@ import {createMatchIdGenerator} from './matchIdGenerator';
 import {createMatch} from './matchFactory';
 import {
   advanceWinner,
-  canEditMatch,
   clearMatchResult,
   generateBracket,
   getBracketWinner,
+  hasPlayedDownstreamMatch,
   isDummyMatch,
 } from './bracketUtils';
 
@@ -425,24 +425,51 @@ export function getDoubleElimWinner(doubleElim: DoubleElim): string | null {
   return null;
 }
 
-export function canEditDoubleElimMatch(doubleElim: DoubleElim, matchId: string): boolean {
-  const finalWinner =
-    doubleElim.finals.resetFinal.winnerId ?? doubleElim.finals.grandFinal.winnerId;
+export function hasPlayedDownstreamDoubleElimMatch(doubleElim: DoubleElim, matchId: string): boolean {
   const found = findMatchInDoubleElim(doubleElim, matchId);
   if (!found) return false;
 
+  // Finals section
   if (found.section === 'finals') {
-    return true;
+    // Grand final → locked if reset final has a winner
+    if (matchId === doubleElim.finals.grandFinal.id) {
+      return !!doubleElim.finals.resetFinal.winnerId;
+    }
+    // Reset final is terminal
+    return false;
   }
 
-  if (finalWinner) return false;
+  // If any final has a winner, all non-final matches are locked
+  const finalWinner =
+    doubleElim.finals.resetFinal.winnerId ?? doubleElim.finals.grandFinal.winnerId;
+  if (finalWinner) return true;
 
+  // Losers section
   if (found.section === 'losers') {
-    return canEditMatch(doubleElim.losers, matchId);
+    return hasPlayedDownstreamMatch(doubleElim.losers, matchId);
   }
 
-  // OPRAVA: Zápasy ve winners bracketu musí být editovatelné, pokud není znám vítěz finále
-  return canEditMatch(doubleElim.winners, matchId);
+  // Winners section: check BOTH next winners match AND losers entry
+  if (hasPlayedDownstreamMatch(doubleElim.winners, matchId)) return true;
+
+  // Bug fix: also check if the corresponding losers bracket entry has been played
+  const loserLink = doubleElim.loserLinks[matchId];
+  if (loserLink) {
+    for (const round of doubleElim.losers.rounds) {
+      const losersMatch = round.find(m => m.id === loserLink.matchId && !isDummyMatch(m));
+      if (losersMatch) {
+        return !!losersMatch.winnerId && !!losersMatch.player1Id && !!losersMatch.player2Id;
+      }
+    }
+  }
+
+  return false;
+}
+
+export function canEditDoubleElimMatch(doubleElim: DoubleElim, matchId: string): boolean {
+  const found = findMatchInDoubleElim(doubleElim, matchId);
+  if (!found) return false;
+  return !!(found.match.player1Id && found.match.player2Id);
 }
 
 function syncLoserSlots(

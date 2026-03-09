@@ -96,6 +96,7 @@ export const en: TranslationMap = {
   'score.clearConfirm': 'Clear this result?',
   'score.clearTitle': 'Clear result',
   'score.clearMessage': 'This will remove the score and winner from this match.',
+  'score.cannotChangeWinner': 'The winner cannot be changed because subsequent matches have already been played. You can only adjust the score.',
 
   'roundRobin.winner': 'Tournament Winner: {{name}}',
   'roundRobin.schedule': 'Schedule',
@@ -554,6 +555,7 @@ export const cs: TranslationMap = {
   'score.clearConfirm': 'Opravdu smazat výsledek?',
   'score.clearTitle': 'Smazat výsledek',
   'score.clearMessage': 'Tímto odeberete skóre i vítěze tohoto zápasu.',
+  'score.cannotChangeWinner': 'Vítěze nelze změnit, protože navazující zápasy již byly odehrány. Můžete pouze upravit skóre.',
 
   'roundRobin.winner': 'Vítěz turnaje: {{name}}',
   'roundRobin.schedule': 'Rozpis',
@@ -1008,6 +1010,7 @@ export const de: TranslationMap = {
   'score.clearConfirm': 'Dieses Ergebnis löschen?',
   'score.clearTitle': 'Ergebnis löschen',
   'score.clearMessage': 'Dies entfernt das Ergebnis und den Gewinner dieses Spiels.',
+  'score.cannotChangeWinner': 'Der Gewinner kann nicht geändert werden, da nachfolgende Spiele bereits gespielt wurden. Sie können nur das Ergebnis anpassen.',
 
   'roundRobin.winner': 'Turniersieger: {{name}}',
   'roundRobin.schedule': 'Spielplan',
@@ -1462,6 +1465,7 @@ export const es: TranslationMap = {
   'score.clearConfirm': '¿Borrar este resultado?',
   'score.clearTitle': 'Borrar resultado',
   'score.clearMessage': 'Esto eliminará el resultado y ganador de este partido.',
+  'score.cannotChangeWinner': 'El ganador no se puede cambiar porque los partidos posteriores ya se han jugado. Solo puedes ajustar el marcador.',
 
   'roundRobin.winner': 'Ganador del Torneo: {{name}}',
   'roundRobin.schedule': 'Calendario',

@@ -8,6 +8,7 @@ import { FinalResultsTable } from '../common/FinalResultsTable';
 import {
   canEditDoubleElimMatch,
   getDoubleElimWinner,
+  hasPlayedDownstreamDoubleElimMatch,
 } from '../../utils/doubleElimUtils';
 import { buildDoubleElimResults } from '../../utils/resultsUtils';
 import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
@@ -166,6 +167,7 @@ export const DoubleElimView = (): ReactElement | null => {
               maxSets={maxSets}
               onSave={handleSave}
               onClose={() => { setEditingMatch(null); }}
+              lockedWinnerId={editingMatch.winnerId && hasPlayedDownstreamDoubleElimMatch(doubleElim, editingMatch.id) ? editingMatch.winnerId : undefined}
             />
           )}
         </>

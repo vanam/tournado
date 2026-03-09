@@ -23,6 +23,7 @@ interface ScoreModalWrapperProps {
   readonly scoringMode: ScoreMode;
   readonly groupStageMaxSets: number;
   readonly bracketMaxSets: number;
+  readonly lockedWinnerId?: string | undefined;
   readonly onSave: (
     matchId: string,
     winnerId: string | null,
@@ -40,6 +41,7 @@ export const ScoreModalWrapper = ({
   scoringMode,
   groupStageMaxSets,
   bracketMaxSets,
+  lockedWinnerId,
   onSave,
   onClose,
 }: ScoreModalWrapperProps): ReactElement | null => {
@@ -54,6 +56,7 @@ export const ScoreModalWrapper = ({
       participants={participants}
       scoringMode={scoringMode}
       maxSets={maxSets}
+      lockedWinnerId={lockedWinnerId}
       onSave={onSave}
       onClose={onClose}
     />
