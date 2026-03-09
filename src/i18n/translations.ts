@@ -219,7 +219,8 @@ export const en: TranslationMap = {
   'groupStage.luckyCriteriaRelativeRankHelp': 'Relative placing in group (rank ÷ group size).',
   'groupStage.luckyCriteriaFairPlayHelp': 'No walkovers (WO) recorded for the player.',
   'groupStage.luckyCriteriaLotteryHelp': 'Deterministic draw used to break a remaining tie.',
-
+  'groupStage.bracketParticipantsUpdated': 'Bracket draw updated',
+  'groupStage.bracketSyncBlocked': 'Bracket draw could not be updated because some matches have already been played.',
   'tabs.playoff': 'Playoff',
   'tabs.results': 'Final Results',
   'tabs.tournament': 'Tournament',
@@ -677,7 +678,8 @@ export const cs: TranslationMap = {
   'groupStage.luckyCriteriaRelativeRankHelp': 'Relativní umístění ve skupině (pořadí ÷ velikost skupiny).',
   'groupStage.luckyCriteriaFairPlayHelp': 'Hráč nemá žádné WO.',
   'groupStage.luckyCriteriaLotteryHelp': 'Deterministický los pro rozsekání zbývající remízy.',
-
+  'groupStage.bracketParticipantsUpdated': 'Losování pavouka bylo aktualizováno',
+  'groupStage.bracketSyncBlocked': 'Losování pavouka nelze aktualizovat, protože některé zápasy již byly odehrány.',
   'tabs.playoff': 'Playoff',
   'tabs.results': 'Výsledková listina',
   'tabs.tournament': 'Turnaj',
@@ -1132,7 +1134,8 @@ export const de: TranslationMap = {
   'groupStage.luckyCriteriaRelativeRankHelp': 'Relative Platzierung in der Gruppe (Rang ÷ Gruppengröße).',
   'groupStage.luckyCriteriaFairPlayHelp': 'Keine Walkovers (WO) für den Spieler.',
   'groupStage.luckyCriteriaLotteryHelp': 'Deterministisches Losverfahren zum Entscheiden eines verbleibenden Gleichstands.',
-
+  'groupStage.bracketParticipantsUpdated': 'Auslosung wurde aktualisiert',
+  'groupStage.bracketSyncBlocked': 'Die Auslosung konnte nicht aktualisiert werden, da einige Spiele bereits gespielt wurden.',
   'tabs.playoff': 'Playoff',
   'tabs.results': 'Endstand',
   'tabs.tournament': 'Turnier',
@@ -1587,7 +1590,8 @@ export const es: TranslationMap = {
   'groupStage.luckyCriteriaRelativeRankHelp': 'Posición relativa en el grupo (ranking ÷ tamaño del grupo).',
   'groupStage.luckyCriteriaFairPlayHelp': 'Sin walkovers (WO) registrados para el jugador.',
   'groupStage.luckyCriteriaLotteryHelp': 'Sorteo determinístico usado para desempatar.',
-
+  'groupStage.bracketParticipantsUpdated': 'El cuadro ha sido actualizado',
+  'groupStage.bracketSyncBlocked': 'El cuadro no se pudo actualizar porque algunos partidos ya se han jugado.',
   'tabs.playoff': 'Playoff',
   'tabs.results': 'Resultados Finales',
   'tabs.tournament': 'Torneo',

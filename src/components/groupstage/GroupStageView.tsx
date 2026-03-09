@@ -18,7 +18,8 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
 import { recordScore, clearScore } from '../../services/matchService';
-import { generatePlayoffs } from '../../services/groupStageService';
+import { generatePlayoffs, syncBracketParticipants } from '../../services/groupStageService';
+import { showToast } from '../../utils/toastUtils';
 import { BracketType, ScoreMode } from '../../types';
 import type {
   GroupStagePlayoffs,
@@ -217,9 +218,21 @@ export const GroupStageView = (): ReactElement | null => {
       case 'group': {
         const { groupId } = editing;
         if (!groupId) return;
-        scoreOp = winnerIdValue === null
-          ? clearScore(tid, matchId, groupId).then(() => {})
-          : recordScore(tid, matchId, scores, walkover, groupId).then(() => {});
+        if (winnerIdValue === null) {
+          scoreOp = clearScore(tid, matchId, groupId).then(() => {});
+        } else {
+          const hasBracket = playoffs != null;
+          scoreOp = recordScore(tid, matchId, scores, walkover, groupId).then(() => {
+            if (!hasBracket) return;
+            return syncBracketParticipants(tid).then((result) => {
+              if (result.updated) {
+                showToast({ message: t('groupStage.bracketParticipantsUpdated') });
+              } else if (result.blocked) {
+                showToast({ message: t('groupStage.bracketSyncBlocked') });
+              }
+            });
+          });
+        }
         break;
       }
       case 'mainBracket':

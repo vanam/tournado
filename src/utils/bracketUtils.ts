@@ -279,6 +279,53 @@ export function canEditMatch(bracket: Bracket, matchId: string): boolean {
   return !!(match.player1Id && match.player2Id);
 }
 
+/**
+ * Returns the player ID seeded at the given 0-based seed index in the bracket's first round.
+ * Reverses the seedPositions mapping to find which first-round slot corresponds to seed `seed`.
+ */
+export function getBracketParticipantAtSeed(bracket: Bracket, seed: number): string | null {
+  const round0 = bracket.rounds[0];
+  if (!round0 || round0.length === 0) return null;
+  const bracketSize = round0.length * 2;
+  const positions = seedPositions(bracketSize);
+  const slotIdx = positions[seed];
+  if (slotIdx === undefined) return null;
+  const matchIdx = Math.floor(slotIdx / 2);
+  const isPlayer2 = slotIdx % 2 === 1;
+  const match = round0[matchIdx];
+  if (!match) return null;
+  return isPlayer2 ? (match.player2Id ?? null) : (match.player1Id ?? null);
+}
+
+/**
+ * Returns true if `playerId` has participated in a real bracket match
+ * (both players present + result recorded). BYE auto-advances are not counted.
+ */
+export function hasPlayerPlayedBracketMatch(bracket: Bracket, playerId: string): boolean {
+  const allMatches = [...bracket.rounds.flat(), bracket.thirdPlaceMatch];
+  for (const match of allMatches) {
+    if (!match) continue;
+    const involved = match.player1Id === playerId || match.player2Id === playerId;
+    const realMatch = match.player1Id !== null && match.player2Id !== null;
+    if (involved && realMatch && match.winnerId !== null) return true;
+  }
+  return false;
+}
+
+/**
+ * Replaces all occurrences of `oldPlayerId` with `newPlayerId` in the bracket
+ * (player1Id, player2Id, winnerId across all rounds and thirdPlaceMatch).
+ */
+export function swapBracketParticipant(bracket: Bracket, oldPlayerId: string, newPlayerId: string): void {
+  const allMatches = [...bracket.rounds.flat(), bracket.thirdPlaceMatch];
+  for (const match of allMatches) {
+    if (!match) continue;
+    if (match.player1Id === oldPlayerId) match.player1Id = newPlayerId;
+    if (match.player2Id === oldPlayerId) match.player2Id = newPlayerId;
+    if (match.winnerId === oldPlayerId) match.winnerId = newPlayerId;
+  }
+}
+
 export function getBracketWinner(bracket: Bracket): string | null {
   const finalRound = bracket.rounds.at(-1);
   if (!finalRound) return null;

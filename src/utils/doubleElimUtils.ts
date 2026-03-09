@@ -472,6 +472,45 @@ export function canEditDoubleElimMatch(doubleElim: DoubleElim, matchId: string):
   return !!(found.match.player1Id && found.match.player2Id);
 }
 
+/**
+ * Returns true if `playerId` has participated in a real double-elimination match
+ * (both players present + result recorded). BYE auto-advances are not counted.
+ */
+export function hasPlayerPlayedDoubleElimMatch(doubleElim: DoubleElim, playerId: string): boolean {
+  const allMatches: (Match | DoubleElimMatch | null | undefined)[] = [
+    ...doubleElim.winners.rounds.flat(),
+    doubleElim.winners.thirdPlaceMatch,
+    ...doubleElim.losers.rounds.flat(),
+    doubleElim.finals.grandFinal,
+    doubleElim.finals.resetFinal,
+  ];
+  for (const match of allMatches) {
+    if (!match || isDummyMatch(match)) continue;
+    const involved = match.player1Id === playerId || match.player2Id === playerId;
+    const realMatch = match.player1Id !== null && match.player2Id !== null;
+    if (involved && realMatch && match.winnerId !== null) return true;
+  }
+  return false;
+}
+
+/**
+ * Replaces all occurrences of `oldPlayerId` with `newPlayerId` across the entire
+ * double-elimination structure (winners, losers, finals).
+ */
+export function swapDoubleElimParticipant(doubleElim: DoubleElim, oldPlayerId: string, newPlayerId: string): void {
+  const swap = (match: Match | DoubleElimMatch | null | undefined): void => {
+    if (!match) return;
+    if (match.player1Id === oldPlayerId) match.player1Id = newPlayerId;
+    if (match.player2Id === oldPlayerId) match.player2Id = newPlayerId;
+    if (match.winnerId === oldPlayerId) match.winnerId = newPlayerId;
+  };
+  for (const round of doubleElim.winners.rounds) for (const m of round) swap(m);
+  swap(doubleElim.winners.thirdPlaceMatch);
+  for (const round of doubleElim.losers.rounds) for (const m of round) swap(m);
+  swap(doubleElim.finals.grandFinal);
+  swap(doubleElim.finals.resetFinal);
+}
+
 function syncLoserSlots(
   winners: Bracket,
   losers: { rounds: DoubleElimMatch[][] },
