@@ -12,7 +12,7 @@ import {
   swapDoubleElimParticipant,
 } from '../utils/doubleElimUtils';
 import { Format } from '../types';
-import type { Bracket, DoubleElim, GroupStagePlayoffs, Tournament, StandingsRow, GroupAdvancersResult } from '../types';
+import type { BracketType, Bracket, DoubleElim, GroupStagePlayoffs, Tournament, StandingsRow, GroupAdvancersResult } from '../types';
 
 export async function getGroupStandings(tournamentId: string, groupId: string): Promise<StandingsRow[]> {
   const db = await getDatabase();
@@ -214,4 +214,29 @@ export async function syncBracketParticipants(tournamentId: string): Promise<Syn
   tournament.groupStagePlayoffs = playoffs;
   await doc.incrementalModify(() => tournament);
   return { updated: true, blocked: false, blockedPlayers: [] };
+}
+
+export interface UpdateGroupStageSettingsParams {
+  qualifiers: number[];
+  bracketType: BracketType;
+}
+
+export async function updateGroupStageSettings(
+  tournamentId: string,
+  params: UpdateGroupStageSettingsParams,
+): Promise<void> {
+  const db = await getDatabase();
+  const doc = await db.tournaments.findOne(tournamentId).exec();
+  if (doc === null) throw new Error(`Tournament ${tournamentId} not found`);
+
+  const tournament = doc.toMutableJSON();
+  if (tournament.format !== Format.GROUPS_TO_BRACKET) {
+    throw new Error('Tournament is not a Groups to Bracket format');
+  }
+
+  tournament.groupStage.settings.qualifiers = params.qualifiers;
+  tournament.groupStage.settings.bracketType = params.bracketType;
+  tournament.groupStagePlayoffs = null;
+
+  await doc.incrementalModify(() => tournament);
 }

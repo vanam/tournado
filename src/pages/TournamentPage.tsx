@@ -1,4 +1,4 @@
-import {type ReactElement, useEffect, useRef, useState} from 'react';
+import {type ReactElement, type ReactNode, useEffect, useRef, useState} from 'react';
 import {useParams, Link, useLocation} from 'react-router-dom';
 import { SearchX, CircleHelp, Maximize2, User, Users, Pencil, Check, X } from 'lucide-react';
 import { Format } from '../types';
@@ -28,6 +28,7 @@ const TournamentContent = (): ReactElement => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState('');
   const [editNameError, setEditNameError] = useState('');
+  const [extraHeaderActions, setExtraHeaderActions] = useState<ReactNode>(null);
 
   useEffect(() => {
       tracker.trackPageView({})
@@ -176,15 +177,18 @@ const TournamentContent = (): ReactElement => {
             {t(`format.${tournament.format}`)} &middot;{' '}
             {t('tournament.players', { count: tournament.players.length })}
           </p>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleFullscreen}
-            aria-label={t('tournament.fullscreen')}
-            title={t('tournament.fullscreen')}
-          >
-            <Maximize2 />
-          </Button>
+          <div className="flex items-center gap-1">
+            {extraHeaderActions}
+            <Button
+              variant="primary-ghost"
+              size="icon"
+              onClick={toggleFullscreen}
+              aria-label={t('tournament.fullscreen')}
+              title={t('tournament.fullscreen')}
+            >
+              <Maximize2 />
+            </Button>
+          </div>
         </div>
         <ProgressBar
           value={progress.completed}
@@ -200,7 +204,7 @@ const TournamentContent = (): ReactElement => {
       {tournament.format === Format.SINGLE_ELIM && <BracketView />}
       {tournament.format === Format.ROUND_ROBIN && <RoundRobinView />}
       {tournament.format === Format.DOUBLE_ELIM && <DoubleElimView />}
-      {tournament.format === Format.GROUPS_TO_BRACKET && <GroupStageView />}
+      {tournament.format === Format.GROUPS_TO_BRACKET && <GroupStageView onRegisterHeaderActions={setExtraHeaderActions} />}
       {tournament.format === Format.SWISS && <SwissView />}
     </div>
   );
