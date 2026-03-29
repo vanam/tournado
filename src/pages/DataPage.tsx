@@ -68,9 +68,9 @@ export const DataPage = (): ReactElement => {
   }, [t]);
 
   // --- Export selection state ---
-  const [selectedTournaments, setSelectedTournaments] = useState<Set<string>>(new Set());
-  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
-  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
+  const [selectedTournaments, setSelectedTournaments] = useState(new Set<string>());
+  const [selectedGroups, setSelectedGroups] = useState(new Set<string>());
+  const [selectedPlayers, setSelectedPlayers] = useState(new Set<string>());
 
   const ungroupedPlayers = players.filter((p) => p.groupIds.length === 0);
 

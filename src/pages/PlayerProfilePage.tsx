@@ -80,7 +80,7 @@ export const PlayerProfilePage = (): ReactElement => {
     .toSorted((a, b) => b - a)
     .map(String);
   const defaultYear = years.at(0) ?? '';
-  const [activeYear, setActiveYear] = useState<string>('');
+  const [activeYear, setActiveYear] = useState('');
   const yearTabs = years.map((y) => ({ id: y, label: y }));
 
   const effectiveYear = activeYear === '' ? defaultYear : activeYear;

@@ -34,8 +34,8 @@ export const ImportPlayersModal = ({
   const [errors, setErrors] = useState<ParseError[]>([]);
   const [activeTab, setActiveTab] = useState<'text' | 'groups'>('text');
   const [library, setLibrary] = useState<PlayerLibrary>({ groups: [], players: [] });
-  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
-  const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState(new Set());
 
   useEffect(() => {
     if (open) {

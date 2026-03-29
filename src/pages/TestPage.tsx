@@ -187,13 +187,13 @@ export const TestPage = (): ReactElement => {
   const navigate = useNavigate();
 
   const [format, setFormat] = useState<Format | 'ALL'>('ALL');
-  const [scoringMode, setScoringMode] = useState<ScoreMode>(ScoreMode.SETS);
+  const [scoringMode, setScoringMode] = useState(ScoreMode.SETS);
   const [teamSize, setTeamSize] = useState<1 | 2>(1);
   const [minPlayers, setMinPlayers] = useState(2);
   const [maxPlayers, setMaxPlayers] = useState(9);
   const [groupCount, setGroupCount] = useState(2);
   const [qualifiersPerGroup, setQualifiersPerGroup] = useState(2);
-  const [bracketType, setBracketType] = useState<BracketType>(BracketType.SINGLE_ELIM);
+  const [bracketType, setBracketType] = useState(BracketType.SINGLE_ELIM);
   const [useLibraryPlayers, setUseLibraryPlayers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string[] | null>(null);

@@ -95,7 +95,7 @@ export const ScoreModal = ({
     return [[0, 0]];
   })();
 
-  const [scores, setScores] = useState<SetScore[]>(initialScores);
+  const [scores, setScores] = useState(initialScores);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [walkover, setWalkover] = useState(canUseWalkover ? match.walkover : false);
 

@@ -25,8 +25,8 @@ export const GroupStageSettingsModal = ({
   onClose,
 }: GroupStageSettingsModalProps): ReactElement => {
   const { t } = useTranslation();
-  const [qualifiers, setQualifiers] = useState<number[]>(initialQualifiers);
-  const [bracketType, setBracketType] = useState<BracketType>(initialBracketType);
+  const [qualifiers, setQualifiers] = useState(initialQualifiers);
+  const [bracketType, setBracketType] = useState(initialBracketType);
 
   const isSaveDisabled = qualifiers.some((q) => Number.isNaN(q) || q < 0);
 

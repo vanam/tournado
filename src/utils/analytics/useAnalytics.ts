@@ -5,7 +5,7 @@ type AnalyticsContextProps = {
   tracker: GoogleAnalyticsTracker;
 };
 
-export const AnalyticsContext = createContext<AnalyticsContextProps>(
+export const AnalyticsContext = createContext(
   {} as AnalyticsContextProps
 );
 

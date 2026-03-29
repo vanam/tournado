@@ -58,7 +58,7 @@ export const TournamentPreview = ({
   );
 
   const [localGroups, setLocalGroups] = useState<BaseGroup[] | null>(null);
-  const [prevGroups, setPrevGroups] = useState<BaseGroup[] | null>(groups);
+  const [prevGroups, setPrevGroups] = useState(groups);
   const [drag, setDrag] = useState<{ playerId: string; fromGroupIndex: number } | null>(null);
   const [overGroupIndex, setOverGroupIndex] = useState<number | null>(null);
 

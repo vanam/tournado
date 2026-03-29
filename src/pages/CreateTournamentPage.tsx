@@ -81,7 +81,7 @@ export const CreateTournamentPage = (): ReactElement => {
   });
 
   const [players, setPlayers] = useState<Player[]>([]);
-  const [teamSize, setTeamSize] = useState<number>(1);
+  const [teamSize, setTeamSize] = useState(1);
   const [participants, setParticipants] = useState<Participant[]>([]);
 
   const {

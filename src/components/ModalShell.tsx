@@ -47,7 +47,7 @@ export const ModalShell = ({
   disableClose = false,
   zIndexClass = 'z-50',
 }: ModalShellProps): ReactElement => {
-  const modalId = useRef<symbol>(Symbol('modal'));
+  const modalId = useRef(Symbol('modal'));
 
   useEffect(() => {
     const currentId = modalId.current;
