@@ -50,14 +50,14 @@ interface EditingState {
 
 
 function bracketHasPlayedMatch(b: Bracket | null): boolean {
-  return b?.rounds.some((r) => r.some((m) => m.winnerId !== null)) ?? false;
+  return b?.rounds.some((r) => r.some((m) => m.player1Id !== null && m.player2Id !== null && m.winnerId !== null)) ?? false;
 }
 
 function doubleElimHasPlayedMatch(de: DoubleElim | null): boolean {
   if (de === null) return false;
   return (
-    de.winners.rounds.some((r) => r.some((m) => m.winnerId !== null)) ||
-    de.losers.rounds.some((r) => r.some((m) => m.winnerId !== null)) ||
+    de.winners.rounds.some((r) => r.some((m) => m.player1Id !== null && m.player2Id !== null && m.winnerId !== null)) ||
+    de.losers.rounds.some((r) => r.some((m) => m.player1Id !== null && m.player2Id !== null && m.winnerId !== null)) ||
     de.finals.grandFinal.winnerId !== null ||
     de.finals.resetFinal.winnerId !== null
   );
