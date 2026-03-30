@@ -55,16 +55,16 @@ export interface RankedResult {
 
 export interface NormalizedStats {
   pointsPct: number;
-  setDiffPerMatch: number;
-  setsWonPerMatch: number;
-  pointsDiffPerMatch: number;
+  winRate: number;
+  setRatio: number;
+  pointRatio: number;
   played: number;
 }
 
 export interface TiebreakDetails {
-  setsWonPerMatch: number;
-  setDiffPerMatch: number;
-  pointsDiffPerMatch: number;
+  winRate: number;
+  setRatio: number;
+  pointRatio: number;
   opponentAvgRank: number;
   relativeRank: number;
   fairPlay: boolean;
@@ -104,9 +104,9 @@ export type RoundRobinCriteriaKey =
   | 'pointsDiff';
 
 export type GroupStageCriteriaKey =
-  | 'setsWonPerMatch'
-  | 'setDiffPerMatch'
-  | 'pointsDiffPerMatch'
+  | 'winRate'
+  | 'setRatio'
+  | 'pointRatio'
   | 'opponentAvgRank'
   | 'relativeRank'
   | 'fairPlay'

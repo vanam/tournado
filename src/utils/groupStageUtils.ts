@@ -146,12 +146,13 @@ export function isGroupStageComplete(groupStage: GroupStage): boolean {
 function normalizeStats(row: StandingsRow): NormalizedStats {
   const played = row.played || 0;
   const safePlayed = played > 0 ? played : 1;
-  const pointsDiff = row.pointsWon - row.pointsLost;
+  const totalSets = row.setsWon + row.setsLost;
+  const totalPoints = row.pointsWon + row.pointsLost;
   return {
     pointsPct: row.points / safePlayed,
-    setDiffPerMatch: (row.setsWon - row.setsLost) / safePlayed,
-    setsWonPerMatch: row.setsWon / safePlayed,
-    pointsDiffPerMatch: pointsDiff / safePlayed,
+    winRate: row.wins / safePlayed,
+    setRatio: totalSets > 0 ? row.setsWon / totalSets : 0,
+    pointRatio: totalPoints > 0 ? row.pointsWon / totalPoints : 0,
     played,
   };
 }
@@ -172,15 +173,15 @@ function stableLotteryValue(entry: GroupAdvancerEntry): number {
 function compareLuckyCandidates(a: GroupAdvancerEntry, b: GroupAdvancerEntry): number {
   const aDetail = a.tiebreakDetails;
   const bDetail = b.tiebreakDetails;
-  if (bDetail.setsWonPerMatch !== aDetail.setsWonPerMatch) {
-    return bDetail.setsWonPerMatch - aDetail.setsWonPerMatch;
+  if (bDetail.winRate !== aDetail.winRate) {
+    return bDetail.winRate - aDetail.winRate;
   }
-  if (bDetail.setDiffPerMatch !== aDetail.setDiffPerMatch) {
-    return bDetail.setDiffPerMatch - aDetail.setDiffPerMatch;
+  if (bDetail.setRatio !== aDetail.setRatio) {
+    return bDetail.setRatio - aDetail.setRatio;
   }
-  if (aDetail.pointsDiffApplicable && bDetail.pointsDiffApplicable && bDetail.pointsDiffPerMatch !== aDetail.pointsDiffPerMatch) {
-      return bDetail.pointsDiffPerMatch - aDetail.pointsDiffPerMatch;
-    }
+  if (aDetail.pointsDiffApplicable && bDetail.pointsDiffApplicable && bDetail.pointRatio !== aDetail.pointRatio) {
+    return bDetail.pointRatio - aDetail.pointRatio;
+  }
   if (aDetail.opponentAvgRank !== bDetail.opponentAvgRank) {
     return aDetail.opponentAvgRank - bDetail.opponentAvgRank;
   }
@@ -194,9 +195,9 @@ function compareLuckyCandidates(a: GroupAdvancerEntry, b: GroupAdvancerEntry): n
 function getLuckyCriteriaKey(entry: GroupAdvancerEntry): string {
   const detail = entry.tiebreakDetails;
   const parts: (number | boolean | null)[] = [
-    detail.setsWonPerMatch,
-    detail.setDiffPerMatch,
-    detail.pointsDiffApplicable ? detail.pointsDiffPerMatch : null,
+    detail.winRate,
+    detail.setRatio,
+    detail.pointsDiffApplicable ? detail.pointRatio : null,
     detail.opponentAvgRank,
     detail.relativeRank,
     detail.fairPlay,
@@ -222,9 +223,9 @@ function buildAppliedCriteria(
   const detail = entry.tiebreakDetails;
   const peerDetail = peer.tiebreakDetails;
   const criteriaOrder: (keyof TiebreakDetails)[] = [
-    'setsWonPerMatch',
-    'setDiffPerMatch',
-    'pointsDiffPerMatch',
+    'winRate',
+    'setRatio',
+    'pointRatio',
     'opponentAvgRank',
     'relativeRank',
     'fairPlay',
@@ -232,7 +233,7 @@ function buildAppliedCriteria(
   const applied: string[] = [];
 
   for (const key of criteriaOrder) {
-    if (key === 'pointsDiffPerMatch' && !detail.pointsDiffApplicable) {
+    if (key === 'pointRatio' && !detail.pointsDiffApplicable) {
       continue;
     }
     const a = detail[key];
@@ -312,9 +313,9 @@ function processGroup(
     if (!player) continue;
     const normalized = normalizeStats(row);
     const tiebreakDetails: TiebreakDetails = {
-      setsWonPerMatch: normalized.setsWonPerMatch,
-      setDiffPerMatch: normalized.setDiffPerMatch,
-      pointsDiffPerMatch: normalized.pointsDiffPerMatch,
+      winRate: normalized.winRate,
+      setRatio: normalized.setRatio,
+      pointRatio: normalized.pointRatio,
       opponentAvgRank: getOpponentAvgRank(row.playerId, opponentsByPlayer, rankById, groupSize),
       relativeRank: (rankIndex + 1) / groupSize,
       fairPlay: !walkoverByPlayer.get(row.playerId),

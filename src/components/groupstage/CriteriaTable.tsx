@@ -12,10 +12,6 @@ function formatNumber(value: number): string {
   return value.toFixed(2);
 }
 
-function formatSignedNumber(value: number): string {
-  const formatted = formatNumber(value);
-  return value > 0 ? `+${formatted}` : formatted;
-}
 
 function buildCriteriaRows(
   player: GroupAdvancerEntry,
@@ -25,9 +21,9 @@ function buildCriteriaRows(
   const details = player.tiebreakDetails;
   const applied = Array.isArray(player.tiebreakApplied)
     ? player.tiebreakApplied.filter((key): key is GroupStageCriteriaKey =>
-        key === 'setsWonPerMatch' ||
-        key === 'setDiffPerMatch' ||
-        key === 'pointsDiffPerMatch' ||
+        key === 'winRate' ||
+        key === 'setRatio' ||
+        key === 'pointRatio' ||
         key === 'opponentAvgRank' ||
         key === 'relativeRank' ||
         key === 'fairPlay' ||
@@ -35,18 +31,18 @@ function buildCriteriaRows(
       )
     : [];
   const labelMap: Record<GroupStageCriteriaKey, string> = {
-    setsWonPerMatch: t('groupStage.luckyCriteriaSetsWon'),
-    setDiffPerMatch: t('groupStage.luckyCriteriaSetDiff'),
-    pointsDiffPerMatch: t('groupStage.luckyCriteriaPointsDiff'),
+    winRate: t('groupStage.luckyCriteriaSetsWon'),
+    setRatio: t('groupStage.luckyCriteriaSetDiff'),
+    pointRatio: t('groupStage.luckyCriteriaPointsDiff'),
     opponentAvgRank: t('groupStage.luckyCriteriaOpponentRank'),
     relativeRank: t('groupStage.luckyCriteriaRelativeRank'),
     fairPlay: t('groupStage.luckyCriteriaFairPlay'),
     lottery: t('groupStage.luckyCriteriaLottery'),
   };
   const helpMap: Record<GroupStageCriteriaKey, string> = {
-    setsWonPerMatch: t('groupStage.luckyCriteriaSetsWonHelp'),
-    setDiffPerMatch: t('groupStage.luckyCriteriaSetDiffHelp'),
-    pointsDiffPerMatch: t('groupStage.luckyCriteriaPointsDiffHelp'),
+    winRate: t('groupStage.luckyCriteriaSetsWonHelp'),
+    setRatio: t('groupStage.luckyCriteriaSetDiffHelp'),
+    pointRatio: t('groupStage.luckyCriteriaPointsDiffHelp'),
     opponentAvgRank: t('groupStage.luckyCriteriaOpponentRankHelp'),
     relativeRank: t('groupStage.luckyCriteriaRelativeRankHelp'),
     fairPlay: t('groupStage.luckyCriteriaFairPlayHelp'),
@@ -54,12 +50,12 @@ function buildCriteriaRows(
   };
 
   return applied
-    .filter((key) => showBalls || key !== 'pointsDiffPerMatch')
+    .filter((key) => showBalls || key !== 'pointRatio')
     .map((key) => {
       let value = '-';
-      if (key === 'setsWonPerMatch') value = formatNumber(details.setsWonPerMatch);
-      if (key === 'setDiffPerMatch') value = formatSignedNumber(details.setDiffPerMatch);
-      if (key === 'pointsDiffPerMatch') value = formatSignedNumber(details.pointsDiffPerMatch);
+      if (key === 'winRate') value = formatPercent(details.winRate);
+      if (key === 'setRatio') value = formatPercent(details.setRatio);
+      if (key === 'pointRatio') value = formatPercent(details.pointRatio);
       if (key === 'opponentAvgRank') value = formatNumber(details.opponentAvgRank);
       if (key === 'relativeRank') value = formatPercent(details.relativeRank);
       if (key === 'fairPlay') {
