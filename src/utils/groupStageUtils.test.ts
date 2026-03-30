@@ -148,16 +148,16 @@ describe('getGroupAdvancers', () => {
     const p6 = byId.get('p6')!;
 
     expect(p4.tiebreakApplied).toEqual([
-      'setsWonPerMatch',
-      'setDiffPerMatch',
-      'pointsDiffPerMatch',
+      'winRate',
+      'setRatio',
+      'pointRatio',
     ]);
     expect(p5.tiebreakApplied).toEqual([
-      'setsWonPerMatch',
-      'setDiffPerMatch',
-      'pointsDiffPerMatch',
+      'winRate',
+      'setRatio',
+      'pointRatio',
     ]);
-    expect(p6.tiebreakApplied).toEqual(['setsWonPerMatch']);
+    expect(p6.tiebreakApplied).toEqual(['winRate', 'setRatio']);
   });
 });
 
