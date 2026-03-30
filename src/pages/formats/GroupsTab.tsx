@@ -48,6 +48,27 @@ export const GroupsTab = (): ReactElement => {
         </p>
       </section>
 
+      <section className="space-y-2">
+        <h2 className="text-base font-semibold text-[var(--color-text)]">
+          {t('formats.groups.wildcards.title')}
+        </h2>
+        <p className="text-sm text-[var(--color-muted)]">
+          {t('formats.groups.wildcards.description')}
+        </p>
+        <p className="text-sm text-[var(--color-muted)]">
+          {t('formats.groups.wildcards.criteria')}
+        </p>
+        <ol className="text-sm text-[var(--color-muted)] list-decimal list-inside space-y-1 pl-1">
+          <li>{t('formats.groups.wildcards.item1')}</li>
+          <li>{t('formats.groups.wildcards.item2')}</li>
+          <li>{t('formats.groups.wildcards.item3')}</li>
+          <li>{t('formats.groups.wildcards.item4')}</li>
+          <li>{t('formats.groups.wildcards.item5')}</li>
+          <li>{t('formats.groups.wildcards.item6')}</li>
+          <li>{t('formats.groups.wildcards.item7')}</li>
+        </ol>
+      </section>
+
       <section className="space-y-4">
         <h2 className="text-base font-semibold text-[var(--color-text)]">
           {t('formats.example')}
