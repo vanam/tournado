@@ -31,7 +31,7 @@
     "ajv-formats": "^3.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dexie": "^4.3.0",
+    "dexie": "^4.4.2",
     "dompurify": "^3.3.1",
     "lucide-react": "^1.7.0",
     "react": "^19.2.0",
