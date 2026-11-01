@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { GroupsToBracketTournament } from '../types';
-import { hasPlayoffMismatch } from '../utils/matchChanges';
+import { hasPlayoffMismatch } from '../utils/playoffLifecycle';
 import { useHistoryChange } from '../hooks/useHistoryChange';
 import { useTranslation } from '../i18n/useTranslation';
 import { HistoryConfirmation } from './HistoryConfirmation';

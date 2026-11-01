@@ -1,11 +1,9 @@
 import { Format, ScoreMode } from '../types';
-import type { Bracket, DoubleElim, GroupStagePlayoffs, GroupsToBracketTournament, Match, SetScore, Tournament } from '../types';
+import type { Bracket, DoubleElim, GroupStagePlayoffs, Match, SetScore, Tournament } from '../types';
 import { DEFAULT_MAX_SETS } from '../constants';
 import { getScoreWinner } from './scoreUtils';
 import { replayElimination } from './replayElimination';
-import { getBracketParticipantAtSeed } from './bracketUtils';
-import { buildGroupStagePlayoffs, getGroupAdvancers, isGroupStageComplete } from './groupStageUtils';
-import { ensureParticipants, getParticipantPlayers } from './participantUtils';
+import { reseedPlayoffs } from './playoffLifecycle';
 import { updateTournamentStatus } from './tournamentStatus';
 
 export type PlayoffSection = Exclude<keyof GroupStagePlayoffs, 'bracketType'>;
@@ -78,49 +76,6 @@ export function listTournamentMatches(tournament: Tournament): LocatedMatch[] {
   }
   const stage = tournament.format === Format.SWISS ? 'swiss.round' : 'roundRobin.round';
   return tournament.schedule.rounds.flatMap((round) => round.matches.map((match) => ({ key: `schedule/${match.id}`, match, stage, round: round.roundNumber })));
-}
-
-function getAdvancers(tournament: GroupsToBracketTournament): { main: string[]; consolation: string[] } {
-  const players = getParticipantPlayers(tournament.players, ensureParticipants(tournament.players, tournament.participants));
-  const result = getGroupAdvancers(tournament.groupStage, players, {
-    scoringMode: tournament.scoringMode, maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
-  });
-  return { main: result.mainWithLucky.map((player) => player.id), consolation: result.consolation.map((player) => player.id) };
-}
-
-export function hasPlayoffMismatch(tournament: GroupsToBracketTournament): boolean {
-  const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
-  if (!playoffs || !isGroupStageComplete(tournament.groupStage)) return false;
-  const expected = getAdvancers(tournament);
-  return (['mainBracket', 'consolationBracket', 'mainDoubleElim', 'consolationDoubleElim'] as const).some((section) => {
-    const value = playoffs[section];
-    if (!value) return false;
-    const bracket = 'winners' in value ? value.winners : value;
-    const ids = section.startsWith('main') ? expected.main : expected.consolation;
-    return ids.some((id, index) => getBracketParticipantAtSeed(bracket, index) !== id);
-  });
-}
-
-function reseedPlayoffs(tournament: GroupsToBracketTournament): void {
-  const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
-  if (!playoffs) return;
-  if (!isGroupStageComplete(tournament.groupStage)) {
-    tournament.groupStagePlayoffs = null;
-    tournament.groupStageBrackets = null;
-    return;
-  }
-  const expected = getAdvancers(tournament);
-  const players = getParticipantPlayers(tournament.players, ensureParticipants(tournament.players, tournament.participants));
-  const replacement = buildGroupStagePlayoffs(tournament.groupStage, players, {
-    scoringMode: tournament.scoringMode, maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
-  });
-  for (const section of ['mainBracket', 'consolationBracket', 'mainDoubleElim', 'consolationDoubleElim'] as const) {
-    const bracket = playoffs[section];
-    const ids = section.startsWith('main') ? expected.main : expected.consolation;
-    if (bracket) replayElimination(bracket, undefined, ids);
-    else if (replacement[section]) Object.assign(playoffs, { [section]: replacement[section] });
-  }
-  tournament.groupStagePlayoffs = playoffs;
 }
 
 function applyScoreChange(tournament: Tournament, row: LocatedMatch, change: Exclude<MatchChange, { type: 'reseed' }>, removedRounds: number[]): { previousWinnerId: string | null; nextWinnerId: string | null } {

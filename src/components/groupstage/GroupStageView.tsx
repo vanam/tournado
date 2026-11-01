@@ -23,11 +23,10 @@ import { useGroupsToBracketTournament } from '../../context/tournamentContext';
 import { generatePlayoffs, updateGroupStageSettings, PlayoffSettingsLockedError } from '../../services/groupStageService';
 import { BracketType, ScoreMode } from '../../types';
 import type {
-  Bracket,
-  DoubleElim,
   GroupStagePlayoffs,
 } from '../../types';
 import { useGroupStageStandings, useGroupComplete, useAdvancers, useWildcardIds, useGroupPlacementByPlayerId } from '../../utils/useGroupStage';
+import { getPlayoffState } from '../../utils/playoffLifecycle';
 import { Button } from '@/components/ui/Button';
 
 type MainTab = 'tournament' | 'results';
@@ -46,35 +45,6 @@ interface EditingState {
   matchId: string;
 }
 
-
-function bracketHasPlayedMatch(b: Bracket | null): boolean {
-  return b?.rounds.some((r) => r.some((m) => m.player1Id !== null && m.player2Id !== null && m.winnerId !== null)) ?? false;
-}
-
-function doubleElimHasPlayedMatch(de: DoubleElim | null): boolean {
-  if (de === null) return false;
-  return (
-    de.winners.rounds.some((r) => r.some((m) => m.player1Id !== null && m.player2Id !== null && m.winnerId !== null)) ||
-    de.losers.rounds.some((r) => r.some((m) => m.player1Id !== null && m.player2Id !== null && m.winnerId !== null)) ||
-    de.finals.grandFinal.winnerId !== null ||
-    de.finals.resetFinal.winnerId !== null
-  );
-}
-
-function hasAnyPlayedPlayoffMatch(playoffs: GroupStagePlayoffs): boolean {
-  return (
-    bracketHasPlayedMatch(playoffs.mainBracket) ||
-    bracketHasPlayedMatch(playoffs.consolationBracket) ||
-    doubleElimHasPlayedMatch(playoffs.mainDoubleElim) ||
-    doubleElimHasPlayedMatch(playoffs.consolationDoubleElim)
-  );
-}
-
-function getPlayoffs(tournament: { groupStagePlayoffs?: GroupStagePlayoffs | null; groupStageBrackets?: GroupStagePlayoffs | null }): GroupStagePlayoffs | null {
-  const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
-  if (!playoffs) return null;
-  return playoffs;
-}
 
 function getMainWinner(playoffs: GroupStagePlayoffs | null, isDoubleElim: boolean): string | null {
   if (!playoffs) return null;
@@ -113,7 +83,8 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
     () => getParticipantPlayers(players, storedParticipants),
     [players, storedParticipants],
   );
-  const playoffs = tournament ? getPlayoffs(tournament) : null;
+  const playoffState = tournament ? getPlayoffState(tournament) : null;
+  const playoffs = playoffState?.playoffs ?? null;
 
   const scoringMode = tournament?.scoringMode ?? ScoreMode.SETS;
   const groupStageMaxSets = tournament?.groupStageMaxSets ?? tournament?.maxSets ?? DEFAULT_MAX_SETS;
@@ -121,7 +92,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
   const bracketType = playoffs?.bracketType ?? groupStage?.settings.bracketType ?? BracketType.SINGLE_ELIM;
   const isDoubleElim = bracketType === BracketType.DOUBLE_ELIM;
 
-  const canEditSettings = playoffs === null || !hasAnyPlayedPlayoffMatch(playoffs);
+  const canEditSettings = !playoffState?.locked;
 
   const standingsByGroup = useGroupStageStandings(groupStage, participants, scoringMode, groupStageMaxSets);
   const groupComplete = useGroupComplete(groupStage);
@@ -141,10 +112,9 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
   );
 
   useEffect(() => {
-    if (!groupComplete || !advancers || !groupStage) return;
-    if (playoffs) return;
+    if (!tournament || !playoffState?.needsGeneration) return;
     void generatePlayoffs(tournament.id).then(reloadTournament);
-  }, [advancers, groupComplete, groupStage, playoffs, tournament, isDoubleElim, reloadTournament]);
+  }, [playoffState?.needsGeneration, tournament, reloadTournament]);
 
   useEffect(() => {
     if (!onRegisterHeaderActions) return;

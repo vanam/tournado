@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { generateNextSwissRound, generateSwissInitialSchedule } from './swissUtils';
 import { buildParticipants, getParticipantPlayers } from './participantUtils';
-import { generateBracket } from './bracketUtils';
 import { generateDoubleElim, advanceDoubleElim } from './doubleElimUtils';
 import { buildRoundRobinResults } from './resultsUtils';
 import { generateSchedule } from './roundRobinUtils';
 import { computeTournamentProgress } from './progressUtils';
-import { applySwaps } from '../services/groupStageService';
-import { BracketType, Format, ScoreMode } from '../types';
+import { Format, ScoreMode } from '../types';
 import type { Player, SwissTournament, DoubleElimTournament } from '../types';
 
 const players: Player[] = Array.from({ length: 8 }, (_, i) => ({ id: `p${i}`, name: `Player ${i}` }));
@@ -25,15 +23,6 @@ describe('tournament corrections', () => {
     expect(round.matches).toHaveLength(2);
     expect(round.matches.flatMap((match) => [match.player1Id, match.player2Id]).toSorted((a, b) => (a ?? '').localeCompare(b ?? ''))).toEqual(participants.map((p) => p.id).toSorted((a, b) => a.localeCompare(b)));
     expect(computeTournamentProgress(tournament).total).toBe(6);
-  });
-
-  it('applies cyclic seed replacements simultaneously', () => {
-    const bracket = generateBracket(players.slice(0, 2));
-    applySwaps({ bracketType: BracketType.SINGLE_ELIM, mainBracket: bracket, mainDoubleElim: null, consolationBracket: null, consolationDoubleElim: null }, [
-      { target: 'main', oldId: 'p0', newId: 'p1' },
-      { target: 'main', oldId: 'p1', newId: 'p0' },
-    ]);
-    expect(bracket.rounds[0]![0]).toMatchObject({ player1Id: 'p1', player2Id: 'p0' });
   });
 
   it('keeps head-to-head decisions in final round-robin ranks', () => {

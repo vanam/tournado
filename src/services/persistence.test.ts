@@ -22,7 +22,8 @@ import {
 import { parseExportFile, importPayload } from '../utils/dataPortability';
 import { buildGroupStagePlayoffs } from '../utils/groupStageUtils';
 import type { MatchChange } from '../utils/matchChanges';
-import { hasPlayoffMismatch, planMatchChange } from '../utils/matchChanges';
+import { planMatchChange } from '../utils/matchChanges';
+import { hasPlayoffMismatch } from '../utils/playoffLifecycle';
 import { generateNextRound } from './swissService';
 import { canGenerateNextSwissRound, isSwissTournamentComplete } from '../utils/swissUtils';
 import { generatePlayoffs, getAdvancers, updateGroupStageSettings, PlayoffSettingsLockedError } from './groupStageService';
