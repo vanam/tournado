@@ -15,10 +15,9 @@ import { ensureParticipants, getParticipantPlayers } from '../../utils/participa
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
-import { recordScore, clearScore } from '../../services/matchService';
 import { generateNextRound } from '../../services/swissService';
 import { Format, ScoreMode } from '../../types';
-import type { Match, SwissTournament, SetScore } from '../../types';
+import type { Match, SwissTournament } from '../../types';
 import { Button } from '@/components/ui/Button';
 
 type SwissTab = 'standings' | 'schedule' | 'results';
@@ -53,12 +52,7 @@ export const SwissView = (): ReactElement | null => {
     ...(complete ? [{ id: 'results' as SwissTab, label: t('swiss.results') }] : []),
   ];
 
-  function handleSave(matchId: string, winnerId: string | null, scores: SetScore[], walkover = false): void {
-    const scoreOp = winnerId === null
-      ? clearScore(tournamentId, matchId)
-      : recordScore(tournamentId, matchId, scores, walkover);
-    void scoreOp.then(reloadTournament).then(() => { setEditingMatch(null); });
-  }
+
 
   function handleGenerateNextRound(): void {
     void generateNextRound(tournamentId).then(reloadTournament);
@@ -115,7 +109,7 @@ export const SwissView = (): ReactElement | null => {
           participants={storedParticipants}
           scoringMode={scoringMode}
           maxSets={maxSets}
-          onSave={handleSave}
+          history={{ tournament }}
           onClose={() => { setEditingMatch(null); }}
         />
       )}

@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import type { Match, Player, Participant, SetScore, ScoreMode } from '../../types';
+import type { Match, Player, Participant, GroupsToBracketTournament, ScoreMode } from '../../types';
 import { ScoreModal } from '../ScoreModal';
 
 type EditingType =
@@ -23,13 +23,7 @@ interface ScoreModalWrapperProps {
   readonly scoringMode: ScoreMode;
   readonly groupStageMaxSets: number;
   readonly bracketMaxSets: number;
-  readonly lockedWinnerId?: string | undefined;
-  readonly onSave: (
-    matchId: string,
-    winnerId: string | null,
-    scores: SetScore[],
-    walkover: boolean
-  ) => void;
+  readonly tournament: GroupsToBracketTournament;
   readonly onClose: () => void;
 }
 
@@ -41,8 +35,7 @@ export const ScoreModalWrapper = ({
   scoringMode,
   groupStageMaxSets,
   bracketMaxSets,
-  lockedWinnerId,
-  onSave,
+  tournament,
   onClose,
 }: ScoreModalWrapperProps): ReactElement | null => {
   if (!activeMatch || !editing) return null;
@@ -56,8 +49,7 @@ export const ScoreModalWrapper = ({
       participants={participants}
       scoringMode={scoringMode}
       maxSets={maxSets}
-      lockedWinnerId={lockedWinnerId}
-      onSave={onSave}
+      history={{ tournament, ...(editing.groupId && { groupId: editing.groupId }), ...(editing.type !== 'group' && { section: editing.type }) }}
       onClose={onClose}
     />
   );

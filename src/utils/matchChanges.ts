@@ -124,32 +124,32 @@ function reseedPlayoffs(tournament: GroupsToBracketTournament): void {
 }
 
 function applyScoreChange(tournament: Tournament, row: LocatedMatch, change: Exclude<MatchChange, { type: 'reseed' }>, removedRounds: number[]): { previousWinnerId: string | null; nextWinnerId: string | null } {
-    const { match } = row;
+  const { match } = row;
 
-    const previousWinnerId = match.winnerId;
-    let nextWinnerId: string | null = null;
-    let scores: SetScore[] = [];
-    let walkover = false;
-    if (change.type === 'score') {
-      if (!match.player1Id || !match.player2Id) throw new Error('Match does not have both players assigned');
-      let maxSets = tournament.maxSets;
-      if (tournament.format === Format.GROUPS_TO_BRACKET) maxSets = (row.groupId ? tournament.groupStageMaxSets : tournament.bracketMaxSets) ?? maxSets;
-      const side = getScoreWinner(change.scores, { scoringMode: tournament.scoringMode ?? ScoreMode.SETS, maxSets: maxSets ?? DEFAULT_MAX_SETS });
-      if (!side) throw new Error('Scores must be valid and have a decisive winner');
-      nextWinnerId = side === 1 ? match.player1Id : match.player2Id;
-      scores = change.scores.map(([a, b]) => [a, b]);
-      walkover = change.walkover;
+  const previousWinnerId = match.winnerId;
+  let nextWinnerId: string | null = null;
+  let scores: SetScore[] = [];
+  let walkover = false;
+  if (change.type === 'score') {
+    if (!match.player1Id || !match.player2Id) throw new Error('Match does not have both players assigned');
+    let maxSets = tournament.maxSets;
+    if (tournament.format === Format.GROUPS_TO_BRACKET) maxSets = (row.groupId ? tournament.groupStageMaxSets : tournament.bracketMaxSets) ?? maxSets;
+    const side = getScoreWinner(change.scores, { scoringMode: tournament.scoringMode ?? ScoreMode.SETS, maxSets: maxSets ?? DEFAULT_MAX_SETS });
+    if (!side) throw new Error('Scores must be valid and have a decisive winner');
+    nextWinnerId = side === 1 ? match.player1Id : match.player2Id;
+    scores = change.scores.map(([a, b]) => [a, b]);
+    walkover = change.walkover;
+  }
+  const result = { matchId: match.id, winnerId: nextWinnerId, scores, walkover };
+  if (row.elimination && previousWinnerId !== nextWinnerId) replayElimination(row.elimination, result);
+  else Object.assign(match, { winnerId: nextWinnerId, scores, walkover });
+  if (previousWinnerId !== nextWinnerId) {
+    if (tournament.format === Format.SWISS && previousWinnerId) {
+      removedRounds.push(...tournament.schedule.rounds.filter((round) => round.roundNumber > row.round).map((round) => round.roundNumber));
+      tournament.schedule.rounds = tournament.schedule.rounds.filter((round) => round.roundNumber <= row.round);
     }
-    const result = { matchId: match.id, winnerId: nextWinnerId, scores, walkover };
-    if (row.elimination && previousWinnerId !== nextWinnerId) replayElimination(row.elimination, result);
-    else Object.assign(match, { winnerId: nextWinnerId, scores, walkover });
-    if (previousWinnerId !== nextWinnerId) {
-      if (tournament.format === Format.SWISS && previousWinnerId) {
-        removedRounds.push(...tournament.schedule.rounds.filter((round) => round.roundNumber > row.round).map((round) => round.roundNumber));
-        tournament.schedule.rounds = tournament.schedule.rounds.filter((round) => round.roundNumber <= row.round);
-      }
-      if (tournament.format === Format.GROUPS_TO_BRACKET && row.groupId) reseedPlayoffs(tournament);
-    }
+    if (tournament.format === Format.GROUPS_TO_BRACKET && row.groupId) reseedPlayoffs(tournament);
+  }
   return { previousWinnerId, nextWinnerId };
 }
 

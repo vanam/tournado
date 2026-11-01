@@ -30,30 +30,33 @@ function addRounds(nodes: Node[], bracket: Bracket, entrants?: string[]): void {
 }
 
 function addDoubleElimNodes(nodes: Node[], bracket: DoubleElim, entrants?: string[]): void {
-
   addRounds(nodes, bracket.winners, entrants);
-    for (const [roundIndex, round] of bracket.losers.rounds.entries()) {
-      for (const match of round) {
-        if (match.dummy) continue;
-        const sources: Source[] = (match.winnersSources ?? []).map((id) => ({ kind: 'loser', matchId: id }));
-        const feeders = bracket.losers.rounds[roundIndex - 1] ?? [];
-        const feederSources: Source[] = feeders.filter((feeder) => feeder.nextMatchId === match.id && !feeder.dummy)
-          .map((feeder) => ({ kind: 'winner', matchId: feeder.id }));
-        if (match.loserSlotFromWinners === 'player2Id') sources.unshift(...feederSources);
-        else sources.push(...feederSources);
-        nodes.push({ match, sources });
+  for (const [roundIndex, round] of bracket.losers.rounds.entries()) {
+    for (const match of round) {
+      if (match.dummy) continue;
+      const slots: (Source | undefined)[] = [undefined, undefined];
+      for (const [sourceId, link] of Object.entries(bracket.loserLinks)) {
+        if (link.matchId === match.id) slots[link.slot === 'player1Id' ? 0 : 1] = { kind: 'loser', matchId: sourceId };
       }
+      const feeders = bracket.losers.rounds[roundIndex - 1] ?? [];
+      for (const feeder of feeders.filter((feeder) => feeder.nextMatchId === match.id && !feeder.dummy)) {
+        const index = slots.findIndex((slot) => !slot);
+        if (index !== -1) slots[index] = { kind: 'winner', matchId: feeder.id };
+      }
+      const sources: Source[] = slots.map((slot) => slot ?? { kind: 'entrant', id: null });
+      nodes.push({ match, sources });
     }
-    const winnersFinal = bracket.winners.rounds.at(-1)?.[0];
-    const losersFinal = bracket.losers.rounds.at(-1)?.find((match) => !match.dummy);
-    const finalSources: Source[] = [];
-    if (winnersFinal) finalSources.push({ kind: 'winner', matchId: winnersFinal.id });
-    if (losersFinal) finalSources.push({ kind: 'winner', matchId: losersFinal.id });
-    else if (winnersFinal) finalSources.push({ kind: 'loser', matchId: winnersFinal.id });
-    nodes.push(
-      { match: bracket.finals.grandFinal, sources: finalSources },
-      { match: bracket.finals.resetFinal, sources: finalSources, resetFrom: bracket.finals.grandFinal },
-    );
+  }
+  const winnersFinal = bracket.winners.rounds.at(-1)?.[0];
+  const losersFinal = bracket.losers.rounds.at(-1)?.find((match) => !match.dummy);
+  const finalSources: Source[] = [];
+  if (winnersFinal) finalSources.push({ kind: 'winner', matchId: winnersFinal.id });
+  if (losersFinal) finalSources.push({ kind: 'winner', matchId: losersFinal.id });
+  else if (winnersFinal) finalSources.push({ kind: 'loser', matchId: winnersFinal.id });
+  nodes.push(
+    { match: bracket.finals.grandFinal, sources: finalSources },
+    { match: bracket.finals.resetFinal, sources: finalSources, resetFrom: bracket.finals.grandFinal },
+  );
 }
 
 /** Rebuilds slot dependencies, preserving results only for identical participants and valid sources. */

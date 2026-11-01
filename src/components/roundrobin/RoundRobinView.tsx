@@ -13,9 +13,8 @@ import { ensureParticipants, getParticipantPlayers } from '../../utils/participa
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
-import { recordScore, clearScore } from '../../services/matchService';
 import { ScoreMode, Format } from '../../types';
-import type { Match, RoundRobinTournament, SetScore } from '../../types';
+import type { Match, RoundRobinTournament } from '../../types';
 import { RoundSchedule } from './RoundSchedule';
 import { GroupPrintView } from '../groupstage/GroupPrintView';
 import type { GroupPrintData } from '../groupstage/GroupPrintView';
@@ -23,7 +22,7 @@ import type { GroupPrintData } from '../groupstage/GroupPrintView';
 type RoundRobinTab = 'standings' | 'matrix' | 'schedule' | 'results';
 
 export const RoundRobinView = (): ReactElement | null => {
-  const { tournament, reloadTournament } = useTypedTournament<RoundRobinTournament>(Format.ROUND_ROBIN);
+  const { tournament } = useTypedTournament<RoundRobinTournament>(Format.ROUND_ROBIN);
   const [tab, setTab] = useState<RoundRobinTab>('standings');
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [printData, setPrintData] = useState<GroupPrintData | null>(null);
@@ -60,7 +59,6 @@ export const RoundRobinView = (): ReactElement | null => {
 
   const standings = computeStandings(schedule, participantPlayers, { scoringMode, maxSets });
   const complete = isScheduleComplete(schedule);
-  const { id: tournamentId } = tournament;
 
   const tabs: { id: RoundRobinTab; label: string }[] = [
     { id: 'standings', label: t('roundRobin.standings') },
@@ -69,12 +67,7 @@ export const RoundRobinView = (): ReactElement | null => {
     { id: 'results', label: t('roundRobin.results') },
   ];
 
-  function handleSave(matchId: string, winnerId: string | null, scores: SetScore[], walkover = false): void {
-    const scoreOp = winnerId === null
-      ? clearScore(tournamentId, matchId)
-      : recordScore(tournamentId, matchId, scores, walkover);
-    void scoreOp.then(reloadTournament).then(() => { setEditingMatch(null); });
-  }
+
 
   return (
     <div>
@@ -144,7 +137,7 @@ export const RoundRobinView = (): ReactElement | null => {
           participants={storedParticipants}
           scoringMode={scoringMode}
           maxSets={maxSets}
-          onSave={handleSave}
+          history={{ tournament }}
           onClose={() => { setEditingMatch(null); }}
         />
       )}

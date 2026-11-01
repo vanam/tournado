@@ -1,3 +1,8 @@
+import { AlertTriangle } from 'lucide-react';
+import { HistoryConfirmation } from './HistoryConfirmation';
+import { useHistoryChange } from '../hooks/useHistoryChange';
+import { planMatchChange, requiresHistoryConfirmation } from '../utils/matchChanges';
+import type { MatchChange, MatchChangeImpact, PlayoffSection } from '../utils/matchChanges';
 import { useState } from 'react';
 import type { ChangeEvent, ReactElement } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
@@ -11,7 +16,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { DEFAULT_MAX_SETS, MAX_POINTS } from '../constants';
 import { getSetTotals, getWalkoverSetWinner, getScoreWinner, hasWalkover } from '../utils/scoreUtils';
 import { ScoreMode } from '../types';
-import type { Match, Player, Participant, SetScore } from '../types';
+import type { Match, Player, Participant, SetScore, Tournament } from '../types';
 import { getParticipantMembers } from '../utils/participantUtils';
 import { getWinnerName } from '../utils/scoreModalUtils';
 
@@ -42,11 +47,12 @@ interface ScoreModalProps {
   match: Match;
   players: Player[];
   participants?: Participant[] | undefined;
-  onSave: (matchId: string, winnerId: string | null, scores: SetScore[], walkover: boolean) => void;
+  onSave?: (matchId: string, winnerId: string | null, scores: SetScore[], walkover: boolean) => void;
   onClose: () => void;
   scoringMode?: ScoreMode;
   maxSets?: number;
   lockedWinnerId?: string | undefined;
+  history?: { tournament: Tournament; groupId?: string; section?: PlayoffSection };
 }
 
 export const ScoreModal = ({
@@ -58,8 +64,10 @@ export const ScoreModal = ({
   scoringMode = ScoreMode.SETS,
   maxSets: maxSetsProp = DEFAULT_MAX_SETS,
   lockedWinnerId,
+  history,
 }: ScoreModalProps): ReactElement => {
   const { t } = useTranslation();
+  const historyChange = useHistoryChange(history?.tournament, onClose);
   const maxSets = Number.isFinite(maxSetsProp) && maxSetsProp > 0 ? maxSetsProp : DEFAULT_MAX_SETS;
   const p1 = players.find((p) => p.id === match.player1Id);
   const p2 = players.find((p) => p.id === match.player2Id);
@@ -87,6 +95,7 @@ export const ScoreModal = ({
   })();
 
   const [scores, setScores] = useState(initialScores);
+  const [expectedPlayers] = useState<[string | null, string | null]>([match.player1Id, match.player2Id]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [walkover, setWalkover] = useState(canUseWalkover ? match.walkover : false);
 
@@ -166,6 +175,19 @@ export const ScoreModal = ({
     }
   }
 
+  function target(): { matchId: string; expectedPlayers: [string | null, string | null]; groupId?: string; section?: PlayoffSection } {
+    return { matchId: match.id, expectedPlayers,
+      ...(history?.groupId && { groupId: history.groupId }), ...(history?.section && { section: history.section }) };
+  }
+  function scoreChange(payload = scores, useWalkover = walkover): MatchChange {
+    return { type: 'score', ...target(), scores: payload, walkover: useWalkover };
+  }
+  function draftImpact(): MatchChangeImpact | null {
+    if (!history || !getWinner()) return null;
+    try { return planMatchChange(history.tournament, scoreChange()).impact; }
+    catch { return null; }
+  }
+
   function getWinner(): string | null {
     const side = getScoreWinner(scores, { scoringMode, maxSets });
     if (side === 1) return match.player1Id;
@@ -182,16 +204,32 @@ export const ScoreModal = ({
     const payloadScores: SetScore[] = isSetOnly
       ? [[firstScore[0], firstScore[1]]]
       : normalizeScoresForWalkover(scores).map((s) => [s[0], s[1]]);
-    onSave(match.id, winner, payloadScores, useWalkover);
+    if (history) historyChange.request(scoreChange(payloadScores, useWalkover));
+    else onSave?.(match.id, winner, payloadScores, useWalkover);
   }
 
   function handleClear(): void {
+    if (history) {
+      const change: MatchChange = { type: 'clear', ...target() };
+      try {
+        if (!requiresHistoryConfirmation(planMatchChange(history.tournament, change).impact)) {
+          setShowClearConfirm(true);
+          return;
+        }
+      } catch {
+        historyChange.request(change);
+        return;
+      }
+      historyChange.request(change);
+      return;
+    }
     setShowClearConfirm(true);
   }
 
   function confirmClear(): void {
     setShowClearConfirm(false);
-    onSave(match.id, null, [], false);
+    if (history) historyChange.request({ type: 'clear', ...target() });
+    else onSave?.(match.id, null, [], false);
   }
 
   function cancelClear(): void {
@@ -200,11 +238,17 @@ export const ScoreModal = ({
 
   const winner = getWinner();
   const canSave = !!winner && (!lockedWinnerId || winner === lockedWinnerId);
+  const impact = draftImpact();
+  const needsReview = impact && requiresHistoryConfirmation(impact);
   const hasResult =
     !!match.winnerId || match.scores.length > 0 || match.walkover || hasWalkover(match.scores);
 
   return (
     <>
+      {history && historyChange.review && <HistoryConfirmation
+        tournament={history.tournament} review={historyChange.review} isSaving={historyChange.isSaving}
+        error={historyChange.error} onConfirm={historyChange.confirm} onCancel={historyChange.cancel}
+      />}
       {showClearConfirm && (
         <ConfirmModal
           title={t('score.clearTitle')}
@@ -215,7 +259,7 @@ export const ScoreModal = ({
           onCancel={cancelClear}
         />
       )}
-      <CustomDialog open={true} onOpenChange={(open) => { if (!open) onClose(); }} onPrimaryAction={handleSave} primaryActionDisabled={!canSave}>
+      <CustomDialog open={true} onOpenChange={(open) => { if (!open && !historyChange.isSaving) onClose(); }} onPrimaryAction={handleSave} primaryActionDisabled={!canSave || historyChange.isSaving || !!historyChange.review}>
         <DialogContent className="max-w-md" aria-describedby={undefined}>
           <DialogTitle className="text-lg font-bold mb-5 pb-3 border-b border-[var(--color-border-soft)]">{t('score.title')}</DialogTitle>
           <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-4">
@@ -344,12 +388,19 @@ export const ScoreModal = ({
             </p>
           )}
 
+          {needsReview && <div className="text-sm bg-[var(--color-accent-soft)] border border-[var(--color-accent-border)] rounded-lg p-3 mb-4">
+            <p className="font-medium text-[var(--color-accent)] flex items-start gap-2"><AlertTriangle className="h-4 w-4 shrink-0" />
+              {impact.deletedResults.length > 0 ? t('history.warningTitle', { count: impact.deletedResults.length }) : t('history.roundsRemoved', { rounds: impact.removedRounds.join(', ') })}</p>
+            {impact.deletedResults.length > 0 && <p className="mt-1">{t('history.warningDescription')}</p>}
+          </div>}
+          {history && match.winnerId && winner === match.winnerId && <p className="text-xs text-[var(--color-muted)] mb-4">{t('history.scoreOnly')}</p>}
+          {historyChange.error && !historyChange.review && <p role="alert" className="text-sm text-[var(--color-accent)]">{historyChange.error}</p>}
           <div className="flex flex-wrap gap-2 justify-end pt-4 mt-2 border-t border-[var(--color-border-soft)]">
             {hasResult && (
               <Button
                 variant="secondary-ghost"
                 onClick={handleClear}
-                disabled={lockedWinnerId != null}
+                disabled={lockedWinnerId != null || historyChange.isSaving}
               >
                 {t('score.clear')}
               </Button>
@@ -357,15 +408,16 @@ export const ScoreModal = ({
             <Button
               variant="primary-ghost"
               onClick={onClose}
+              disabled={historyChange.isSaving}
             >
               {t('score.cancel')}
             </Button>
             <Button
               variant="primary"
               onClick={handleSave}
-              disabled={!canSave}
+              disabled={!canSave || historyChange.isSaving}
             >
-              {t('score.save')}
+              {t(needsReview ? 'history.preview' : 'score.save')}
             </Button>
           </div>
         </DialogContent>

@@ -1,6 +1,8 @@
+import { historyTranslations } from './historyTranslations';
 import type { TranslationMap } from '../types';
 
 export const en: TranslationMap = {
+  ...historyTranslations.en,
   'nav.title': 'Tournado',
 
   'home.title': 'Tournaments',
@@ -470,6 +472,7 @@ export const en: TranslationMap = {
 };
 
 export const cs: TranslationMap = {
+  ...historyTranslations.cs,
   'nav.title': 'Turnádo',
 
   'home.title': 'Turnaje',
@@ -941,6 +944,7 @@ export const cs: TranslationMap = {
 };
 
 export const de: TranslationMap = {
+  ...historyTranslations.de,
   'nav.title': 'Tournado',
 
   'home.title': 'Turniere',
@@ -1409,6 +1413,7 @@ export const de: TranslationMap = {
 };
 
 export const es: TranslationMap = {
+  ...historyTranslations.es,
   'nav.title': 'Tournado',
 
   'home.title': 'Torneos',

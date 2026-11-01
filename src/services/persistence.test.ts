@@ -22,7 +22,7 @@ import {
 import { parseExportFile, importPayload } from '../utils/dataPortability';
 import { buildGroupStagePlayoffs } from '../utils/groupStageUtils';
 import type { MatchChange } from '../utils/matchChanges';
-import { planMatchChange } from '../utils/matchChanges';
+import { hasPlayoffMismatch, planMatchChange } from '../utils/matchChanges';
 import { generateNextRound } from './swissService';
 import { canGenerateNextSwissRound, isSwissTournamentComplete } from '../utils/swissUtils';
 import { generatePlayoffs, getAdvancers } from './groupStageService';
@@ -183,6 +183,48 @@ describe('persistent tournament operations', () => {
     const replayedFinal = confirmed.groupStagePlayoffs!.mainBracket!.rounds[0]![0]!;
     expect([replayedFinal.player1Id, replayedFinal.player2Id]).toContain(match.player1Id);
     expect(replayedFinal.winnerId).toBeNull();
+  });
+
+  it('preserves played playoffs on score-only tiebreak corrections until explicit recalculation', async () => {
+    let tournament = await createTournament({ name: 'Frozen playoff draw', format: Format.GROUPS_TO_BRACKET,
+      players: names.slice(0, 5), groupCount: 2, qualifiers: [1, 1], groupParticipantIndexes: [[0, 1, 2], [3, 4]],
+    });
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    const a = tournament.players[0]!.id;
+    const b = tournament.players[1]!.id;
+    const c = tournament.players[2]!.id;
+    const d = tournament.players[3]!.id;
+    for (const group of tournament.groupStage.groups) for (const match of group.schedule.rounds.flatMap((round) => round.matches)) {
+      const pair = new Set([match.player1Id, match.player2Id]);
+      let winner = d;
+      let loserSets = 0;
+      if (pair.has(a)) {
+        winner = pair.has(b) ? a : c;
+        if (winner === c) loserSets = 2;
+      } else if (pair.has(b)) winner = b;
+      const scores: [number, number][] = match.player1Id === winner ? [[3, loserSets]] : [[loserSets, 3]];
+      await recordScore(tournament.id, match.id, scores, false, group.id);
+    }
+    tournament = await generatePlayoffs(tournament.id);
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    const final = tournament.groupStagePlayoffs!.mainBracket!.rounds[0]![0]!;
+    const completed = await recordScore(tournament.id, final.id, [[3, 0]], false, undefined, 'mainBracket');
+    if (completed.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    const group = completed.groupStage.groups[0]!;
+    const match = group.schedule.rounds.flatMap((round) => round.matches).find((match) => [match.player1Id, match.player2Id].includes(a) && [match.player1Id, match.player2Id].includes(b))!;
+    const scores: [number, number][] = match.player1Id === a ? [[3, 2]] : [[2, 3]];
+    const corrected = await recordScore(completed.id, match.id, scores, false, group.id);
+    if (corrected.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    expect(corrected.groupStagePlayoffs).toEqual(completed.groupStagePlayoffs);
+    expect(hasPlayoffMismatch(corrected)).toBe(true);
+    const change = { type: 'reseed' } as const;
+    const preview = planMatchChange(corrected, change).impact;
+    expect(preview.deletedResults).toHaveLength(1);
+    await expect(saveMatchChange(corrected.id, change)).rejects.toThrow(HistoryConfirmationRequiredError);
+    const rebuilt = await saveMatchChange(corrected.id, change, preview.token);
+    if (rebuilt.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    expect(hasPlayoffMismatch(rebuilt)).toBe(false);
+    expect(rebuilt.groupStagePlayoffs!.mainBracket!.rounds[0]![0]!.winnerId).toBeNull();
   });
 
   it('removes unplayed playoffs when a group result is cleared', async () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { advanceWinner, generateBracket } from './bracketUtils';
 import { advanceDoubleElim, generateDoubleElim } from './doubleElimUtils';
+import type { MatchChange } from './matchChanges';
 import { listTournamentMatches, planMatchChange } from './matchChanges';
 import { updateTournamentStatus } from './tournamentStatus';
 import { Format } from '../types';
@@ -74,6 +75,20 @@ describe('history change plans', () => {
     if (count >= 3) expect(de.losers.rounds.at(-1)![0]!.winnerId).toBeNull();
     const after = new Map(listTournamentMatches(plan.tournament).map((row) => [row.key, row.match]));
     for (const deleted of plan.impact.deletedResults) expect(after.get(deleted.key)?.scores ?? []).toEqual([]);
+  });
+
+  it('uses persisted loser links even when optional entry metadata is missing', () => {
+    const original = double(8);
+    const legacy = structuredClone(original);
+    for (const match of legacy.doubleElim.losers.rounds.flat()) {
+      delete match.winnersSources;
+      delete match.loserSlotFromWinners;
+    }
+    const root = original.doubleElim.winners.rounds[0]![0]!;
+    const change = { type: 'score', matchId: root.id, scores: [[0, 3]], walkover: false } satisfies MatchChange;
+    const normal = planMatchChange(original, change);
+    const restored = planMatchChange(legacy, change);
+    expect(restored.impact.deletedResults.map((row) => row.key)).toEqual(normal.impact.deletedResults.map((row) => row.key));
   });
 
   it('preserves the played reset and every downstream result on a score-only correction', () => {

@@ -5,20 +5,19 @@ import { WinnerBanner } from '../common/WinnerBanner';
 import { TabBar } from '../common/TabBar';
 import { FinalResultsTable } from '../common/FinalResultsTable';
 import { MatchCard } from './MatchCard';
-import { getBracketWinner, canEditMatch, hasPlayedDownstreamMatch } from '../../utils/bracketUtils';
+import { getBracketWinner, canEditMatch } from '../../utils/bracketUtils';
 import { buildBracketResults } from '../../utils/resultsUtils';
 import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
-import { recordScore, clearScore } from '../../services/matchService';
 import { ScoreMode, Format } from '../../types';
-import type { Match, SetScore, SingleElimTournament } from '../../types';
+import type { Match, SingleElimTournament } from '../../types';
 
 type BracketTab = 'playoff' | 'results';
 
 export const BracketView = (): ReactElement | null => {
-  const { tournament, reloadTournament } = useTypedTournament<SingleElimTournament>(Format.SINGLE_ELIM);
+  const { tournament } = useTypedTournament<SingleElimTournament>(Format.SINGLE_ELIM);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [tab, setTab] = useState<BracketTab>('playoff');
   const { t } = useTranslation();
@@ -32,19 +31,13 @@ export const BracketView = (): ReactElement | null => {
   const maxSets = tournament.maxSets ?? DEFAULT_MAX_SETS;
   const winner = getBracketWinner(bracket);
   const thirdPlaceMatch = bracket.thirdPlaceMatch;
-  const { id: tournamentId } = tournament;
 
   const tabs: { id: BracketTab; label: string }[] = [
     { id: 'playoff', label: t('tabs.playoff') },
     { id: 'results', label: t('tabs.results') },
   ];
 
-  function handleSave(matchId: string, winnerId: string | null, scores: SetScore[], walkover = false): void {
-    const scoreOp = winnerId === null
-      ? clearScore(tournamentId, matchId)
-      : recordScore(tournamentId, matchId, scores, walkover);
-    void scoreOp.then(reloadTournament).then(() => { setEditingMatch(null); });
-  }
+
 
   return (
     <div>
@@ -93,9 +86,8 @@ export const BracketView = (): ReactElement | null => {
               participants={storedParticipants}
               scoringMode={scoringMode}
               maxSets={maxSets}
-              onSave={handleSave}
+              history={{ tournament }}
               onClose={() => { setEditingMatch(null); }}
-              lockedWinnerId={editingMatch.winnerId && hasPlayedDownstreamMatch(bracket, editingMatch.id) ? editingMatch.winnerId : undefined}
             />
           )}
         </>

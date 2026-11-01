@@ -1,3 +1,4 @@
+import { PlayoffRecalculation } from '../PlayoffRecalculation';
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Settings } from 'lucide-react';
 import { TabBar } from '../common/TabBar';
@@ -14,20 +15,16 @@ import {
   getGroupPlayers,
 } from '../../utils/groupStageUtils';
 import { findGroupMatch, findBracketMatch, findDoubleElimMatch } from '../../utils/matchFinders';
-import { hasPlayedDownstreamMatch } from '../../utils/bracketUtils';
-import { getDoubleElimWinner, hasPlayedDownstreamDoubleElimMatch } from '../../utils/doubleElimUtils';
+import { getDoubleElimWinner } from '../../utils/doubleElimUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
-import { recordScore, clearScore } from '../../services/matchService';
-import { generatePlayoffs, GroupStageSyncBlockedError, updateGroupStageSettings } from '../../services/groupStageService';
-import { showToast } from '../../utils/toastUtils';
+import { generatePlayoffs, updateGroupStageSettings } from '../../services/groupStageService';
 import { BracketType, ScoreMode } from '../../types';
 import type {
   Bracket,
   DoubleElim,
   GroupStagePlayoffs,
-  SetScore,
 } from '../../types';
 import { useGroupStageStandings, useGroupComplete, useAdvancers, useWildcardIds, useGroupPlacementByPlayerId } from '../../utils/useGroupStage';
 import { Button } from '@/components/ui/Button';
@@ -190,34 +187,6 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
     return null;
   }, [editing, groupStage, playoffs]);
 
-  const lockedWinnerId = useMemo((): string | undefined => {
-    if (!editing || !activeMatch?.winnerId) return;
-    let isLocked = false;
-    switch (editing.type) {
-      case 'group': {
-        break;
-      }
-      case 'mainBracket': {
-        isLocked = !!playoffs?.mainBracket && hasPlayedDownstreamMatch(playoffs.mainBracket, editing.matchId);
-        break;
-      }
-      case 'consolationBracket': {
-        isLocked = !!playoffs?.consolationBracket && hasPlayedDownstreamMatch(playoffs.consolationBracket, editing.matchId);
-        break;
-      }
-      case 'mainDoubleElim': {
-        isLocked = !!playoffs?.mainDoubleElim && hasPlayedDownstreamDoubleElimMatch(playoffs.mainDoubleElim, editing.matchId);
-        break;
-      }
-      case 'consolationDoubleElim': {
-        isLocked = !!playoffs?.consolationDoubleElim && hasPlayedDownstreamDoubleElimMatch(playoffs.consolationDoubleElim, editing.matchId);
-        break;
-      }
-    }
-    if (!isLocked) return;
-    return activeMatch.winnerId;
-  }, [editing, activeMatch, playoffs]);
-
   const activePlayers = useMemo(() => {
     if (!editing || !groupStage) return participants;
     if (editing.type === 'group') {
@@ -255,36 +224,6 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
     return sortResults([...mainResults, ...consolationResults]);
   }, [mainTab, playoffs, participants, isDoubleElim]);
 
-  function handleSave(matchId: string, winnerIdValue: string | null, scores: SetScore[], walkover: boolean): void {
-    if (!editing || !tournament) return;
-    const tid = tournament.id;
-    let scoreOp: Promise<void> = Promise.resolve();
-    switch (editing.type) {
-      case 'group': {
-        const { groupId } = editing;
-        if (!groupId) return;
-        scoreOp = winnerIdValue === null ? clearScore(tid, matchId, groupId).then(() => {}) : recordScore(tid, matchId, scores, walkover, groupId).then(() => {});
-        break;
-      }
-      case 'mainBracket':
-      case 'consolationBracket':
-      case 'mainDoubleElim':
-      case 'consolationDoubleElim': {
-        scoreOp = winnerIdValue === null
-          ? clearScore(tid, matchId, undefined, editing.type).then(() => {})
-          : recordScore(tid, matchId, scores, walkover, undefined, editing.type).then(() => {});
-        break;
-      }
-    }
-    void scoreOp.then(reloadTournament).then(() => { setEditing(null); }).catch((error: unknown) => {
-      if (error instanceof GroupStageSyncBlockedError) {
-        showToast({ message: t('groupStage.bracketSyncBlocked') });
-        return;
-      }
-      throw error;
-    });
-  }
-
   function handleSaveSettings(newQualifiers: number[], newBracketType: BracketType): void {
     if (!tournament) return;
     const { id: tournamentId } = tournament;
@@ -317,6 +256,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
         />
       )}
 
+      <PlayoffRecalculation tournament={tournament} />
       <TabBar tabs={mainTabs} activeId={mainTab} onChange={setMainTab} />
 
       {mainTab === 'results' ? (
@@ -370,8 +310,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
             scoringMode={scoringMode}
             groupStageMaxSets={groupStageMaxSets}
             bracketMaxSets={bracketMaxSets}
-            lockedWinnerId={lockedWinnerId}
-            onSave={handleSave}
+            tournament={tournament}
             onClose={() => { setEditing(null); }}
           />
 

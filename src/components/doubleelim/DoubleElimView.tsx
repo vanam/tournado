@@ -8,16 +8,14 @@ import { FinalResultsTable } from '../common/FinalResultsTable';
 import {
   canEditDoubleElimMatch,
   getDoubleElimWinner,
-  hasPlayedDownstreamDoubleElimMatch,
 } from '../../utils/doubleElimUtils';
 import { buildDoubleElimResults } from '../../utils/resultsUtils';
 import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useTypedTournament } from '../../context/tournamentContext';
-import { recordScore, clearScore } from '../../services/matchService';
 import { ScoreMode, Format } from '../../types';
-import type { DoubleElimTournament, Match, SetScore } from '../../types';
+import type { DoubleElimTournament, Match } from '../../types';
 
 type DoubleElimTab = 'playoff' | 'results';
 
@@ -29,7 +27,7 @@ function shouldShowFinal(match?: Match | null): boolean {
 }
 
 export const DoubleElimView = (): ReactElement | null => {
-  const { tournament, reloadTournament } = useTypedTournament<DoubleElimTournament>(Format.DOUBLE_ELIM);
+  const { tournament } = useTypedTournament<DoubleElimTournament>(Format.DOUBLE_ELIM);
   const { t } = useTranslation();
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [tab, setTab] = useState<DoubleElimTab>('playoff');
@@ -59,13 +57,7 @@ export const DoubleElimView = (): ReactElement | null => {
   );
   const finalsRoundIndex = doubleElim?.winners.rounds.length ?? 0;
 
-  function handleSave(matchId: string, winnerIdValue: string | null, scores: SetScore[], walkover = false): void {
-    if (!tournament) return;
-    const scoreOp = winnerIdValue === null
-      ? clearScore(tournament.id, matchId)
-      : recordScore(tournament.id, matchId, scores, walkover);
-    void scoreOp.then(reloadTournament).then(() => { setEditingMatch(null); });
-  }
+
 
   if (!tournament || !doubleElim) return null;
 
@@ -165,9 +157,8 @@ export const DoubleElimView = (): ReactElement | null => {
               participants={storedParticipants}
               scoringMode={scoringMode}
               maxSets={maxSets}
-              onSave={handleSave}
+              history={{ tournament }}
               onClose={() => { setEditingMatch(null); }}
-              lockedWinnerId={editingMatch.winnerId && hasPlayedDownstreamDoubleElimMatch(doubleElim, editingMatch.id) ? editingMatch.winnerId : undefined}
             />
           )}
         </>
