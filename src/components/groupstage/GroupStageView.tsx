@@ -20,7 +20,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
 import { recordScore, clearScore } from '../../services/matchService';
-import { generatePlayoffs, syncBracketParticipants, updateGroupStageSettings } from '../../services/groupStageService';
+import { generatePlayoffs, GroupStageSyncBlockedError, updateGroupStageSettings } from '../../services/groupStageService';
 import { showToast } from '../../utils/toastUtils';
 import { BracketType, ScoreMode } from '../../types';
 import type {
@@ -263,21 +263,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
       case 'group': {
         const { groupId } = editing;
         if (!groupId) return;
-        if (winnerIdValue === null) {
-          scoreOp = clearScore(tid, matchId, groupId).then(() => {});
-        } else {
-          const hasBracket = playoffs != null;
-          scoreOp = recordScore(tid, matchId, scores, walkover, groupId).then(() => {
-            if (!hasBracket) return;
-            return syncBracketParticipants(tid).then((result) => {
-              if (result.updated) {
-                showToast({ message: t('groupStage.bracketParticipantsUpdated') });
-              } else if (result.blocked) {
-                showToast({ message: t('groupStage.bracketSyncBlocked') });
-              }
-            });
-          });
-        }
+        scoreOp = winnerIdValue === null ? clearScore(tid, matchId, groupId).then(() => {}) : recordScore(tid, matchId, scores, walkover, groupId).then(() => {});
         break;
       }
       case 'mainBracket':
@@ -290,7 +276,13 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
         break;
       }
     }
-    void scoreOp.then(reloadTournament).then(() => { setEditing(null); });
+    void scoreOp.then(reloadTournament).then(() => { setEditing(null); }).catch((error: unknown) => {
+      if (error instanceof GroupStageSyncBlockedError) {
+        showToast({ message: t('groupStage.bracketSyncBlocked') });
+        return;
+      }
+      throw error;
+    });
   }
 
   function handleSaveSettings(newQualifiers: number[], newBracketType: BracketType): void {

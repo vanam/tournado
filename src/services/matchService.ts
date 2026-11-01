@@ -1,4 +1,5 @@
 import { getDatabase } from '../db';
+import { syncGroupStageParticipants, GroupStageSyncBlockedError } from './groupStageService';
 import {
   findBracketMatch,
   findDoubleElimMatch,
@@ -353,6 +354,7 @@ export async function recordScore(
       }
     }
 
+    if (tournament.format === Format.GROUPS_TO_BRACKET && groupId && syncGroupStageParticipants(tournament).blocked) throw new GroupStageSyncBlockedError();
     updateTournamentStatus(tournament);
     return tournament;
   });
@@ -407,6 +409,7 @@ export async function clearScore(
       }
     }
 
+    if (tournament.format === Format.GROUPS_TO_BRACKET && groupId && syncGroupStageParticipants(tournament).blocked) throw new GroupStageSyncBlockedError();
     updateTournamentStatus(tournament);
     return tournament;
   });

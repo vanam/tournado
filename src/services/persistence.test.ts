@@ -21,6 +21,7 @@ import {
 } from './playerGroupService';
 import { parseExportFile, importPayload } from '../utils/dataPortability';
 import { buildGroupStagePlayoffs } from '../utils/groupStageUtils';
+import { generatePlayoffs, GroupStageSyncBlockedError } from './groupStageService';
 
 vi.mock('../db', () => ({ getDatabase: vi.fn() }));
 let db: TournadoDatabase;
@@ -75,6 +76,57 @@ describe('persistent tournament operations', () => {
     ]);
     expect(completed.completedAt).toBeTruthy();
     const cleared = await clearScore(tournament.id, matches[2]!.id);
+    expect(cleared.completedAt).toBeNull();
+  });
+
+  it('updates group advancers atomically and rejects changes to played playoff slots', async () => {
+    let tournament = await createTournament({
+      name: 'Atomic groups', format: Format.GROUPS_TO_BRACKET,
+      players: names.slice(0, 4), groupCount: 2, qualifiers: [1, 1],
+    });
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    for (const group of tournament.groupStage.groups) {
+      for (const match of group.schedule.rounds.flatMap((r) => r.matches)) {
+        await recordScore(tournament.id, match.id, [[3, 0]], false, group.id);
+      }
+    }
+    tournament = await generatePlayoffs(tournament.id);
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    const group = tournament.groupStage.groups[0]!;
+    const match = group.schedule.rounds[0]!.matches[0]!;
+    tournament = await recordScore(tournament.id, match.id, [[0, 3]], false, group.id);
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    const final = tournament.groupStagePlayoffs!.mainBracket!.rounds[0]![0]!;
+    expect([final.player1Id, final.player2Id]).toContain(match.player2Id);
+    expect([final.player1Id, final.player2Id]).not.toContain(match.player1Id);
+    await recordScore(tournament.id, final.id, [[3, 0]], false, undefined, 'mainBracket');
+    const doc = (await db.tournaments.findOne(tournament.id).exec())!;
+    const before = doc.toMutableJSON();
+    await expect(recordScore(tournament.id, match.id, [[3, 0]], false, group.id))
+      .rejects.toThrow(GroupStageSyncBlockedError);
+    await expect(clearScore(tournament.id, match.id, group.id))
+      .rejects.toThrow(GroupStageSyncBlockedError);
+    expect((await db.tournaments.findOne(tournament.id).exec())!.toMutableJSON()).toEqual(before);
+    await expect(recordScore(tournament.id, match.id, [[1, 3]], false, group.id)).resolves.toBeDefined();
+  });
+
+  it('removes unplayed playoffs when a group result is cleared', async () => {
+    const tournament = await createTournament({
+      name: 'Reopen groups', format: Format.GROUPS_TO_BRACKET,
+      players: names.slice(0, 4), groupCount: 2, qualifiers: [1, 1],
+    });
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    for (const group of tournament.groupStage.groups) {
+      for (const match of group.schedule.rounds.flatMap((r) => r.matches)) {
+        await recordScore(tournament.id, match.id, [[3, 0]], false, group.id);
+      }
+    }
+    await generatePlayoffs(tournament.id);
+    const group = tournament.groupStage.groups[0]!;
+    const cleared = await clearScore(tournament.id, group.schedule.rounds[0]!.matches[0]!.id, group.id);
+    if (cleared.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    expect(cleared.groupStagePlayoffs).toBeNull();
+    expect(cleared.groupStageBrackets).toBeNull();
     expect(cleared.completedAt).toBeNull();
   });
 

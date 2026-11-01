@@ -4,6 +4,7 @@ import {
   getGroupAdvancers,
   buildGroupStagePlayoffs,
   getGroupPlayers,
+  isGroupStageComplete,
 } from '../utils/groupStageUtils';
 import {
   ensureParticipants,
@@ -24,6 +25,7 @@ import type {
   Tournament,
   StandingsRow,
   GroupAdvancersResult,
+  GroupsToBracketTournament,
 } from '../types';
 
 export async function getGroupStandings(
@@ -229,111 +231,120 @@ export function applySwaps(
   }
 }
 
-/**
- * After a group match result has changed, recalculates advancers and syncs
- * bracket participants for all brackets that have not yet played the affected slots.
- *
- * - If ALL changed advancer positions are safe (old advancer hasn't played any
- *   real bracket match), all swaps are applied and the tournament is saved.
- * - If ANY changed position is unsafe, no swaps are applied and `blocked` is returned.
- */
-export async function syncBracketParticipants(
-  tournamentId: string,
-): Promise<SyncBracketResult> {
+/** Updates playoff participants inside the same transaction as a group result change. */
+export function syncGroupStageParticipants(tournament: GroupsToBracketTournament): SyncBracketResult {
+  const playoffs =
+    tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
+  if (!playoffs) {
+    return { updated: false, blocked: false, blockedPlayers: [] };
+  }
+
+  if (!isGroupStageComplete(tournament.groupStage)) {
+    const played = [playoffs.mainBracket, playoffs.consolationBracket].some(
+      (bracket) => bracket && [...bracket.rounds.flat(), bracket.thirdPlaceMatch].some(
+        (match) => match?.player1Id && match.player2Id && match.winnerId,
+      ),
+    ) || [playoffs.mainDoubleElim, playoffs.consolationDoubleElim].some(
+      (bracket) => bracket && [
+        ...bracket.winners.rounds.flat(), ...bracket.losers.rounds.flat(),
+        bracket.finals.grandFinal, bracket.finals.resetFinal,
+      ].some((match) => match.player1Id && match.player2Id && match.winnerId),
+    );
+    if (played) return { updated: false, blocked: true, blockedPlayers: [] };
+    tournament.groupStagePlayoffs = null;
+    tournament.groupStageBrackets = null;
+    return { updated: true, blocked: false, blockedPlayers: [] };
+  }
+
+  const storedParticipants = ensureParticipants(
+    tournament.players,
+    tournament.participants,
+  );
+  const participantPlayers = getParticipantPlayers(
+    tournament.players,
+    storedParticipants,
+  );
+  const newAdvancers = getGroupAdvancers(
+    tournament.groupStage,
+    participantPlayers,
+    {
+      scoringMode: tournament.scoringMode,
+      maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
+    },
+  );
+
+  const swaps: SwapEntry[] = [];
+  const blockedPlayers: string[] = [];
+
+  const mainIds = newAdvancers.mainWithLucky.map((e) => e.id);
+  const consolationIds = newAdvancers.consolation.map((e) => e.id);
+
+  if (playoffs.mainBracket) {
+    collectBracketSwaps(
+      playoffs.mainBracket,
+      mainIds,
+      'main',
+      swaps,
+      blockedPlayers,
+    );
+  }
+  if (playoffs.mainDoubleElim) {
+    collectDoubleElimSwaps(
+      playoffs.mainDoubleElim,
+      mainIds,
+      'mainDoubleElim',
+      swaps,
+      blockedPlayers,
+    );
+  }
+  if (playoffs.consolationBracket) {
+    collectBracketSwaps(
+      playoffs.consolationBracket,
+      consolationIds,
+      'consolation',
+      swaps,
+      blockedPlayers,
+    );
+  }
+  if (playoffs.consolationDoubleElim) {
+    collectDoubleElimSwaps(
+      playoffs.consolationDoubleElim,
+      consolationIds,
+      'consolationDoubleElim',
+      swaps,
+      blockedPlayers,
+    );
+  }
+
+  if (blockedPlayers.length > 0) {
+    return { updated: false, blocked: true, blockedPlayers };
+  }
+  if (swaps.length === 0) {
+    return { updated: false, blocked: false, blockedPlayers: [] };
+  }
+
+  applySwaps(playoffs, swaps);
+  tournament.groupStagePlayoffs = playoffs;
+  return { updated: true, blocked: false, blockedPlayers: [] };
+}
+
+export class GroupStageSyncBlockedError extends Error {
+  constructor() {
+    super('Group result cannot change participants in a played playoff');
+    this.name = 'GroupStageSyncBlockedError';
+  }
+}
+
+/** Reconciles existing playoff participants without changing any group scores. */
+export async function syncBracketParticipants(tournamentId: string): Promise<SyncBracketResult> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
-
-  let result: SyncBracketResult = {
-    updated: true,
-    blocked: false,
-    blockedPlayers: [],
-  };
+  let result: SyncBracketResult = { updated: false, blocked: false, blockedPlayers: [] };
   await doc.incrementalModify((tournament) => {
-    if (tournament.format !== Format.GROUPS_TO_BRACKET) {
-      result = { updated: false, blocked: false, blockedPlayers: [] };
-      return tournament;
+    if (tournament.format === Format.GROUPS_TO_BRACKET) {
+      result = syncGroupStageParticipants(tournament);
     }
-
-    const playoffs =
-      tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
-    if (!playoffs) {
-      result = { updated: false, blocked: false, blockedPlayers: [] };
-      return tournament;
-    }
-
-    const storedParticipants = ensureParticipants(
-      tournament.players,
-      tournament.participants,
-    );
-    const participantPlayers = getParticipantPlayers(
-      tournament.players,
-      storedParticipants,
-    );
-    const newAdvancers = getGroupAdvancers(
-      tournament.groupStage,
-      participantPlayers,
-      {
-        scoringMode: tournament.scoringMode,
-        maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
-      },
-    );
-
-    const swaps: SwapEntry[] = [];
-    const blockedPlayers: string[] = [];
-
-    const mainIds = newAdvancers.mainWithLucky.map((e) => e.id);
-    const consolationIds = newAdvancers.consolation.map((e) => e.id);
-
-    if (playoffs.mainBracket) {
-      collectBracketSwaps(
-        playoffs.mainBracket,
-        mainIds,
-        'main',
-        swaps,
-        blockedPlayers,
-      );
-    }
-    if (playoffs.mainDoubleElim) {
-      collectDoubleElimSwaps(
-        playoffs.mainDoubleElim,
-        mainIds,
-        'mainDoubleElim',
-        swaps,
-        blockedPlayers,
-      );
-    }
-    if (playoffs.consolationBracket) {
-      collectBracketSwaps(
-        playoffs.consolationBracket,
-        consolationIds,
-        'consolation',
-        swaps,
-        blockedPlayers,
-      );
-    }
-    if (playoffs.consolationDoubleElim) {
-      collectDoubleElimSwaps(
-        playoffs.consolationDoubleElim,
-        consolationIds,
-        'consolationDoubleElim',
-        swaps,
-        blockedPlayers,
-      );
-    }
-
-    if (blockedPlayers.length > 0) {
-      result = { updated: false, blocked: true, blockedPlayers };
-      return tournament;
-    }
-    if (swaps.length === 0) {
-      result = { updated: false, blocked: false, blockedPlayers: [] };
-      return tournament;
-    }
-
-    applySwaps(playoffs, swaps);
-    tournament.groupStagePlayoffs = playoffs;
-
     return tournament;
   });
   return result;
