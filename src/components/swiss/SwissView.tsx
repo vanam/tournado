@@ -7,7 +7,7 @@ import { ScoreModal } from '../ScoreModal';
 import { SwissStandingsTable } from './SwissStandingsTable';
 import {
   computeSwissStandings,
-  isCurrentRoundComplete,
+  canGenerateNextSwissRound,
   isSwissTournamentComplete,
   buildSwissResults,
 } from '../../utils/swissUtils';
@@ -41,7 +41,7 @@ export const SwissView = (): ReactElement | null => {
   const showPoints = scoringMode === ScoreMode.POINTS;
 
   const standings = computeSwissStandings(schedule, participantPlayers, { scoringMode, maxSets });
-  const roundComplete = isCurrentRoundComplete(schedule);
+  const canGenerate = canGenerateNextSwissRound(tournament);
   const complete = isSwissTournamentComplete(tournament);
   const currentRound = schedule.rounds.length;
   const totalRounds = tournament.totalRounds;
@@ -92,7 +92,7 @@ export const SwissView = (): ReactElement | null => {
           <div className="mt-4 text-sm text-[var(--color-muted)]">
             {t('swiss.roundProgress', { current: currentRound, total: totalRounds })}
           </div>
-          {roundComplete && !complete && (
+          {canGenerate && (
             <div className="mt-4">
               <Button onClick={handleGenerateNextRound}>
                 {t('swiss.generateNextRound', { n: currentRound + 1 })}

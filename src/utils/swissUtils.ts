@@ -1,3 +1,4 @@
+import { isScheduleComplete } from './roundRobinUtils';
 import { ensureParticipants, getParticipantPlayers } from './participantUtils';
 import { createMatch } from './matchFactory';
 import { createMatchIdGenerator } from './matchIdGenerator';
@@ -510,9 +511,16 @@ export function isCurrentRoundComplete(schedule: RoundRobinSchedule): boolean {
   return lastRound.matches.every((m) => m.winnerId !== null);
 }
 
+/** A new draw requires every existing round to be complete, including corrected history. */
+export function canGenerateNextSwissRound(tournament: SwissTournament): boolean {
+  const { schedule, totalRounds } = tournament;
+  return schedule.rounds.length > 0 && schedule.rounds.length < totalRounds && isScheduleComplete(schedule);
+}
+
 export function isSwissTournamentComplete(tournament: SwissTournament): boolean {
   return (
-    isCurrentRoundComplete(tournament.schedule) &&
+    tournament.schedule.rounds.length > 0 &&
+    isScheduleComplete(tournament.schedule) &&
     tournament.schedule.rounds.length >= tournament.totalRounds
   );
 }

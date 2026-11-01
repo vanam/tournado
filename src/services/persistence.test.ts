@@ -21,6 +21,8 @@ import {
 } from './playerGroupService';
 import { parseExportFile, importPayload } from '../utils/dataPortability';
 import { buildGroupStagePlayoffs } from '../utils/groupStageUtils';
+import { generateNextRound } from './swissService';
+import { canGenerateNextSwissRound, isSwissTournamentComplete } from '../utils/swissUtils';
 import { generatePlayoffs, GroupStageSyncBlockedError } from './groupStageService';
 
 vi.mock('../db', () => ({ getDatabase: vi.fn() }));
@@ -128,6 +130,37 @@ describe('persistent tournament operations', () => {
     expect(cleared.groupStagePlayoffs).toBeNull();
     expect(cleared.groupStageBrackets).toBeNull();
     expect(cleared.completedAt).toBeNull();
+  });
+
+  it('requires all Swiss rounds to be complete after historical corrections', async () => {
+    let tournament = await createTournament({
+      name: 'Swiss history', format: Format.SWISS, players: names.slice(0, 4), swissRounds: 3,
+    });
+    if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
+    const firstMatch = tournament.schedule.rounds[0]!.matches[0]!;
+    for (let roundIndex = 0; roundIndex < 3; roundIndex++) {
+      for (const match of tournament.schedule.rounds[roundIndex]!.matches) {
+        tournament = await recordScore(tournament.id, match.id, [[3, 0]]);
+        if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
+      }
+      if (roundIndex === 1) {
+        tournament = await clearScore(tournament.id, firstMatch.id);
+        if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
+        expect(canGenerateNextSwissRound(tournament)).toBe(false);
+        await expect(generateNextRound(tournament.id)).rejects.toThrow('not complete');
+        tournament = await recordScore(tournament.id, firstMatch.id, [[3, 0]]);
+        if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
+      }
+      if (roundIndex < 2) tournament = await generateNextRound(tournament.id);
+      if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
+    }
+    expect(isSwissTournamentComplete(tournament)).toBe(true);
+    expect(tournament.completedAt).toBeTruthy();
+    tournament = await clearScore(tournament.id, firstMatch.id);
+    if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
+    expect(isSwissTournamentComplete(tournament)).toBe(false);
+    expect(canGenerateNextSwissRound(tournament)).toBe(false);
+    expect(tournament.completedAt).toBeNull();
   });
 
   it('respects a points-mode retirement after two lost sets', async () => {

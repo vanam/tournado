@@ -1,6 +1,7 @@
 import { getDatabase } from '../db';
 import {
   generateNextSwissRound,
+  canGenerateNextSwissRound,
   isCurrentRoundComplete,
 } from '../utils/swissUtils';
 import { Format } from '../types';
@@ -18,14 +19,13 @@ export async function generateNextRound(
       throw new Error('Tournament is not a Swiss format');
     }
 
-    if (!isCurrentRoundComplete(tournament.schedule)) {
-      throw new Error('Current round is not complete');
-    }
-
     if (tournament.schedule.rounds.length >= tournament.totalRounds) {
       throw new Error('All rounds have been played');
     }
 
+    if (!canGenerateNextSwissRound(tournament)) {
+      throw new Error('Current or previous rounds are not complete');
+    }
     const round = generateNextSwissRound(tournament);
     tournament.schedule.rounds.push(round);
 
