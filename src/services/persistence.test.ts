@@ -23,7 +23,7 @@ import { parseExportFile, importPayload } from '../utils/dataPortability';
 import { buildGroupStagePlayoffs } from '../utils/groupStageUtils';
 import { generateNextRound } from './swissService';
 import { canGenerateNextSwissRound, isSwissTournamentComplete } from '../utils/swissUtils';
-import { generatePlayoffs, GroupStageSyncBlockedError } from './groupStageService';
+import { generatePlayoffs, getAdvancers, GroupStageSyncBlockedError } from './groupStageService';
 
 vi.mock('../db', () => ({ getDatabase: vi.fn() }));
 let db: TournadoDatabase;
@@ -79,6 +79,46 @@ describe('persistent tournament operations', () => {
     expect(completed.completedAt).toBeTruthy();
     const cleared = await clearScore(tournament.id, matches[2]!.id);
     expect(cleared.completedAt).toBeNull();
+  });
+
+  it.each(['legacy', 'balanced'] as const)('preserves %s playoff slots across persistence, imports and group score corrections', async (layout) => {
+    let tournament = await createTournament({
+      name: 'Seed compatibility', format: Format.GROUPS_TO_BRACKET,
+      players: Array.from({ length: 16 }, (_, i) => ({ name: `Seed ${i + 1}` })),
+      groupCount: 4, qualifiers: [2, 2, 2, 2],
+    });
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    for (const group of tournament.groupStage.groups) {
+      for (const match of group.schedule.rounds.flatMap((round) => round.matches)) {
+        // Reverse the initial ranking so playoff seeding must follow earned group placements.
+        const firstWins = group.playerIds.indexOf(match.player1Id!) > group.playerIds.indexOf(match.player2Id!);
+        await recordScore(tournament.id, match.id, firstWins ? [[3, 0]] : [[0, 3]], false, group.id);
+      }
+    }
+    tournament = await generatePlayoffs(tournament.id);
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    const bracket = tournament.groupStagePlayoffs!.mainBracket!;
+    expect(bracket.seeding).toBe('balanced');
+    if (layout === 'legacy') {
+      const { mainWithLucky } = await getAdvancers(tournament.id);
+      const legacySeeds = [[0, 7], [2, 5], [1, 6], [3, 4]];
+      for (const [index, match] of bracket.rounds[0]!.entries()) {
+        match.player1Id = mainWithLucky[legacySeeds[index]![0]!]!.id;
+        match.player2Id = mainWithLucky[legacySeeds[index]![1]!]!.id;
+      }
+      delete bracket.seeding;
+      await db.tournaments.upsert(tournament);
+    }
+    const first = bracket.rounds[0]![0]!;
+    const played = await recordScore(tournament.id, first.id, [[3, 0]], false, undefined, 'mainBracket');
+    await importPayload({ version: 4, exportedAt: '', tournaments: [played], players: [], groups: [] });
+    if (played.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    const group = played.groupStage.groups[0]!;
+    const match = group.schedule.rounds[0]!.matches[0]!;
+    const corrected = await recordScore(played.id, match.id,
+      match.winnerId === match.player1Id ? [[3, 1]] : [[1, 3]], false, group.id);
+    if (corrected.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    expect(corrected.groupStagePlayoffs).toEqual(played.groupStagePlayoffs);
   });
 
   it('updates group advancers atomically and rejects changes to played playoff slots', async () => {

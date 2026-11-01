@@ -29,6 +29,8 @@ export interface Match {
 }
 
 export interface Bracket {
+  /** Missing on saved brackets that use the original seeding layout. */
+  seeding?: 'balanced';
   rounds: Match[][];
   thirdPlaceMatch?: Match | null;
 }

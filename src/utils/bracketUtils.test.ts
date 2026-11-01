@@ -8,6 +8,7 @@ import {
   hasPlayedDownstreamMatch,
   clearMatchResult,
   getBracketWinner,
+  getBracketParticipantAtSeed,
 } from './bracketUtils';
 import type { Bracket, Match, Player, SetScore } from '../types';
 
@@ -55,6 +56,20 @@ describe('nextPowerOf2', () => {
 });
 
 describe('seedPositions', () => {
+  it.each([2, 4, 8, 16, 32, 64, 128])('separates every top seed tier in a draw of %i', (size) => {
+    const positions = seedPositions(size);
+    expect(new Set(positions).size).toBe(size);
+    for (let topCount = 2; topCount <= size; topCount *= 2) {
+      const branchSize = size / topCount;
+      const branches = positions.slice(0, topCount).map((slot) => Math.floor(slot / branchSize));
+      expect(new Set(branches).size).toBe(topCount);
+    }
+  });
+
+  it.each([0, -1, 3, 6, 1.5])('rejects invalid draw size %s', (size) => {
+    expect(() => seedPositions(size)).toThrow('power of two');
+  });
+
   it('returns [0] for size 1', () => {
     expect(seedPositions(1)).toEqual([0]);
   });
@@ -78,6 +93,49 @@ describe('seedPositions', () => {
 });
 
 describe('generateBracket', () => {
+  it.each([3, 5, 6, 9, 12, 17])('awards BYEs to the highest seeds among %i entrants', (count) => {
+    const players = makePlayers(count);
+    const bracket = generateBracket(players);
+    const byeWinners = bracket.rounds[0]!.filter((match) => match.winnerId).map((match) => match.winnerId);
+    const byeCount = nextPowerOf2(count) - count;
+    expect(new Set(byeWinners)).toEqual(new Set(players.slice(0, byeCount).map((player) => player.id)));
+  });
+
+  it('uses the selected entrant order instead of old seeds or ratings', () => {
+    const players = makePlayers(4).toReversed();
+    const bracket = generateBracket(players);
+    expect(bracket.rounds[0]!.map((match) => [match.player1Id, match.player2Id])).toEqual([
+      ['p4', 'p1'], ['p3', 'p2'],
+    ]);
+  });
+
+  it('pairs complementary remaining seeds in every round when favourites advance', () => {
+    const players = makePlayers(32);
+    const bracket = generateBracket(players);
+    const seeds = new Map(players.map((player) => [player.id, player.seed!]));
+    for (const [index, round] of bracket.rounds.entries()) {
+      const remaining = players.length / 2 ** index;
+      for (const match of round) {
+        const firstSeed = seeds.get(match.player1Id!)!;
+        const secondSeed = seeds.get(match.player2Id!)!;
+        expect(firstSeed + secondSeed).toBe(remaining + 1);
+        advanceWinner(bracket, match.id, firstSeed < secondSeed ? match.player1Id! : match.player2Id!, [[3, 0]]);
+      }
+    }
+  });
+
+  it('reads both new and legacy seed slots without moving saved participants', () => {
+    const bracket = generateBracket(makePlayers(8));
+    for (let seed = 0; seed < 8; seed++) expect(getBracketParticipantAtSeed(bracket, seed)).toBe(`p${seed + 1}`);
+    delete bracket.seeding;
+    const legacyPairs = [['p1', 'p8'], ['p3', 'p6'], ['p2', 'p7'], ['p4', 'p5']];
+    for (const [i, match] of bracket.rounds[0]!.entries()) {
+      match.player1Id = legacyPairs[i]![0]!;
+      match.player2Id = legacyPairs[i]![1]!;
+    }
+    for (let seed = 0; seed < 8; seed++) expect(getBracketParticipantAtSeed(bracket, seed)).toBe(`p${seed + 1}`);
+  });
+
   it('generates a bracket for 2 players', () => {
     const players = makePlayers(2);
     const bracket = generateBracket(players);
@@ -190,7 +248,7 @@ describe('generateBracket', () => {
     }
   });
 
-  it('pairs seeds 1..N as 1vN, 3vN-2, 2vN-1, 4vN-3 in round 1', () => {
+  it('balances all branches for eight seeds', () => {
     const players = makePlayers(8);
     const bracket = generateBracket(players);
     const round1 = bracket.rounds[0]!;
@@ -198,9 +256,9 @@ describe('generateBracket', () => {
     const pairs = round1.map((m) => [m.player1Id, m.player2Id]);
     expect(pairs).toEqual([
       ['p1', 'p8'],
-      ['p3', 'p6'],
-      ['p2', 'p7'],
       ['p4', 'p5'],
+      ['p2', 'p7'],
+      ['p3', 'p6'],
     ]);
   });
 
@@ -212,13 +270,13 @@ describe('generateBracket', () => {
     const pairs = round1.map((m) => [m.player1Id, m.player2Id]);
     expect(pairs).toEqual([
       ['p1', 'p16'],
-      ['p3', 'p14'],
-      ['p5', 'p12'],
-      ['p7', 'p10'],
-      ['p2', 'p15'],
-      ['p4', 'p13'],
-      ['p6', 'p11'],
       ['p8', 'p9'],
+      ['p4', 'p13'],
+      ['p5', 'p12'],
+      ['p2', 'p15'],
+      ['p7', 'p10'],
+      ['p3', 'p14'],
+      ['p6', 'p11'],
     ]);
   });
 });

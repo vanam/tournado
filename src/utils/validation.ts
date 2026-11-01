@@ -92,6 +92,7 @@ function isValidMatch(value: unknown): value is Match {
 
 function isValidBracket(value: unknown): value is Bracket {
   if (!isObject(value)) return false;
+  if ('seeding' in value && value['seeding'] !== 'balanced') return false;
   if (!isArray(value['rounds'])) return false;
   if (!value['rounds'].every((round) => isArray(round) && round.every((m) => isValidMatch(m)))) return false;
   if ('thirdPlaceMatch' in value && !isNullish(value['thirdPlaceMatch']) && !isValidMatch(value['thirdPlaceMatch'])) return false;

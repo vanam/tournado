@@ -245,6 +245,13 @@ function findMatchInRounds(
   return null;
 }
 
+function playBetween(de: DoubleElim, section: 'winners' | 'losers', p1: string, p2: string, winner: string): DoubleElim {
+  const match = findMatchInRounds(de[section].rounds, p1, p2);
+  if (!match) throw new Error(`Missing ${section} match ${p1} vs ${p2}`);
+  const scores: [number, number][] = match.player1Id === winner ? [[3, 0]] : [[0, 3]];
+  return advanceDoubleElim(clone(de), match.id, winner, scores);
+}
+
 describe('double elimination with 5 players A B C D E - full simulation', () => {
   const players: Player[] = [
     { id: 'A', name: 'A' },
@@ -254,131 +261,48 @@ describe('double elimination with 5 players A B C D E - full simulation', () => 
     { id: 'E', name: 'E' },
   ];
 
-  it('auto-advances C in losers entry match after A-C is played in winners', () => {
+  it('auto-advances C after B-C and completes the seeded tournament', () => {
     let de = generateDoubleElim(players);
-
-    // --- Winners čtvrtfinále: D-E (D vyhraje 5-0) ---
-    const matchDE = findMatchInRounds(de.winners.rounds, 'D', 'E')!;
-    expect(matchDE).toBeTruthy();
-    de = advanceDoubleElim(clone(de), matchDE.id, 'D', [[5, 0]]);
-
-    // E padá do losers R0 (BYE-E), auto-advance E
-    const losersR0 = de.losers.rounds[0]!;
-    const byeE = losersR0.find(m => m.player1Id === 'E' || m.player2Id === 'E')!;
+    de = playBetween(de, 'winners', 'D', 'E', 'D');
+    const byeE = de.losers.rounds[0]!.find((match) => [match.player1Id, match.player2Id].includes('E'))!;
     expect(byeE.winnerId).toBe('E');
 
-    // --- Winners semifinále: A-C (A vyhraje 3-0) ---
-    const matchAC = findMatchInRounds(de.winners.rounds, 'A', 'C')!;
-    expect(matchAC).toBeTruthy();
-    de = advanceDoubleElim(clone(de), matchAC.id, 'A', [[3, 0]]);
-
-    // C padá do losers R1 entry (BYE-C), musí auto-advance C
-    const losersR1 = de.losers.rounds[1]!;
-    const entryC = losersR1.find(m => m.player1Id === 'C' || m.player2Id === 'C')!;
-    expect(entryC).toBeTruthy();
+    // B-C is the semifinal on the BYE-only branch. Its loser can advance past a genuine BYE.
+    de = playBetween(de, 'winners', 'B', 'C', 'B');
+    const entryC = de.losers.rounds[1]!.find((match) => [match.player1Id, match.player2Id].includes('C'))!;
     expect(entryC.winnerId).toBe('C');
+    expect([de.losers.rounds[2]![0]!.player1Id, de.losers.rounds[2]![0]!.player2Id]).toContain('C');
 
-    // C postoupil do losers R2 (consolation)
-    const losersR2 = de.losers.rounds[2]!;
-    const consolMatch = losersR2[0]!;
-    expect([consolMatch.player1Id, consolMatch.player2Id]).toContain('C');
-
-    // --- Winners semifinále: B-D (B vyhraje 1-0) ---
-    const matchBD = findMatchInRounds(de.winners.rounds, 'B', 'D')!;
-    expect(matchBD).toBeTruthy();
-    de = advanceDoubleElim(clone(de), matchBD.id, 'B', [[1, 0]]);
-
-    // D padá do losers R1 entry, kde čeká E
-    const losersR1After = de.losers.rounds[1]!;
-    const entryDEAfter = losersR1After.find(m =>
-      [m.player1Id, m.player2Id].includes('D') &&
-      [m.player1Id, m.player2Id].includes('E')
-    )!;
-    expect(entryDEAfter).toBeTruthy();
-
-    // --- Winners finále: A-B (B vyhraje 0-3) ---
-    const matchAB = findMatchInRounds(de.winners.rounds, 'A', 'B')!;
-    expect(matchAB).toBeTruthy();
-    de = advanceDoubleElim(clone(de), matchAB.id, 'B', [[0, 3]]);
-
-    // B je winners champion
-    expect(de.winners.rounds.at(-1)![0]!.winnerId).toBe('B');
-
-    // --- Losers: D-E (D vyhraje) ---
-    const losersR1Now = de.losers.rounds[1]!;
-    const losersDE = losersR1Now.find(m =>
-      [m.player1Id, m.player2Id].includes('D') &&
-      [m.player1Id, m.player2Id].includes('E')
-    )!;
-    expect(losersDE).toBeTruthy();
-    de = advanceDoubleElim(clone(de), losersDE.id, 'D', [[11, 5]]);
-
-    // --- Losers consolation: C vs D ---
-    const losersR2Now = de.losers.rounds[2]!;
-    const consolCD = losersR2Now[0]!;
-    expect([consolCD.player1Id, consolCD.player2Id]).toContain('C');
-    expect([consolCD.player1Id, consolCD.player2Id]).toContain('D');
-    de = advanceDoubleElim(clone(de), consolCD.id, 'C', [[11, 8]]);
-
-    // A padl z winners finále do losers R3 entry
-    const losersR3 = de.losers.rounds[3]!;
-    const losersEntryA = losersR3[0]!;
-    expect([losersEntryA.player1Id, losersEntryA.player2Id]).toContain('A');
-    expect([losersEntryA.player1Id, losersEntryA.player2Id]).toContain('C');
-    de = advanceDoubleElim(clone(de), losersEntryA.id, 'A', [[11, 6]]);
-
-    // --- Grand finále: B (winners) vs A (losers champion) ---
-    const grandFinal = de.finals.grandFinal;
-    expect(grandFinal.player1Id).toBe('B');
-    expect(grandFinal.player2Id).toBe('A');
-    de = advanceDoubleElim(clone(de), grandFinal.id, 'B', [[11, 9]]);
-
-    // B vyhrál grand finále jako winners champion → turnaj končí, B je vítěz
+    de = playBetween(de, 'winners', 'A', 'D', 'A');
+    de = playBetween(de, 'winners', 'A', 'B', 'B');
+    de = playBetween(de, 'losers', 'D', 'E', 'D');
+    de = playBetween(de, 'losers', 'C', 'D', 'C');
+    de = playBetween(de, 'losers', 'A', 'C', 'A');
+    const grand = de.finals.grandFinal;
+    expect(grand).toMatchObject({ player1Id: 'B', player2Id: 'A' });
+    advanceDoubleElim(de, grand.id, 'B', [[3, 0]]);
     expect(getDoubleElimWinner(de)).toBe('B');
   });
 });
 
 describe('double elimination with 8 players - losers semifinal editability', () => {
-  it('allows editing H vs D in losers semifinals when winners final is played before losers bracket', () => {
-    const players: Player[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(id => ({ id, name: id }));
+  it('allows editing the losers semifinal when the winners final was played first', () => {
+    const players = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((id) => ({ id, name: id }));
     let de = generateDoubleElim(players);
-
-    // Winners quarterfinals
-    const matchAH = findMatchInRounds(de.winners.rounds, 'A', 'H')!;
-    const matchCF = findMatchInRounds(de.winners.rounds, 'C', 'F')!;
-    const matchBG = findMatchInRounds(de.winners.rounds, 'B', 'G')!;
-    const matchDE = findMatchInRounds(de.winners.rounds, 'D', 'E')!;
-    de = advanceDoubleElim(clone(de), matchAH.id, 'A', [[2, 0]]);
-    de = advanceDoubleElim(clone(de), matchCF.id, 'C', [[2, 0]]);
-    de = advanceDoubleElim(clone(de), matchBG.id, 'B', [[2, 0]]);
-    de = advanceDoubleElim(clone(de), matchDE.id, 'D', [[2, 0]]);
-
-    // Winners semifinals
-    const matchAC = findMatchInRounds(de.winners.rounds, 'A', 'C')!;
-    const matchBD = findMatchInRounds(de.winners.rounds, 'B', 'D')!;
-    de = advanceDoubleElim(clone(de), matchAC.id, 'A', [[2, 0]]);
-    de = advanceDoubleElim(clone(de), matchBD.id, 'B', [[2, 0]]);
-
-    // Winners final played BEFORE losers bracket (B drops to losers)
-    const matchAB = findMatchInRounds(de.winners.rounds, 'A', 'B')!;
-    de = advanceDoubleElim(clone(de), matchAB.id, 'A', [[2, 0]]);
-
-    // Losers bracket round 1
-    const matchHF = findMatchInRounds(de.losers.rounds, 'H', 'F')!;
-    const matchGE = findMatchInRounds(de.losers.rounds, 'G', 'E')!;
-    de = advanceDoubleElim(clone(de), matchHF.id, 'H', [[2, 0]]);
-    de = advanceDoubleElim(clone(de), matchGE.id, 'G', [[2, 0]]);
-
-    // Losers quarterfinals (entry round)
-    const matchHC = findMatchInRounds(de.losers.rounds, 'H', 'C')!;
-    const matchDG = findMatchInRounds(de.losers.rounds, 'D', 'G')!;
-    de = advanceDoubleElim(clone(de), matchHC.id, 'H', [[2, 0]]);
-    de = advanceDoubleElim(clone(de), matchDG.id, 'D', [[2, 0]]);
-
-    // Losers semifinal H vs D must be editable
-    const matchHD = findMatchInRounds(de.losers.rounds, 'H', 'D')!;
-    expect(matchHD).toBeTruthy();
-    expect(canEditDoubleElimMatch(de, matchHD.id)).toBe(true);
+    de = playBetween(de, 'winners', 'A', 'H', 'A');
+    de = playBetween(de, 'winners', 'C', 'F', 'C');
+    de = playBetween(de, 'winners', 'B', 'G', 'B');
+    de = playBetween(de, 'winners', 'D', 'E', 'D');
+    de = playBetween(de, 'winners', 'A', 'D', 'A');
+    de = playBetween(de, 'winners', 'B', 'C', 'B');
+    de = playBetween(de, 'winners', 'A', 'B', 'A');
+    de = playBetween(de, 'losers', 'H', 'E', 'H');
+    de = playBetween(de, 'losers', 'G', 'F', 'G');
+    de = playBetween(de, 'losers', 'H', 'D', 'H');
+    de = playBetween(de, 'losers', 'G', 'C', 'C');
+    const semifinal = findMatchInRounds(de.losers.rounds, 'H', 'C')!;
+    expect(semifinal).toBeTruthy();
+    expect(canEditDoubleElimMatch(de, semifinal.id)).toBe(true);
   });
 });
 

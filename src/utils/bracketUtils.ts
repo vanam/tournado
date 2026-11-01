@@ -13,9 +13,22 @@ export function isDummyMatch(match: Match | null | undefined): boolean {
   return match?.dummy ?? false;
 }
 
-// Standard seeding positions for a bracket of given size.
-// For size 8: seeds play [1v8, 3v6, 2v7, 4v5] in round 1.
+/** Maps each zero-based seed to a slot, separating the top 2, 4, 8, ... seeds recursively. */
 export function seedPositions(bracketSize: number): number[] {
+  if (bracketSize < 1 || !Number.isInteger(Math.log2(bracketSize))) {
+    throw new Error('Bracket size must be a positive power of two');
+  }
+  let seeds = [1];
+  for (let size = 2; size <= bracketSize; size *= 2) {
+    seeds = seeds.flatMap((seed) => [seed, size + 1 - seed]);
+  }
+  const positions: number[] = Array.from({ length: bracketSize });
+  for (const [slot, seed] of seeds.entries()) positions[seed - 1] = slot;
+  return positions;
+}
+
+// Unmarked saved brackets retain their original slot mapping during participant synchronization.
+function legacySeedPositions(bracketSize: number): number[] {
   if (bracketSize === 1) return [0];
   const positions: number[] = Array.from({ length: bracketSize });
   const half = bracketSize / 2;
@@ -111,6 +124,7 @@ function createThirdPlaceMatch(numRounds: number, nextMatchId: () => string): Ma
   return numRounds >= 2 ? createMatch(nextMatchId()) : null;
 }
 
+/** Input order defines seeding, including earned group placements rather than original player seeds. */
 export function generateBracket(players: Player[]): Bracket {
   matchIdGenerator.reset();
   const n = players.length;
@@ -127,7 +141,7 @@ export function generateBracket(players: Player[]): Bracket {
   createSubsequentRounds(rounds, numRounds, nextMatchId);
 
   const thirdPlaceMatch = createThirdPlaceMatch(numRounds, nextMatchId);
-  return { rounds, thirdPlaceMatch };
+  return { rounds, thirdPlaceMatch, seeding: 'balanced' };
 }
 
 // Pomocná funkce: najde zápas v pavouku a vrátí { match, roundIndex }
@@ -284,13 +298,15 @@ export function canEditMatch(bracket: Bracket, matchId: string): boolean {
 
 /**
  * Returns the player ID seeded at the given 0-based seed index in the bracket's first round.
- * Reverses the seedPositions mapping to find which first-round slot corresponds to seed `seed`.
+ * Uses the saved layout, including the legacy mapping for brackets without a seeding marker.
  */
 export function getBracketParticipantAtSeed(bracket: Bracket, seed: number): string | null {
   const round0 = bracket.rounds[0];
   if (!round0 || round0.length === 0) return null;
   const bracketSize = round0.length * 2;
-  const positions = seedPositions(bracketSize);
+  const positions = bracket.seeding === 'balanced'
+    ? seedPositions(bracketSize)
+    : legacySeedPositions(bracketSize);
   const slotIdx = positions[seed];
   if (slotIdx === undefined) return null;
   const matchIdx = Math.floor(slotIdx / 2);
