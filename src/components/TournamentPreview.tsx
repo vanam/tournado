@@ -5,7 +5,10 @@ import { BracketRounds } from './common/BracketRounds';
 import { useTranslation } from '../i18n/useTranslation';
 import { generateBracket } from '../utils/bracketUtils';
 import { generateDoubleElim } from '../utils/doubleElimUtils';
-import { distributePlayersToGroups, indexToGroupLabel } from '../utils/groupStageUtils';
+import {
+  distributePlayersToGroups,
+  indexToGroupLabel,
+} from '../utils/groupStageUtils';
 import type { BaseGroup } from '../utils/groupStageUtils';
 import { Format } from '../types';
 import type { Player } from '../types';
@@ -25,7 +28,8 @@ function getUpdatedPlayerIds(
   toGroupIndex: number,
   playerId: string,
 ): string[] {
-  if (groupIndex === fromGroupIndex) return currentIds.filter((id) => id !== playerId);
+  if (groupIndex === fromGroupIndex)
+    return currentIds.filter((id) => id !== playerId);
   if (groupIndex === toGroupIndex) return [...currentIds, playerId];
   return currentIds;
 }
@@ -57,9 +61,14 @@ export const TournamentPreview = ({
     [format, players, groupCount],
   );
 
-  const [localGroups, setLocalGroups] = useState<BaseGroup[] | null>(null);
+  const [localGroups, setLocalGroups] = useState<BaseGroup[] | null>(
+    externalGroups ?? groups,
+  );
   const [prevGroups, setPrevGroups] = useState(groups);
-  const [drag, setDrag] = useState<{ playerId: string; fromGroupIndex: number } | null>(null);
+  const [drag, setDrag] = useState<{
+    playerId: string;
+    fromGroupIndex: number;
+  } | null>(null);
   const [overGroupIndex, setOverGroupIndex] = useState<number | null>(null);
 
   if (prevGroups !== groups) {
@@ -73,7 +82,10 @@ export const TournamentPreview = ({
     setDrag({ playerId, fromGroupIndex });
   }
 
-  function handleGroupDragOver(e: DragEvent<HTMLDivElement>, groupIndex: number): void {
+  function handleGroupDragOver(
+    e: DragEvent<HTMLDivElement>,
+    groupIndex: number,
+  ): void {
     e.preventDefault();
     if (overGroupIndex !== groupIndex) setOverGroupIndex(groupIndex);
   }
@@ -94,7 +106,13 @@ export const TournamentPreview = ({
     if (fromGroupIndex !== toGroupIndex) {
       const newGroups = localGroups.map((g, i) => ({
         ...g,
-        playerIds: getUpdatedPlayerIds(g.playerIds, i, fromGroupIndex, toGroupIndex, playerId),
+        playerIds: getUpdatedPlayerIds(
+          g.playerIds,
+          i,
+          fromGroupIndex,
+          toGroupIndex,
+          playerId,
+        ),
       }));
       setLocalGroups(newGroups);
       onGroupsChange?.(newGroups);
@@ -131,9 +149,13 @@ export const TournamentPreview = ({
           {displayGroups.map((group, i) => (
             <div
               key={group.id}
-              onDragOver={(e) => { handleGroupDragOver(e, i); }}
+              onDragOver={(e) => {
+                handleGroupDragOver(e, i);
+              }}
               onDragLeave={handleGroupDragLeave}
-              onDrop={() => { handleGroupDrop(i); }}
+              onDrop={() => {
+                handleGroupDrop(i);
+              }}
               className={`border rounded-xl p-4 transition-colors ${
                 overGroupIndex === i && drag?.fromGroupIndex !== i
                   ? 'border-[var(--color-primary)] bg-[var(--color-soft)]'
@@ -151,7 +173,9 @@ export const TournamentPreview = ({
                     <li
                       key={pid}
                       draggable
-                      onDragStart={() => { handleDragStart(pid, i); }}
+                      onDragStart={() => {
+                        handleDragStart(pid, i);
+                      }}
                       onDragEnd={handleDragEnd}
                       className={`flex items-center gap-2 border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm transition-colors ${
                         isDragging ? 'opacity-40' : ''
