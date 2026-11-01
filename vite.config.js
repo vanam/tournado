@@ -18,6 +18,7 @@ export default defineConfig({
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
         manualChunks(id) {
+          if (id.includes('node_modules/rxdb')) return 'database';
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
             return 'react-vendor';
           }

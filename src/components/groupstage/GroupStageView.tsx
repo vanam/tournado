@@ -15,7 +15,7 @@ import {
 } from '../../utils/groupStageUtils';
 import { findGroupMatch, findBracketMatch, findDoubleElimMatch } from '../../utils/matchFinders';
 import { hasPlayedDownstreamMatch } from '../../utils/bracketUtils';
-import { hasPlayedDownstreamDoubleElimMatch } from '../../utils/doubleElimUtils';
+import { getDoubleElimWinner, hasPlayedDownstreamDoubleElimMatch } from '../../utils/doubleElimUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
@@ -81,14 +81,7 @@ function getPlayoffs(tournament: { groupStagePlayoffs?: GroupStagePlayoffs | nul
 function getMainWinner(playoffs: GroupStagePlayoffs | null, isDoubleElim: boolean): string | null {
   if (!playoffs) return null;
   if (isDoubleElim && playoffs.mainDoubleElim) {
-    for (const round of playoffs.mainDoubleElim.winners.rounds) {
-      for (const match of round) {
-        if (match.winnerId && playoffs.mainDoubleElim.winners.rounds.indexOf(round) === playoffs.mainDoubleElim.winners.rounds.length - 1) {
-          return match.winnerId;
-        }
-      }
-    }
-    return playoffs.mainDoubleElim.finals.grandFinal.winnerId ?? playoffs.mainDoubleElim.finals.resetFinal.winnerId ?? null;
+    return getDoubleElimWinner(playoffs.mainDoubleElim);
   }
   if (playoffs.mainBracket) {
     const lastRound = playoffs.mainBracket.rounds.at(-1);
@@ -292,8 +285,8 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
       case 'mainDoubleElim':
       case 'consolationDoubleElim': {
         scoreOp = winnerIdValue === null
-          ? clearScore(tid, matchId).then(() => {})
-          : recordScore(tid, matchId, scores, walkover).then(() => {});
+          ? clearScore(tid, matchId, undefined, editing.type).then(() => {})
+          : recordScore(tid, matchId, scores, walkover, undefined, editing.type).then(() => {});
         break;
       }
     }

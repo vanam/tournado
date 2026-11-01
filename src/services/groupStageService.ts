@@ -5,14 +5,12 @@ import { ensureParticipants, getParticipantPlayers } from '../utils/participantU
 import {
   getBracketParticipantAtSeed,
   hasPlayerPlayedBracketMatch,
-  swapBracketParticipant,
 } from '../utils/bracketUtils';
 import {
   hasPlayerPlayedDoubleElimMatch,
-  swapDoubleElimParticipant,
 } from '../utils/doubleElimUtils';
 import { Format } from '../types';
-import type { BracketType, Bracket, DoubleElim, GroupStagePlayoffs, Tournament, StandingsRow, GroupAdvancersResult } from '../types';
+import type { Match, BracketType, Bracket, DoubleElim, GroupStagePlayoffs, Tournament, StandingsRow, GroupAdvancersResult } from '../types';
 
 export async function getGroupStandings(tournamentId: string, groupId: string): Promise<StandingsRow[]> {
   const db = await getDatabase();
@@ -140,17 +138,24 @@ function collectDoubleElimSwaps(
   }
 }
 
-function applySwaps(playoffs: GroupStagePlayoffs, swaps: SwapEntry[]): void {
-  for (const swap of swaps) {
-    if (swap.target === 'main' && playoffs.mainBracket) {
-      swapBracketParticipant(playoffs.mainBracket, swap.oldId, swap.newId);
-    } else if (swap.target === 'mainDoubleElim' && playoffs.mainDoubleElim) {
-      swapDoubleElimParticipant(playoffs.mainDoubleElim, swap.oldId, swap.newId);
-    } else if (swap.target === 'consolation' && playoffs.consolationBracket) {
-      swapBracketParticipant(playoffs.consolationBracket, swap.oldId, swap.newId);
-    } else if (swap.target === 'consolationDoubleElim' && playoffs.consolationDoubleElim) {
-      swapDoubleElimParticipant(playoffs.consolationDoubleElim, swap.oldId, swap.newId);
+export function applySwaps(playoffs: GroupStagePlayoffs, swaps: SwapEntry[]): void {
+  const replaceMatches = (target: BracketTarget, matches: (Match | null | undefined)[]): void => {
+    const replacements = new Map(swaps.filter((swap) => swap.target === target).map((swap) => [swap.oldId, swap.newId]));
+    for (const match of matches) {
+      if (!match) continue;
+      for (const key of ['player1Id', 'player2Id', 'winnerId'] as const) {
+        const id = match[key];
+        if (id !== null) match[key] = replacements.get(id) ?? id;
+      }
     }
+  };
+  for (const target of ['main', 'consolation'] as const) {
+    const bracket = target === 'main' ? playoffs.mainBracket : playoffs.consolationBracket;
+    if (bracket) replaceMatches(target, [...bracket.rounds.flat(), bracket.thirdPlaceMatch]);
+  }
+  for (const target of ['mainDoubleElim', 'consolationDoubleElim'] as const) {
+    const bracket = playoffs[target];
+    if (bracket) replaceMatches(target, [...bracket.winners.rounds.flat(), ...bracket.losers.rounds.flat(), bracket.finals.grandFinal, bracket.finals.resetFinal]);
   }
 }
 

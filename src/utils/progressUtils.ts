@@ -1,5 +1,7 @@
 import { Format, BracketType } from '../types';
-import type { Tournament, Group, GroupStage } from '../types';
+import { ensureParticipants } from './participantUtils';
+import { getDoubleElimWinner } from './doubleElimUtils';
+import type { DoubleElim, Tournament, Group, GroupStage } from '../types';
 import type { Match } from '../types/core';
 import { nextPowerOf2 } from './bracketUtils';
 
@@ -32,6 +34,13 @@ function estimatePlayoffMatchCount(groupStage: GroupStage): number {
   return total;
 }
 
+function doubleElimMatches(bracket: DoubleElim): Match[] {
+  const { winners, losers, finals } = bracket;
+  const matches = [...winners.rounds.flat(), ...losers.rounds.flat(), finals.grandFinal];
+  if (!getDoubleElimWinner(bracket) || finals.resetFinal.player1Id) matches.push(finals.resetFinal);
+  return matches.filter((match) => !match.dummy && (match.player1Id !== null || match.player2Id !== null || !getDoubleElimWinner(bracket)));
+}
+
 export function computeTournamentProgress(tournament: Tournament): { completed: number; total: number } {
   switch (tournament.format) {
     case Format.SINGLE_ELIM: {
@@ -47,13 +56,7 @@ export function computeTournamentProgress(tournament: Tournament): { completed: 
       };
     }
     case Format.DOUBLE_ELIM: {
-      const { winners, losers, finals } = tournament.doubleElim;
-      const allMatches = [
-        ...winners.rounds.flat(),
-        ...losers.rounds.flat(),
-        finals.grandFinal,
-        finals.resetFinal,
-      ].filter(m => !m.dummy);
+      const allMatches = doubleElimMatches(tournament.doubleElim);
       return {
         total: allMatches.length,
         completed: allMatches.filter(m => m.winnerId !== null).length,
@@ -67,7 +70,7 @@ export function computeTournamentProgress(tournament: Tournament): { completed: 
       };
     }
     case Format.SWISS: {
-      const total = tournament.totalRounds * Math.floor(tournament.players.length / 2);
+      const total = tournament.totalRounds * Math.floor(ensureParticipants(tournament.players, tournament.participants).length / 2);
       const completed = tournament.schedule.rounds
         .flatMap(r => r.matches)
         .filter(m => !m.dummy && m.winnerId !== null).length;
@@ -89,12 +92,7 @@ export function computeTournamentProgress(tournament: Tournament): { completed: 
           }
         }
         if (playoffs.mainDoubleElim != null) {
-          playoffMatches.push(
-            ...playoffs.mainDoubleElim.winners.rounds.flat(),
-            ...playoffs.mainDoubleElim.losers.rounds.flat(),
-            playoffs.mainDoubleElim.finals.grandFinal,
-            playoffs.mainDoubleElim.finals.resetFinal,
-          );
+          playoffMatches.push(...doubleElimMatches(playoffs.mainDoubleElim));
         }
         if (playoffs.consolationBracket != null) {
           playoffMatches.push(...playoffs.consolationBracket.rounds.flat());
@@ -103,12 +101,7 @@ export function computeTournamentProgress(tournament: Tournament): { completed: 
           }
         }
         if (playoffs.consolationDoubleElim != null) {
-          playoffMatches.push(
-            ...playoffs.consolationDoubleElim.winners.rounds.flat(),
-            ...playoffs.consolationDoubleElim.losers.rounds.flat(),
-            playoffs.consolationDoubleElim.finals.grandFinal,
-            playoffs.consolationDoubleElim.finals.resetFinal,
-          );
+          playoffMatches.push(...doubleElimMatches(playoffs.consolationDoubleElim));
         }
 
         const nonDummyPlayoff = playoffMatches.filter(m => !m.dummy);

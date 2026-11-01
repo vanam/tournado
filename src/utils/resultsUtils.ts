@@ -13,10 +13,12 @@ interface TieKeyRow {
   setsLost?: number | undefined;
   pointsWon?: number | undefined;
   pointsLost?: number | undefined;
+  tiebreakDetails?: StandingsRow['tiebreakDetails'];
 }
 
 interface RoundRobinOptions {
   scoringMode?: ScoreMode | undefined;
+  maxSets?: number | undefined;
 }
 
 interface StandingsResultRow extends StandingsRow {
@@ -36,6 +38,8 @@ function tieKey(row: TieKeyRow, scoringMode: ScoreMode): string {
     const pointsDiff = (row.pointsWon ?? 0) - (row.pointsLost ?? 0);
     parts.push(pointsDiff);
   }
+  const details = row.tiebreakDetails;
+  if (details) parts.push(details.headToHead, details.headToHeadSetDiff, details.headToHeadSetsWon);
   return parts.join('|');
 }
 
@@ -277,7 +281,7 @@ export function getTournamentResults(tournament: Tournament): RankedResult[] {
       return buildDoubleElimResults(tournament.doubleElim, participantPlayers);
     }
     case Format.ROUND_ROBIN: {
-      return buildRoundRobinResults(tournament.schedule, participantPlayers, { scoringMode });
+      return buildRoundRobinResults(tournament.schedule, participantPlayers, { scoringMode, maxSets: tournament.maxSets });
     }
     case Format.SWISS: {
       const maxSets = tournament.maxSets ?? DEFAULT_MAX_SETS;

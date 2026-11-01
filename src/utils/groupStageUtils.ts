@@ -359,7 +359,7 @@ function applyLotteryAndTiebreak(sortedCandidates: GroupAdvancerEntry[], missing
         entry.tiebreakDetails.lotteryUsed = true;
         return entry;
       });
-      slice.toSorted((a, b) => (a.tiebreakDetails.lottery ?? 0) - (b.tiebreakDetails.lottery ?? 0));
+      slice.sort((a, b) => (a.tiebreakDetails.lottery ?? 0) - (b.tiebreakDetails.lottery ?? 0));
       for (const [k, sliceEntry] of slice.entries()) {
         sortedCandidates[i + k] = sliceEntry;
       }

@@ -1,3 +1,4 @@
+import { ensureParticipants, getParticipantPlayers } from './participantUtils';
 import { createMatch } from './matchFactory';
 import { createMatchIdGenerator } from './matchIdGenerator';
 import { getSetTotals, isWalkoverScore } from './scoreUtils';
@@ -464,12 +465,13 @@ function pairRound(
 }
 
 export function generateNextSwissRound(tournament: SwissTournament): Round {
-  const { schedule, players } = tournament;
+  const { schedule } = tournament;
+  const players = getParticipantPlayers(tournament.players, ensureParticipants(tournament.players, tournament.participants));
   const roundNumber = schedule.rounds.length + 1;
   const idPrefix = 'sw';
   const idGen = createMatchIdGenerator(schedule.rounds.reduce((sum, r) => sum + r.matches.length, 0));
 
-  const standings = computeSwissStandings(schedule, players);
+  const standings = computeSwissStandings(schedule, players, { scoringMode: tournament.scoringMode ?? ScoreMode.SETS, maxSets: tournament.maxSets ?? 5 });
   const byePlayerId = assignByeForRound(standings, schedule);
   const prevOpponents = getPreviousOpponents(schedule);
 

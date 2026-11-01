@@ -131,7 +131,7 @@ export const RoundRobinView = (): ReactElement | null => {
           )}
           {tab !== 'standings' && tab !== 'matrix' && (
             <div className="mt-6">
-              <FinalResultsTable results={buildRoundRobinResults(schedule, participantPlayers, { scoringMode })} />
+              <FinalResultsTable results={buildRoundRobinResults(schedule, participantPlayers, { scoringMode, maxSets })} />
             </div>
           )}
         </>

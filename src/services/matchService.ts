@@ -2,8 +2,11 @@ import { getDatabase } from '../db';
 import { findBracketMatch, findDoubleElimMatch, findGroupMatch } from '../utils/matchFinders';
 import { advanceWinner, canEditMatch, clearMatchResult } from '../utils/bracketUtils';
 import { advanceDoubleElim, canEditDoubleElimMatch, clearDoubleElimMatch } from '../utils/doubleElimUtils';
+import { getWalkoverSetWinner } from '../utils/scoreUtils';
 import { Format } from '../types';
 import type { Match, SetScore, GroupStagePlayoffs, Tournament } from '../types';
+
+export type PlayoffSection = Exclude<keyof GroupStagePlayoffs, 'bracketType'>;
 
 function findMatchInSchedule(
   schedule: { rounds: Array<{ matches: Match[] }> },
@@ -20,6 +23,8 @@ function determineWinner(scores: SetScore[], player1Id: string, player2Id: strin
   let p1Wins = 0;
   let p2Wins = 0;
   for (const [s1, s2] of scores) {
+    const walkoverWinner = getWalkoverSetWinner(s1, s2);
+    if (walkoverWinner) return walkoverWinner === 1 ? player1Id : player2Id;
     if (s1 > s2) p1Wins++;
     else if (s2 > s1) p2Wins++;
   }
@@ -57,9 +62,10 @@ function recordPlayoffScore(
   playoffs: GroupStagePlayoffs,
   matchId: string,
   setScores: SetScore[],
-  walkover: boolean
+  walkover: boolean,
+  section?: PlayoffSection
 ): void {
-  if (playoffs.mainBracket) {
+  if ((!section || section === 'mainBracket') && playoffs.mainBracket) {
     const match = findBracketMatch(playoffs.mainBracket, matchId);
     if (match?.player1Id !== null && match?.player2Id !== null && match !== null) {
       const winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
@@ -67,7 +73,7 @@ function recordPlayoffScore(
       return;
     }
   }
-  if (playoffs.mainDoubleElim) {
+  if ((!section || section === 'mainDoubleElim') && playoffs.mainDoubleElim) {
     const match = findDoubleElimMatch(playoffs.mainDoubleElim, matchId);
     if (match?.player1Id !== null && match?.player2Id !== null && match !== null) {
       const winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
@@ -75,7 +81,7 @@ function recordPlayoffScore(
       return;
     }
   }
-  if (playoffs.consolationBracket) {
+  if ((!section || section === 'consolationBracket') && playoffs.consolationBracket) {
     const match = findBracketMatch(playoffs.consolationBracket, matchId);
     if (match?.player1Id !== null && match?.player2Id !== null && match !== null) {
       const winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
@@ -83,7 +89,7 @@ function recordPlayoffScore(
       return;
     }
   }
-  if (playoffs.consolationDoubleElim) {
+  if ((!section || section === 'consolationDoubleElim') && playoffs.consolationDoubleElim) {
     const match = findDoubleElimMatch(playoffs.consolationDoubleElim, matchId);
     if (match?.player1Id !== null && match?.player2Id !== null && match !== null) {
       const winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
@@ -94,20 +100,20 @@ function recordPlayoffScore(
   throw new Error(`Match ${matchId} not found in playoffs`);
 }
 
-function clearPlayoffScore(playoffs: GroupStagePlayoffs, matchId: string): void {
-  if (playoffs.mainBracket && findBracketMatch(playoffs.mainBracket, matchId) !== null) {
+function clearPlayoffScore(playoffs: GroupStagePlayoffs, matchId: string, section?: PlayoffSection): void {
+  if ((!section || section === 'mainBracket') && playoffs.mainBracket && findBracketMatch(playoffs.mainBracket, matchId) !== null) {
     clearMatchResult(playoffs.mainBracket, matchId);
     return;
   }
-  if (playoffs.mainDoubleElim && findDoubleElimMatch(playoffs.mainDoubleElim, matchId) !== null) {
+  if ((!section || section === 'mainDoubleElim') && playoffs.mainDoubleElim && findDoubleElimMatch(playoffs.mainDoubleElim, matchId) !== null) {
     clearDoubleElimMatch(playoffs.mainDoubleElim, matchId);
     return;
   }
-  if (playoffs.consolationBracket && findBracketMatch(playoffs.consolationBracket, matchId) !== null) {
+  if ((!section || section === 'consolationBracket') && playoffs.consolationBracket && findBracketMatch(playoffs.consolationBracket, matchId) !== null) {
     clearMatchResult(playoffs.consolationBracket, matchId);
     return;
   }
-  if (playoffs.consolationDoubleElim && findDoubleElimMatch(playoffs.consolationDoubleElim, matchId) !== null) {
+  if ((!section || section === 'consolationDoubleElim') && playoffs.consolationDoubleElim && findDoubleElimMatch(playoffs.consolationDoubleElim, matchId) !== null) {
     clearDoubleElimMatch(playoffs.consolationDoubleElim, matchId);
     return;
   }
@@ -142,7 +148,8 @@ export async function recordScore(
   matchId: string,
   scores: SetScore[],
   walkover: boolean = false,
-  groupId?: string
+  groupId?: string,
+  section?: PlayoffSection
 ): Promise<Tournament> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(tournamentId).exec();
@@ -200,7 +207,7 @@ export async function recordScore(
         if (playoffs == null) {
           throw new Error('Playoffs not yet generated');
         }
-        recordPlayoffScore(playoffs, matchId, setScores, walkover);
+        recordPlayoffScore(playoffs, matchId, setScores, walkover, section);
       }
       break;
     }
@@ -213,7 +220,8 @@ export async function recordScore(
 export async function clearScore(
   tournamentId: string,
   matchId: string,
-  groupId?: string
+  groupId?: string,
+  section?: PlayoffSection
 ): Promise<Tournament> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(tournamentId).exec();
@@ -250,7 +258,7 @@ export async function clearScore(
         if (playoffs == null) {
           throw new Error('Playoffs not yet generated');
         }
-        clearPlayoffScore(playoffs, matchId);
+        clearPlayoffScore(playoffs, matchId, section);
       }
       break;
     }
