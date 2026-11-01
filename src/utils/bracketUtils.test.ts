@@ -620,7 +620,7 @@ describe('hasPlayedDownstreamMatch', () => {
     }
   });
 
-  it('returns false for semifinal after clearing final when 3rd place match was played', () => {
+  it('preserves independent bronze results after clearing the final', () => {
     const players = makePlayers(4);
     let bracket = generateBracket(players);
     const scores: SetScore[] = [[11, 5]];
@@ -640,9 +640,9 @@ describe('hasPlayedDownstreamMatch', () => {
     // Clear final
     bracket = clearMatchResult(clone(bracket), final.id);
 
-    // Semis should now be unlocked (no downstream match with results)
+    // The bronze result still depends on both semifinal results.
     for (const match of bracket.rounds[0]!) {
-      expect(hasPlayedDownstreamMatch(bracket, match.id)).toBe(false);
+      expect(hasPlayedDownstreamMatch(bracket, match.id)).toBe(true);
     }
   });
 });

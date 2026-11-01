@@ -11,7 +11,7 @@ import type { DatabaseCollections, TournadoDatabase } from '../db';
 import type { GroupsToBracketTournament, PlayerGroup } from '../types';
 import { Format, ScoreMode } from '../types';
 import { createTournament, renameTournament } from './tournamentService';
-import { recordScore, clearScore } from './matchService';
+import { recordScore, clearScore, saveMatchChange, HistoryConfirmationRequiredError } from './matchService';
 import { createPlayer, updatePlayer, getPlayerProfile } from './playerService';
 import {
   createPlayerGroup,
@@ -21,9 +21,11 @@ import {
 } from './playerGroupService';
 import { parseExportFile, importPayload } from '../utils/dataPortability';
 import { buildGroupStagePlayoffs } from '../utils/groupStageUtils';
+import type { MatchChange } from '../utils/matchChanges';
+import { planMatchChange } from '../utils/matchChanges';
 import { generateNextRound } from './swissService';
 import { canGenerateNextSwissRound, isSwissTournamentComplete } from '../utils/swissUtils';
-import { generatePlayoffs, getAdvancers, GroupStageSyncBlockedError } from './groupStageService';
+import { generatePlayoffs, getAdvancers } from './groupStageService';
 
 vi.mock('../db', () => ({ getDatabase: vi.fn() }));
 let db: TournadoDatabase;
@@ -121,6 +123,30 @@ describe('persistent tournament operations', () => {
     expect(corrected.groupStagePlayoffs).toEqual(played.groupStagePlayoffs);
   });
 
+  it('rechecks confirmation against concurrent score edits before deleting results', async () => {
+    let tournament = await createTournament({ name: 'Confirm current history', format: Format.SINGLE_ELIM, players: names.slice(0, 4) });
+    if (tournament.format !== Format.SINGLE_ELIM) throw new Error('Wrong format');
+    const first = tournament.bracket.rounds[0]![0]!;
+    for (const match of tournament.bracket.rounds[0]!) await recordScore(tournament.id, match.id, [[3, 0]]);
+    tournament = (await db.tournaments.findOne(tournament.id).exec())!.toMutableJSON();
+    if (tournament.format !== Format.SINGLE_ELIM) throw new Error('Wrong format');
+    const final = tournament.bracket.rounds[1]![0]!;
+    tournament = await recordScore(tournament.id, final.id, [[3, 0]]);
+    const change = { type: 'score', matchId: first.id, scores: [[0, 3]], walkover: false } satisfies MatchChange;
+    const preview = planMatchChange(tournament, change).impact;
+    expect(preview.deletedResults).toHaveLength(1);
+    const concurrent = await recordScore(tournament.id, final.id, [[3, 1]]);
+    await expect(saveMatchChange(tournament.id, change, preview.token)).rejects.toThrow(HistoryConfirmationRequiredError);
+    expect((await db.tournaments.findOne(tournament.id).exec())!.toMutableJSON()).toEqual(concurrent);
+    const fresh = planMatchChange(concurrent, change).impact;
+    expect(fresh.deletedResults[0]!.match.scores).toEqual([[3, 1]]);
+    const saved = await saveMatchChange(tournament.id, change, fresh.token);
+    if (saved.format !== Format.SINGLE_ELIM) throw new Error('Wrong format');
+    expect(saved.bracket.rounds[0]![0]!.winnerId).toBe(first.player2Id);
+    expect(saved.bracket.rounds[1]![0]!.scores).toEqual([]);
+    expect(saved.completedAt).toBeNull();
+  });
+
   it('updates group advancers atomically and rejects changes to played playoff slots', async () => {
     let tournament = await createTournament({
       name: 'Atomic groups', format: Format.GROUPS_TO_BRACKET,
@@ -145,11 +171,18 @@ describe('persistent tournament operations', () => {
     const doc = (await db.tournaments.findOne(tournament.id).exec())!;
     const before = doc.toMutableJSON();
     await expect(recordScore(tournament.id, match.id, [[3, 0]], false, group.id))
-      .rejects.toThrow(GroupStageSyncBlockedError);
+      .rejects.toThrow(HistoryConfirmationRequiredError);
     await expect(clearScore(tournament.id, match.id, group.id))
-      .rejects.toThrow(GroupStageSyncBlockedError);
+      .rejects.toThrow(HistoryConfirmationRequiredError);
     expect((await db.tournaments.findOne(tournament.id).exec())!.toMutableJSON()).toEqual(before);
-    await expect(recordScore(tournament.id, match.id, [[1, 3]], false, group.id)).resolves.toBeDefined();
+    const unchanged = await recordScore(tournament.id, match.id, [[1, 3]], false, group.id);
+    const change = { type: 'score', matchId: match.id, scores: [[3, 0]], walkover: false, groupId: group.id } satisfies MatchChange;
+    const impact = planMatchChange(unchanged, change).impact;
+    const confirmed = await saveMatchChange(tournament.id, change, impact.token);
+    if (confirmed.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    const replayedFinal = confirmed.groupStagePlayoffs!.mainBracket!.rounds[0]![0]!;
+    expect([replayedFinal.player1Id, replayedFinal.player2Id]).toContain(match.player1Id);
+    expect(replayedFinal.winnerId).toBeNull();
   });
 
   it('removes unplayed playoffs when a group result is cleared', async () => {
@@ -172,32 +205,27 @@ describe('persistent tournament operations', () => {
     expect(cleared.completedAt).toBeNull();
   });
 
-  it('requires all Swiss rounds to be complete after historical corrections', async () => {
-    let tournament = await createTournament({
-      name: 'Swiss history', format: Format.SWISS, players: names.slice(0, 4), swissRounds: 3,
-    });
+  it('requires confirmation before discarding later Swiss rounds', async () => {
+    let tournament = await createTournament({ name: 'Swiss history', format: Format.SWISS, players: names.slice(0, 4), swissRounds: 3 });
     if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
-    const firstMatch = tournament.schedule.rounds[0]!.matches[0]!;
-    for (let roundIndex = 0; roundIndex < 3; roundIndex++) {
-      for (const match of tournament.schedule.rounds[roundIndex]!.matches) {
+    const first = tournament.schedule.rounds[0]!.matches[0]!;
+    for (let round = 0; round < 3; round++) {
+      for (const match of tournament.schedule.rounds[round]!.matches) {
         tournament = await recordScore(tournament.id, match.id, [[3, 0]]);
         if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
       }
-      if (roundIndex === 1) {
-        tournament = await clearScore(tournament.id, firstMatch.id);
-        if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
-        expect(canGenerateNextSwissRound(tournament)).toBe(false);
-        await expect(generateNextRound(tournament.id)).rejects.toThrow('not complete');
-        tournament = await recordScore(tournament.id, firstMatch.id, [[3, 0]]);
-        if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
-      }
-      if (roundIndex < 2) tournament = await generateNextRound(tournament.id);
+      if (round < 2) tournament = await generateNextRound(tournament.id);
       if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
     }
     expect(isSwissTournamentComplete(tournament)).toBe(true);
-    expect(tournament.completedAt).toBeTruthy();
-    tournament = await clearScore(tournament.id, firstMatch.id);
+    const change = { type: 'clear', matchId: first.id } as const;
+    const impact = planMatchChange(tournament, change).impact;
+    expect(impact.removedRounds).toEqual([2, 3]);
+    expect(impact.deletedResults).toHaveLength(4);
+    await expect(clearScore(tournament.id, first.id)).rejects.toThrow(HistoryConfirmationRequiredError);
+    tournament = await saveMatchChange(tournament.id, change, impact.token);
     if (tournament.format !== Format.SWISS) throw new Error('Wrong format');
+    expect(tournament.schedule.rounds).toHaveLength(1);
     expect(isSwissTournamentComplete(tournament)).toBe(false);
     expect(canGenerateNextSwissRound(tournament)).toBe(false);
     expect(tournament.completedAt).toBeNull();

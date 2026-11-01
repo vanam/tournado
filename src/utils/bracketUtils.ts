@@ -300,13 +300,16 @@ export function canEditMatch(bracket: Bracket, matchId: string): boolean {
  * Returns the player ID seeded at the given 0-based seed index in the bracket's first round.
  * Uses the saved layout, including the legacy mapping for brackets without a seeding marker.
  */
+export function getBracketSeedPositions(bracket: Bracket): number[] {
+  const size = (bracket.rounds[0]?.length ?? 0) * 2;
+  if (!size) return [];
+  return bracket.seeding === 'balanced' ? seedPositions(size) : legacySeedPositions(size);
+}
+
 export function getBracketParticipantAtSeed(bracket: Bracket, seed: number): string | null {
   const round0 = bracket.rounds[0];
   if (!round0 || round0.length === 0) return null;
-  const bracketSize = round0.length * 2;
-  const positions = bracket.seeding === 'balanced'
-    ? seedPositions(bracketSize)
-    : legacySeedPositions(bracketSize);
+  const positions = getBracketSeedPositions(bracket);
   const slotIdx = positions[seed];
   if (slotIdx === undefined) return null;
   const matchIdx = Math.floor(slotIdx / 2);
@@ -432,12 +435,6 @@ export function clearMatchResult(bracket: Bracket, matchId: string): Bracket {
   if (!currentMatch) return bracket;
 
   resetBracketMatchResult(bracket, currentMatch, currentRound);
-
-  // When clearing the final, also clear the 3rd place match result
-  const finalRoundIndex = bracket.rounds.length - 1;
-  if (bracket.thirdPlaceMatch && currentRound === finalRoundIndex) {
-    resetMatchResult(bracket.thirdPlaceMatch);
-  }
 
   cascadeClearMatches(bracket, currentMatch, currentRound);
   return bracket;
