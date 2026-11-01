@@ -25,6 +25,25 @@ describe('generateDoubleElim', () => {
 });
 
 describe('advanceDoubleElim', () => {
+  it('preserves a played reset on score corrections and removes it when no longer needed', () => {
+    const de = generateDoubleElim(makePlayers(2));
+    const first = de.winners.rounds[0]![0]!;
+    advanceDoubleElim(de, first.id, first.player1Id!, [[3, 0]]);
+    const grand = de.finals.grandFinal;
+    advanceDoubleElim(de, grand.id, grand.player2Id!, [[0, 3]]);
+    const reset = de.finals.resetFinal;
+    advanceDoubleElim(de, reset.id, reset.player1Id!, [[3, 1]]);
+    const playedReset = structuredClone(reset);
+
+    advanceDoubleElim(de, grand.id, grand.player2Id!, [[1, 3]]);
+    expect(reset).toEqual(playedReset);
+    expect(getDoubleElimWinner(de)).toBe(reset.player1Id);
+
+    advanceDoubleElim(de, grand.id, grand.player1Id!, [[3, 1]]);
+    expect(reset).toMatchObject({ player1Id: null, player2Id: null, winnerId: null, scores: [] });
+    expect(getDoubleElimWinner(de)).toBe(grand.player1Id);
+  });
+
   it('routes losers into the losers bracket', () => {
     let doubleElim = generateDoubleElim(makePlayers(4));
     const winnersRound1 = doubleElim.winners.rounds[0]!;

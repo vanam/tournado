@@ -378,11 +378,6 @@ export function advanceDoubleElim(
   } else if (found.section === 'losers') {
     advanceWinner(doubleElim.losers, matchId, winnerId, scores, walkover);
   } else {
-    if (matchId === doubleElim.finals.grandFinal.id) {
-      clearFinalMatch(doubleElim.finals.resetFinal);
-      doubleElim.finals.resetFinal.player1Id = null;
-      doubleElim.finals.resetFinal.player2Id = null;
-    }
     found.match.winnerId = winnerId;
     found.match.scores = scores;
     found.match.walkover = walkover;
