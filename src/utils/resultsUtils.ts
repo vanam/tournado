@@ -1,3 +1,4 @@
+import { getTournamentPlayoffs } from './tournamentCompatibility';
 import { computeStandings } from './roundRobinUtils';
 import { getBracketWinner } from './bracketUtils';
 import { getDoubleElimWinner } from './doubleElimUtils';
@@ -317,7 +318,7 @@ export function getTournamentResults(tournament: Tournament): RankedResult[] {
       return buildSwissResults(standings);
     }
     case Format.GROUPS_TO_BRACKET: {
-      const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets ?? null;
+      const playoffs = getTournamentPlayoffs(tournament);
       if (playoffs === null) return [];
       const isDoubleElim = playoffs.bracketType === BracketType.DOUBLE_ELIM;
       let mainResults: RankedResult[] = [];

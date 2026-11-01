@@ -1,3 +1,4 @@
+import { normalizeTournament } from '../utils/tournamentCompatibility';
 import { getDatabase } from '../db';
 import { ensurePlayoffs, changePlayoffSettings } from '../utils/playoffLifecycle';
 import type { PlayoffSettings } from '../utils/playoffLifecycle';
@@ -92,7 +93,8 @@ export async function generatePlayoffs(
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
 
-  const saved = await doc.incrementalModify((tournament) => {
+  const saved = await doc.incrementalModify((current) => {
+    const tournament = normalizeTournament(current);
     if (tournament.format !== Format.GROUPS_TO_BRACKET) {
       throw new Error('Tournament is not a Groups to Bracket format');
     }
@@ -112,7 +114,8 @@ export async function updateGroupStageSettings(
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (doc === null) throw new Error(`Tournament ${tournamentId} not found`);
 
-  await doc.incrementalModify((tournament) => {
+  await doc.incrementalModify((current) => {
+    const tournament = normalizeTournament(current);
     if (tournament.format !== Format.GROUPS_TO_BRACKET) {
       throw new Error('Tournament is not a Groups to Bracket format');
     }

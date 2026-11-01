@@ -6,6 +6,7 @@ import { isValidTournament } from './validation';
 import type { Tournament } from '../types';
 import type { PlayerLibraryEntry, PlayerGroup } from '../types/playerLibrary';
 import { getDatabase } from '../db';
+import { normalizeTournament } from './tournamentCompatibility';
 
 export const DATA_VERSION = 4;
 
@@ -52,7 +53,10 @@ export async function buildExportPayload(
 ): Promise<ExportPayload> {
   const db = await getDatabase();
   const tournamentDocs = await db.tournaments.find().exec();
-  const allTournaments = tournamentDocs.map(d => d.toMutableJSON());
+  const allTournaments = tournamentDocs.map((doc) => {
+    const tournament = doc.toMutableJSON();
+    return tournament.version === TOURNAMENT_VERSION ? normalizeTournament(tournament) : tournament;
+  });
   const playerDocs = await db.players.find().exec();
   const allPlayers = playerDocs.map(d => d.toJSON() as PlayerLibraryEntry);
   const groupDocs = await db.playerGroups.find().exec();
@@ -108,7 +112,7 @@ export async function importPayload(payload: ExportPayload): Promise<ImportResul
   validateImportEntities(payload);
   const compatTournaments = payload.tournaments.filter(
     (t) => t.version === TOURNAMENT_VERSION,
-  );
+  ).map((tournament) => normalizeTournament(tournament));
   const compatPlayers = payload.players.filter(
     (p) => p.version === PLAYER_VERSION,
   );

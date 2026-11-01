@@ -1,3 +1,4 @@
+import { getTournamentPlayoffs } from '../utils/tournamentCompatibility';
 import {useState} from 'react';
 import type {ReactElement, ChangeEvent} from 'react';
 import {useNavigate} from 'react-router-dom';
@@ -275,8 +276,8 @@ function getPendingMatches(tournament: Tournament): PendingMatchRef[] {
           .map((match) => ({matchId: match.id, groupId: group.id}))
       );
 
-      const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
-      if (playoffs === null || playoffs === undefined) {
+      const playoffs = getTournamentPlayoffs(tournament);
+      if (playoffs === null) {
         return groupMatches;
       }
 
@@ -317,8 +318,8 @@ async function populateRandomResults(tournament: Tournament): Promise<Tournament
       const groupPending = current.groupStage.groups.flatMap((group) =>
         group.schedule.rounds.flatMap((round) => round.matches).filter((match) => isReadyMatch(match))
       );
-      const playoffs = current.groupStagePlayoffs ?? current.groupStageBrackets;
-      if (groupPending.length === 0 && (playoffs === null || playoffs === undefined)) {
+      const playoffs = getTournamentPlayoffs(current);
+      if (groupPending.length === 0 && (playoffs === null)) {
         current = await generatePlayoffs(current.id);
         continue;
       }

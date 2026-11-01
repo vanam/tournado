@@ -1,3 +1,4 @@
+import { getTournamentPlayoffs, normalizeTournament } from './tournamentCompatibility';
 import { Format, ScoreMode } from '../types';
 import type { Bracket, DoubleElim, GroupStagePlayoffs, Match, SetScore, Tournament } from '../types';
 import { DEFAULT_MAX_SETS } from '../constants';
@@ -67,7 +68,7 @@ export function listTournamentMatches(tournament: Tournament): LocatedMatch[] {
       key: `group/${group.id}/${match.id}`, match, stage: 'roundRobin.round', round: round.roundNumber, groupId: group.id, groupName: group.name,
     }))));
     const result: LocatedMatch[] = [...rows];
-    const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
+    const playoffs = getTournamentPlayoffs(tournament);
     if (playoffs) for (const section of ['mainBracket', 'consolationBracket', 'mainDoubleElim', 'consolationDoubleElim'] as const) {
       const bracket = playoffs[section];
       if (bracket) result.push(...bracketMatches(bracket, section, section));
@@ -110,7 +111,7 @@ function applyScoreChange(tournament: Tournament, row: LocatedMatch, change: Exc
 
 /** Plans and applies on a private copy. The same plan drives the warning and the atomic write. */
 export function planMatchChange(original: Tournament, change: MatchChange): { tournament: Tournament; impact: MatchChangeImpact } {
-  const tournament = structuredClone(original);
+  const tournament = normalizeTournament(structuredClone(original));
   const before = listTournamentMatches(original);
   let editedKey: string | undefined;
   let previousWinnerId: string | null = null;

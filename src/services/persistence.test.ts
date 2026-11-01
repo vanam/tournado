@@ -10,8 +10,8 @@ import { playerGroupSchema } from '../db/schemas/playerGroup';
 import type { DatabaseCollections, TournadoDatabase } from '../db';
 import type { GroupsToBracketTournament, PlayerGroup } from '../types';
 import { Format, ScoreMode, BracketType } from '../types';
-import { createTournament, renameTournament } from './tournamentService';
-import { recordScore, clearScore, saveMatchChange, HistoryConfirmationRequiredError } from './matchService';
+import { createTournament, getTournament, renameTournament } from './tournamentService';
+import { recordScore, clearScore, saveMatchChange, isMatchEditable, HistoryConfirmationRequiredError } from './matchService';
 import { createPlayer, updatePlayer, getPlayerProfile } from './playerService';
 import {
   createPlayerGroup,
@@ -19,7 +19,7 @@ import {
   listPlayerGroups,
   reorderPlayerGroups,
 } from './playerGroupService';
-import { parseExportFile, importPayload } from '../utils/dataPortability';
+import { buildExportPayload, parseExportFile, importPayload } from '../utils/dataPortability';
 import { buildGroupStagePlayoffs } from '../utils/groupStageUtils';
 import type { MatchChange } from '../utils/matchChanges';
 import { planMatchChange } from '../utils/matchChanges';
@@ -54,7 +54,67 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((name) => ({
   name,
 }));
 
+async function legacyPlayoffTournament(): Promise<GroupsToBracketTournament> {
+  const tournament = await createTournament({ name: 'Legacy Playoff', format: Format.GROUPS_TO_BRACKET,
+    players: names.slice(0, 4), groupCount: 2, qualifiers: [1, 1], consolation: true });
+  if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+  for (const group of tournament.groupStage.groups) {
+    for (const match of group.schedule.rounds.flatMap((round) => round.matches)) {
+      match.winnerId = match.player1Id;
+      match.scores = [[3, 0]];
+    }
+  }
+  tournament.groupStageBrackets = buildGroupStagePlayoffs(tournament.groupStage, tournament.players);
+  tournament.groupStagePlayoffs = null;
+  return tournament;
+}
+
 describe('persistent tournament operations', () => {
+  it('reads legacy Playoff without rewriting it, then normalizes the latest score transaction', async () => {
+    const legacy = await legacyPlayoffTournament();
+    await db.tournaments.upsert(legacy);
+    const read = await getTournament(legacy.id);
+    if (read.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    expect(read.groupStagePlayoffs).toEqual(legacy.groupStageBrackets);
+    expect(read.groupStageBrackets).toBeNull();
+    expect((await db.tournaments.findOne(legacy.id).exec())!.toMutableJSON()).toMatchObject({ groupStagePlayoffs: null });
+    const match = legacy.groupStageBrackets!.mainBracket!.rounds[0]![0]!;
+    expect(await isMatchEditable(legacy.id, match.id)).toBe(true);
+    const saved = await recordScore(legacy.id, match.id, [[3, 0]], false, undefined, 'mainBracket');
+    if (saved.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    expect(saved.groupStageBrackets).toBeNull();
+    expect(saved.groupStagePlayoffs!.mainBracket!.rounds[0]![0]!.winnerId).toBe(match.player1Id);
+    expect(saved.groupStagePlayoffs!.consolationBracket).toEqual(legacy.groupStageBrackets!.consolationBracket);
+    expect((await getTournament(legacy.id))).toEqual(saved);
+  });
+
+  it('normalizes existing legacy Playoff during generation without replacing its draw', async () => {
+    const legacy = await legacyPlayoffTournament();
+    await db.tournaments.upsert(legacy);
+    const generated = await generatePlayoffs(legacy.id);
+    if (generated.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    expect(generated.groupStagePlayoffs).toEqual(legacy.groupStageBrackets);
+    expect(generated.groupStageBrackets).toBeNull();
+    await updateGroupStageSettings(legacy.id, { qualifiers: [1, 1], bracketType: BracketType.DOUBLE_ELIM });
+    const changed = await getTournament(legacy.id);
+    if (changed.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    expect(changed.groupStagePlayoffs).toBeNull();
+    expect(changed.groupStageBrackets).toBeNull();
+  });
+
+  it('exports canonical copies and validates legacy imports before normalization', async () => {
+    const legacy = await legacyPlayoffTournament();
+    await db.tournaments.upsert(legacy);
+    const payload = await buildExportPayload(new Set([legacy.id]), new Set(), new Set());
+    const exported = payload.tournaments.find((tournament) => tournament.id === legacy.id);
+    expect(exported).toMatchObject({ groupStagePlayoffs: legacy.groupStageBrackets, groupStageBrackets: null });
+    const imported = { ...legacy, id: crypto.randomUUID() };
+    await importPayload({ version: 4, exportedAt: '', tournaments: [imported], players: [], groups: [] });
+    const stored = (await db.tournaments.findOne(imported.id).exec())!.toMutableJSON();
+    expect(stored).toMatchObject({ groupStagePlayoffs: legacy.groupStageBrackets, groupStageBrackets: null });
+    expect(imported.groupStagePlayoffs).toBeNull();
+  });
+
   it('preserves independent concurrent edits and updates completion', async () => {
     const tournament = await createTournament({
       name: 'Concurrent',
@@ -492,6 +552,18 @@ function mockLegacyDatabase(
 }
 
 describe('legacy data migration', () => {
+  it('normalizes historical Playoff after validating the migration batch', async () => {
+    const legacy = { ...await legacyPlayoffTournament(), id: crypto.randomUUID() };
+    localStorage.removeItem('tournado-rxdb-migrated-v2');
+    mockLegacyDatabase({ tournaments: { [legacy.id]: legacy }, players: {}, groups: {} });
+    try {
+      await migrateFromOldDatabase(db);
+      const stored = (await db.tournaments.findOne(legacy.id).exec())!.toMutableJSON();
+      expect(stored).toMatchObject({ groupStagePlayoffs: legacy.groupStageBrackets, groupStageBrackets: null });
+      expect(localStorage.getItem('tournado-rxdb-migrated-v2')).toBe('1');
+    } finally { vi.unstubAllGlobals(); }
+  });
+
   it.each([2, 3, 4, 5])(
     'recovers legacy version %i without overwriting destination records',
     async (version) => {

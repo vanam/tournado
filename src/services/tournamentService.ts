@@ -1,3 +1,4 @@
+import { normalizeTournament } from '../utils/tournamentCompatibility';
 import { getTournamentSummary, readTournament } from '../utils/tournamentStatus';
 import { getDatabase } from '../db';
 import { generateBracket } from '../utils/bracketUtils';
@@ -211,7 +212,7 @@ export async function duplicateTournament(id: string): Promise<Tournament> {
   const doc = await db.tournaments.findOne(id).exec();
   if (!doc) throw new Error(`Tournament ${id} not found`);
 
-  const original = doc.toMutableJSON();
+  const original = normalizeTournament(doc.toMutableJSON());
   const cloned: Tournament = structuredClone(original);
   cloned.id = crypto.randomUUID();
   cloned.name = `${original.name} (copy)`;

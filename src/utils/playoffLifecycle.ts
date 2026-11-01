@@ -1,3 +1,4 @@
+import { getTournamentPlayoffs, setTournamentPlayoffs } from './tournamentCompatibility';
 import type { BracketType, GroupStagePlayoffs, GroupsToBracketTournament } from '../types';
 import { getBracketParticipantAtSeed } from './bracketUtils';
 import { buildGroupStagePlayoffs, getGroupAdvancers, isGroupStageComplete } from './groupStageUtils';
@@ -19,7 +20,7 @@ export interface PlayoffSettings { qualifiers: number[]; bracketType: BracketTyp
 export function getPlayoffState(tournament: GroupsToBracketTournament): {
   playoffs: GroupStagePlayoffs | null; ready: boolean; locked: boolean; needsGeneration: boolean;
 } {
-  const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets ?? null;
+  const playoffs = getTournamentPlayoffs(tournament);
   const ready = isGroupStageComplete(tournament.groupStage);
   const locked = playoffs !== null && playoffSections.some((section) => {
     const bracket = playoffs[section];
@@ -41,15 +42,14 @@ function buildPlayoffs(tournament: GroupsToBracketTournament): GroupStagePlayoff
 
 /** Initial generation never replaces an existing draw, even after a delayed request. */
 export function ensurePlayoffs(tournament: GroupsToBracketTournament): void {
-  if (getPlayoffState(tournament).needsGeneration) tournament.groupStagePlayoffs = buildPlayoffs(tournament);
+  if (getPlayoffState(tournament).needsGeneration) setTournamentPlayoffs(tournament, buildPlayoffs(tournament));
 }
 
 export function changePlayoffSettings(tournament: GroupsToBracketTournament, settings: PlayoffSettings): void {
   if (getPlayoffState(tournament).locked) throw new PlayoffSettingsLockedError();
   tournament.groupStage.settings.qualifiers = settings.qualifiers;
   tournament.groupStage.settings.bracketType = settings.bracketType;
-  tournament.groupStagePlayoffs = null;
-  tournament.groupStageBrackets = null;
+  setTournamentPlayoffs(tournament, null);
 }
 
 function getAdvancers(tournament: GroupsToBracketTournament): { main: string[]; consolation: string[] } {
@@ -77,8 +77,7 @@ export function reseedPlayoffs(tournament: GroupsToBracketTournament): void {
   const playoffs = getPlayoffState(tournament).playoffs;
   if (!playoffs) return;
   if (!isGroupStageComplete(tournament.groupStage)) {
-    tournament.groupStagePlayoffs = null;
-    tournament.groupStageBrackets = null;
+    setTournamentPlayoffs(tournament, null);
     return;
   }
   const expected = getAdvancers(tournament);
@@ -89,6 +88,6 @@ export function reseedPlayoffs(tournament: GroupsToBracketTournament): void {
     if (bracket) replayElimination(bracket, undefined, ids);
     else if (replacement[section]) Object.assign(playoffs, { [section]: replacement[section] });
   }
-  tournament.groupStagePlayoffs = playoffs;
+  setTournamentPlayoffs(tournament, playoffs);
 }
 

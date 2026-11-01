@@ -5,7 +5,8 @@ import type {
   PlayerGroup,
 } from '../types/playerLibrary';
 import type { TournadoDatabase } from './collections';
-import { validateImportEntities, DATA_VERSION } from '../utils/dataPortability';
+import { validateImportEntities, DATA_VERSION, TOURNAMENT_VERSION } from '../utils/dataPortability';
+import { normalizeTournament } from '../utils/tournamentCompatibility';
 
 const MIGRATION_KEY = 'tournado-rxdb-migrated-v2';
 const migrations = new WeakMap<TournadoDatabase, Promise<void>>();
@@ -131,7 +132,9 @@ async function performMigration(db: TournadoDatabase): Promise<void> {
     const existingGroups = new Set(playerGroupsDocs.map((d) => d.primary));
     const results = await Promise.all([
       db.tournaments.bulkInsert(
-        tournaments.filter((t) => !existingTournaments.has(t.id)),
+        tournaments.filter((t) => !existingTournaments.has(t.id)).map((tournament) =>
+          tournament.version === TOURNAMENT_VERSION ? normalizeTournament(tournament) : tournament,
+        ),
       ),
       db.players.bulkInsert(players.filter((p) => !existingPlayers.has(p.id))),
       db.playerGroups.bulkInsert(

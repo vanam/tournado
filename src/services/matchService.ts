@@ -1,3 +1,4 @@
+import { getTournamentPlayoffs } from '../utils/tournamentCompatibility';
 import { getDatabase } from '../db';
 import { findBracketMatch, findDoubleElimMatch } from '../utils/matchFinders';
 import { canEditMatch } from '../utils/bracketUtils';
@@ -5,7 +6,7 @@ import { canEditDoubleElimMatch } from '../utils/doubleElimUtils';
 import { planMatchChange, requiresHistoryConfirmation } from '../utils/matchChanges';
 import type { MatchChange, MatchChangeImpact, PlayoffSection } from '../utils/matchChanges';
 import { Format } from '../types';
-import type { GroupStagePlayoffs, SetScore, Tournament } from '../types';
+import type { GroupsToBracketTournament, SetScore, Tournament } from '../types';
 export type { PlayoffSection } from '../utils/matchChanges';
 
 export class HistoryConfirmationRequiredError extends Error {
@@ -41,14 +42,10 @@ export async function clearScore(tournamentId: string, matchId: string, groupId?
 }
 
 function checkGroupStageEditable(
-  tournament: {
-    groupStagePlayoffs?: GroupStagePlayoffs | null;
-    groupStageBrackets?: GroupStagePlayoffs | null;
-  },
+  tournament: GroupsToBracketTournament,
   matchId: string,
 ): boolean {
-  const playoffs =
-    tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
+  const playoffs = getTournamentPlayoffs(tournament);
   if (playoffs == null) {
     return true;
   }

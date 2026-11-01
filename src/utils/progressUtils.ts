@@ -1,3 +1,4 @@
+import { getTournamentPlayoffs } from './tournamentCompatibility';
 import { Format, BracketType } from '../types';
 import { ensureParticipants } from './participantUtils';
 import { getDoubleElimWinner } from './doubleElimUtils';
@@ -81,7 +82,7 @@ export function computeTournamentProgress(tournament: Tournament): { completed: 
         .flatMap(g => g.schedule.rounds.flatMap(r => r.matches))
         .filter(m => !m.dummy);
 
-      const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
+      const playoffs = getTournamentPlayoffs(tournament);
       const playoffMatches: Match[] = [];
 
       if (playoffs != null) {
