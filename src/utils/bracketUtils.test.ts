@@ -618,3 +618,19 @@ describe('getBracketWinner', () => {
     expect(getBracketWinner(bracket)).toBeNull();
   });
 });
+
+it('invalidates the bronze loser branch when clearing an earlier round', () => {
+  const players = Array.from({ length: 8 }, (_, i) => ({ id: `p${i}`, name: `Player ${i}` }));
+  const bracket = generateBracket(players);
+  for (const round of bracket.rounds) {
+    for (const match of round) advanceWinner(bracket, match.id, match.player1Id!, [[3, 0]]);
+  }
+  const bronze = bracket.thirdPlaceMatch!;
+  const unaffectedPlayer = bronze.player2Id;
+  advanceWinner(bracket, bronze.id, bronze.player1Id!, [[3, 0]]);
+  clearMatchResult(bracket, bracket.rounds[0]![0]!.id);
+  expect(bronze).toMatchObject({
+    player1Id: null, player2Id: unaffectedPlayer, winnerId: null, scores: [], walkover: false,
+  });
+  expect(bracket.rounds.at(-1)![0]!.winnerId).toBeNull();
+});

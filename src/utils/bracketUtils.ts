@@ -360,6 +360,16 @@ function resetMatchResult(match: Match): void {
 }
 
 // Pomocná funkce: kaskádově vymaže navazující zápasy
+/** Invalidates both the winner and loser branches of a semifinal. */
+function resetBracketMatchResult(bracket: Bracket, match: Match, roundIndex: number): void {
+  resetMatchResult(match);
+  if (bracket.thirdPlaceMatch && roundIndex === bracket.rounds.length - 2) {
+    if (match.position === 0) bracket.thirdPlaceMatch.player1Id = null;
+    else bracket.thirdPlaceMatch.player2Id = null;
+    resetMatchResult(bracket.thirdPlaceMatch);
+  }
+}
+
 function cascadeClearMatches(bracket: Bracket, startMatch: Match, startRound: number): void {
   let currentMatch = startMatch;
   let currentRound = startRound;
@@ -389,7 +399,7 @@ function cascadeClearMatches(bracket: Bracket, startMatch: Match, startRound: nu
         nextMatch.player2Id = null;
       }
     }
-    resetMatchResult(nextMatch);
+    resetBracketMatchResult(bracket, nextMatch, nextRound);
     currentMatch = nextMatch;
     currentRound = nextRound;
   }
@@ -405,18 +415,7 @@ export function clearMatchResult(bracket: Bracket, matchId: string): Bracket {
   const { match: currentMatch, roundIndex: currentRound } = findMatchAndRound(bracket, matchId);
   if (!currentMatch) return bracket;
 
-  resetMatchResult(currentMatch);
-
-  // Pokud čistíme semifinále, vymažeme hráče ze zápasu o 3. místo a jeho výsledek
-  const semiRoundIndex = bracket.rounds.length - 2;
-  if (bracket.thirdPlaceMatch && currentRound === semiRoundIndex) {
-    if (currentMatch.position === 0) {
-      bracket.thirdPlaceMatch.player1Id = null;
-    } else {
-      bracket.thirdPlaceMatch.player2Id = null;
-    }
-    resetMatchResult(bracket.thirdPlaceMatch);
-  }
+  resetBracketMatchResult(bracket, currentMatch, currentRound);
 
   // When clearing the final, also clear the 3rd place match result
   const finalRoundIndex = bracket.rounds.length - 1;
