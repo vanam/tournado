@@ -1,8 +1,7 @@
 import { AlertTriangle } from 'lucide-react';
 import { HistoryConfirmation } from './HistoryConfirmation';
 import { useHistoryChange } from '../hooks/useHistoryChange';
-import { planMatchChange, requiresHistoryConfirmation } from '../utils/matchChanges';
-import type { MatchChange, MatchChangeImpact, PlayoffSection } from '../utils/matchChanges';
+import type { MatchChange, PlayoffSection } from '../utils/matchChanges';
 import { useState } from 'react';
 import type { ChangeEvent, ReactElement } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
@@ -67,7 +66,8 @@ export const ScoreModal = ({
   history,
 }: ScoreModalProps): ReactElement => {
   const { t } = useTranslation();
-  const historyChange = useHistoryChange(history?.tournament, onClose);
+  const historyChange = useHistoryChange(history?.tournament, onClose, { match,
+    ...(history?.groupId && { groupId: history.groupId }), ...(history?.section && { section: history.section }) });
   const maxSets = Number.isFinite(maxSetsProp) && maxSetsProp > 0 ? maxSetsProp : DEFAULT_MAX_SETS;
   const p1 = players.find((p) => p.id === match.player1Id);
   const p2 = players.find((p) => p.id === match.player2Id);
@@ -95,7 +95,6 @@ export const ScoreModal = ({
   })();
 
   const [scores, setScores] = useState(initialScores);
-  const [expectedPlayers] = useState<[string | null, string | null]>([match.player1Id, match.player2Id]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [walkover, setWalkover] = useState(canUseWalkover ? match.walkover : false);
 
@@ -175,17 +174,8 @@ export const ScoreModal = ({
     }
   }
 
-  function target(): { matchId: string; expectedPlayers: [string | null, string | null]; groupId?: string; section?: PlayoffSection } {
-    return { matchId: match.id, expectedPlayers,
-      ...(history?.groupId && { groupId: history.groupId }), ...(history?.section && { section: history.section }) };
-  }
   function scoreChange(payload = scores, useWalkover = walkover): MatchChange {
-    return { type: 'score', ...target(), scores: payload, walkover: useWalkover };
-  }
-  function draftImpact(): MatchChangeImpact | null {
-    if (!history || !getWinner()) return null;
-    try { return planMatchChange(history.tournament, scoreChange()).impact; }
-    catch { return null; }
+    return { type: 'score', matchId: match.id, scores: payload, walkover: useWalkover };
   }
 
   function getWinner(): string | null {
@@ -209,37 +199,28 @@ export const ScoreModal = ({
   }
 
   function handleClear(): void {
-    if (history) {
-      const change: MatchChange = { type: 'clear', ...target() };
-      try {
-        if (!requiresHistoryConfirmation(planMatchChange(history.tournament, change).impact)) {
-          setShowClearConfirm(true);
-          return;
-        }
-      } catch {
-        historyChange.request(change);
-        return;
-      }
-      historyChange.request(change);
-      return;
-    }
-    setShowClearConfirm(true);
+    if (history) historyChange.request({ type: 'clear', matchId: match.id });
+    else setShowClearConfirm(true);
   }
 
   function confirmClear(): void {
-    setShowClearConfirm(false);
-    if (history) historyChange.request({ type: 'clear', ...target() });
-    else onSave?.(match.id, null, [], false);
+    if (history) historyChange.confirm();
+    else {
+      setShowClearConfirm(false);
+      onSave?.(match.id, null, [], false);
+    }
   }
 
   function cancelClear(): void {
-    setShowClearConfirm(false);
+    if (history) historyChange.cancel();
+    else setShowClearConfirm(false);
   }
 
   const winner = getWinner();
   const canSave = !!winner && (!lockedWinnerId || winner === lockedWinnerId);
-  const impact = draftImpact();
-  const needsReview = impact && requiresHistoryConfirmation(impact);
+  const preview = canSave ? historyChange.preview(scoreChange()) : null;
+  const impact = preview?.impact;
+  const needsReview = preview?.needsReview;
   const hasResult =
     !!match.winnerId || match.scores.length > 0 || match.walkover || hasWalkover(match.scores);
 
@@ -249,7 +230,7 @@ export const ScoreModal = ({
         tournament={history.tournament} review={historyChange.review} isSaving={historyChange.isSaving}
         error={historyChange.error} onConfirm={historyChange.confirm} onCancel={historyChange.cancel}
       />}
-      {showClearConfirm && (
+      {(showClearConfirm || historyChange.clearConfirmation) && (
         <ConfirmModal
           title={t('score.clearTitle')}
           message={t('score.clearMessage')}
@@ -259,7 +240,7 @@ export const ScoreModal = ({
           onCancel={cancelClear}
         />
       )}
-      <CustomDialog open={true} onOpenChange={(open) => { if (!open && !historyChange.isSaving) onClose(); }} onPrimaryAction={handleSave} primaryActionDisabled={!canSave || historyChange.isSaving || !!historyChange.review}>
+      <CustomDialog open={true} onOpenChange={(open) => { if (!open && !historyChange.isSaving) onClose(); }} onPrimaryAction={handleSave} primaryActionDisabled={!canSave || historyChange.isSaving || !!historyChange.review || historyChange.clearConfirmation}>
         <DialogContent className="max-w-md" aria-describedby={undefined}>
           <DialogTitle className="text-lg font-bold mb-5 pb-3 border-b border-[var(--color-border-soft)]">{t('score.title')}</DialogTitle>
           <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mb-4">
@@ -388,7 +369,7 @@ export const ScoreModal = ({
             </p>
           )}
 
-          {needsReview && <div className="text-sm bg-[var(--color-accent-soft)] border border-[var(--color-accent-border)] rounded-lg p-3 mb-4">
+          {needsReview && impact && <div className="text-sm bg-[var(--color-accent-soft)] border border-[var(--color-accent-border)] rounded-lg p-3 mb-4">
             <p className="font-medium text-[var(--color-accent)] flex items-start gap-2"><AlertTriangle className="h-4 w-4 shrink-0" />
               {impact.deletedResults.length > 0 ? t('history.warningTitle', { count: impact.deletedResults.length }) : t('history.roundsRemoved', { rounds: impact.removedRounds.join(', ') })}</p>
             {impact.deletedResults.length > 0 && <p className="mt-1">{t('history.warningDescription')}</p>}
