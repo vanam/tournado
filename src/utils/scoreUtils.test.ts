@@ -3,6 +3,7 @@ import {
   formatSetPointEntries,
   formatSetResults,
   getSetTotals,
+  getScoreWinner,
   getWalkoverSetWinner,
   hasWalkover,
   isWalkoverScore,
@@ -85,5 +86,21 @@ describe('formatSetPointEntries', () => {
     const loserEntries = formatSetPointEntries(scores, { swapped: true });
     expect(winnerEntries).toEqual([{ text: 'WO', isWin: true }]);
     expect(loserEntries).toEqual([{ text: 'WO', isWin: false }]);
+  });
+});
+
+describe('getScoreWinner', () => {
+  it.each<SetScore[]>([[[0, 0]], [[2, 2]], [[-1, 0]], [[1.5, 0]], [[6, 0]], [[Number.NaN, 0]], [[3, 0], [0, 3]]])(
+    'rejects invalid or non-decisive set totals %j', (...scores) => {
+      expect(getScoreWinner(scores)).toBe(0);
+    },
+  );
+  it('uses scoring mode and configured limits', () => {
+    expect(getScoreWinner([[6, 0]], { maxSets: 7 })).toBe(1);
+    expect(getScoreWinner([[0, 3]])).toBe(2);
+    expect(getScoreWinner([[11, 0], [0, 11]], { scoringMode: ScoreMode.POINTS })).toBe(0);
+    expect(getScoreWinner([[0, 11], [0, 11], [111, 0]], { scoringMode: ScoreMode.POINTS })).toBe(1);
+    expect(getScoreWinner([[111, 111]], { scoringMode: ScoreMode.POINTS })).toBe(0);
+    expect(getScoreWinner([[111, 0], [0, 111]], { scoringMode: ScoreMode.POINTS })).toBe(0);
   });
 });

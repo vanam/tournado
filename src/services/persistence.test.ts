@@ -9,7 +9,7 @@ import { playerSchema } from '../db/schemas/player';
 import { playerGroupSchema } from '../db/schemas/playerGroup';
 import type { DatabaseCollections, TournadoDatabase } from '../db';
 import type { GroupsToBracketTournament, PlayerGroup } from '../types';
-import { Format } from '../types';
+import { Format, ScoreMode } from '../types';
 import { createTournament, renameTournament } from './tournamentService';
 import { recordScore, clearScore } from './matchService';
 import { createPlayer, updatePlayer, getPlayerProfile } from './playerService';
@@ -163,9 +163,20 @@ describe('persistent tournament operations', () => {
     expect(tournament.completedAt).toBeNull();
   });
 
+  it('rejects tied scores without changing the tournament', async () => {
+    const tournament = await createTournament({
+      name: 'Decisive result', format: Format.SINGLE_ELIM, players: names.slice(0, 2),
+    });
+    if (tournament.format !== Format.SINGLE_ELIM) throw new Error('Wrong format');
+    await expect(recordScore(tournament.id, tournament.bracket.rounds[0]![0]!.id, [[0, 0]]))
+      .rejects.toThrow('decisive winner');
+    expect((await db.tournaments.findOne(tournament.id).exec())!.toMutableJSON()).toEqual(tournament);
+  });
+
   it('respects a points-mode retirement after two lost sets', async () => {
     const tournament = await createTournament({
       name: 'Retirement',
+      scoringMode: ScoreMode.POINTS,
       format: Format.SINGLE_ELIM,
       players: names.slice(0, 2),
     });

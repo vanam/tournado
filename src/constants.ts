@@ -1,3 +1,5 @@
+export const MAX_POINTS = 111;
+
 export const DEFAULT_MAX_SETS = 5;
 
 export const MIN_PLAYERS = 2;

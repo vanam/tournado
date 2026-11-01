@@ -1,13 +1,15 @@
 import type { SetScore } from '../types';
-import { MAX_POINTS } from '../components/ScoreModal';
+import { DEFAULT_MAX_SETS, MAX_POINTS } from '../constants';
 import { ScoreMode } from '../types';
+
+type ScoreWinner = 0 | 1 | 2;
 
 export function isWalkoverScore(value: number | string): boolean {
   const numeric = Number(value);
   return Number.isFinite(numeric) && Math.abs(numeric) === MAX_POINTS;
 }
 
-export function getWalkoverSetWinner(a: number, b: number): 0 | 1 | 2 {
+export function getWalkoverSetWinner(a: number, b: number): ScoreWinner {
   if (!isWalkoverScore(a) && !isWalkoverScore(b)) return 0;
   if ((a === MAX_POINTS && b === MAX_POINTS) || (a === -MAX_POINTS && b === -MAX_POINTS)) return 0;
   if (a === MAX_POINTS || b === -MAX_POINTS) return 1;
@@ -73,6 +75,30 @@ export function getSetTotals(scores: SetScore[], options: SetTotalsOptions = {})
   }
 
   return { p1Sets, p2Sets };
+}
+
+/** Shared score validation and winner selection for the editor and all tournament formats. */
+export function getScoreWinner(scores: SetScore[], options: SetTotalsOptions = {}): ScoreWinner {
+  const { scoringMode = ScoreMode.SETS, maxSets = DEFAULT_MAX_SETS } = options;
+  if (!Number.isInteger(maxSets) || maxSets < 1 || !Array.isArray(scores) || scores.length === 0) return 0;
+  if (scoringMode === ScoreMode.SETS ? scores.length !== 1 : scores.length > maxSets) return 0;
+  let retirementWinner: ScoreWinner = 0;
+  for (const score of scores) {
+    if (!Array.isArray(score)) return 0;
+    const [a, b] = score;
+    const limit = scoringMode === ScoreMode.SETS ? maxSets : MAX_POINTS;
+    if (!score.every((value) => Number.isInteger(value) && value <= limit &&
+      (value >= 0 || (scoringMode === ScoreMode.POINTS && value === -MAX_POINTS)))) return 0;
+    if (scoringMode === ScoreMode.POINTS && (isWalkoverScore(a) || isWalkoverScore(b))) {
+      const side = getWalkoverSetWinner(a, b);
+      if (!side || (retirementWinner && retirementWinner !== side)) return 0;
+      retirementWinner = side;
+    }
+  }
+  if (retirementWinner) return retirementWinner;
+  const { p1Sets, p2Sets } = getSetTotals(scores, { scoringMode, maxSets });
+  if (p1Sets === p2Sets) return 0;
+  return p1Sets > p2Sets ? 1 : 2;
 }
 
 interface FormatOptions {

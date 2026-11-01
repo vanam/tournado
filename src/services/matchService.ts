@@ -16,8 +16,9 @@ import {
   clearDoubleElimMatch,
 } from '../utils/doubleElimUtils';
 import { updateTournamentStatus } from '../utils/tournamentStatus';
-import { getWalkoverSetWinner } from '../utils/scoreUtils';
-import { Format } from '../types';
+import { getScoreWinner } from '../utils/scoreUtils';
+import { DEFAULT_MAX_SETS } from '../constants';
+import { Format, ScoreMode } from '../types';
 import type { Match, SetScore, GroupStagePlayoffs, Tournament } from '../types';
 
 export type PlayoffSection = Exclude<keyof GroupStagePlayoffs, 'bracketType'>;
@@ -33,20 +34,8 @@ function findMatchInSchedule(
   return null;
 }
 
-function determineWinner(
-  scores: SetScore[],
-  player1Id: string,
-  player2Id: string,
-): string {
-  let p1Wins = 0;
-  let p2Wins = 0;
-  for (const [s1, s2] of scores) {
-    const walkoverWinner = getWalkoverSetWinner(s1, s2);
-    if (walkoverWinner) return walkoverWinner === 1 ? player1Id : player2Id;
-    if (s1 > s2) p1Wins++;
-    else if (s2 > s1) p2Wins++;
-  }
-  return p1Wins >= p2Wins ? player1Id : player2Id;
+function determineWinner(winnerIndex: 1 | 2, player1Id: string, player2Id: string): string {
+  return winnerIndex === 1 ? player1Id : player2Id;
 }
 
 function applyScheduleScore(
@@ -54,6 +43,7 @@ function applyScheduleScore(
   matchId: string,
   setScores: SetScore[],
   walkover: boolean,
+  winnerIndex: 1 | 2,
 ): void {
   const match = findMatchInSchedule(schedule, matchId);
   if (match === null) throw new Error(`Match ${matchId} not found`);
@@ -62,7 +52,7 @@ function applyScheduleScore(
   }
   match.scores = setScores;
   match.walkover = walkover;
-  match.winnerId = determineWinner(setScores, match.player1Id, match.player2Id);
+  match.winnerId = determineWinner(winnerIndex, match.player1Id, match.player2Id);
 }
 
 function clearScheduleScore(
@@ -81,6 +71,7 @@ function recordPlayoffScore(
   matchId: string,
   setScores: SetScore[],
   walkover: boolean,
+  winnerIndex: 1 | 2,
   section?: PlayoffSection,
 ): void {
   if ((!section || section === 'mainBracket') && playoffs.mainBracket) {
@@ -91,7 +82,7 @@ function recordPlayoffScore(
       match !== null
     ) {
       const winnerId = determineWinner(
-        setScores,
+        winnerIndex,
         match.player1Id,
         match.player2Id,
       );
@@ -113,7 +104,7 @@ function recordPlayoffScore(
       match !== null
     ) {
       const winnerId = determineWinner(
-        setScores,
+        winnerIndex,
         match.player1Id,
         match.player2Id,
       );
@@ -138,7 +129,7 @@ function recordPlayoffScore(
       match !== null
     ) {
       const winnerId = determineWinner(
-        setScores,
+        winnerIndex,
         match.player1Id,
         match.player2Id,
       );
@@ -163,7 +154,7 @@ function recordPlayoffScore(
       match !== null
     ) {
       const winnerId = determineWinner(
-        setScores,
+        winnerIndex,
         match.player1Id,
         match.player2Id,
       );
@@ -276,6 +267,15 @@ export async function recordScore(
       throw new Error('Scores array is required');
     }
 
+    let maxSets = tournament.maxSets;
+    if (tournament.format === Format.GROUPS_TO_BRACKET) {
+      maxSets = (groupId ? tournament.groupStageMaxSets : tournament.bracketMaxSets) ?? maxSets;
+    }
+    const winnerIndex = getScoreWinner(scores, {
+      scoringMode: tournament.scoringMode ?? ScoreMode.SETS,
+      maxSets: maxSets ?? DEFAULT_MAX_SETS,
+    });
+    if (!winnerIndex) throw new Error('Scores must be valid and have a decisive winner');
     const setScores: SetScore[] = scores.map(([a, b]) => [a, b]);
 
     switch (tournament.format) {
@@ -286,7 +286,7 @@ export async function recordScore(
           throw new Error('Match does not have both players assigned');
         }
         const winnerId = determineWinner(
-          setScores,
+          winnerIndex,
           match.player1Id,
           match.player2Id,
         );
@@ -306,7 +306,7 @@ export async function recordScore(
           throw new Error('Match does not have both players assigned');
         }
         const winnerId = determineWinner(
-          setScores,
+          winnerIndex,
           match.player1Id,
           match.player2Id,
         );
@@ -320,11 +320,11 @@ export async function recordScore(
         break;
       }
       case Format.ROUND_ROBIN: {
-        applyScheduleScore(tournament.schedule, matchId, setScores, walkover);
+        applyScheduleScore(tournament.schedule, matchId, setScores, walkover, winnerIndex);
         break;
       }
       case Format.SWISS: {
-        applyScheduleScore(tournament.schedule, matchId, setScores, walkover);
+        applyScheduleScore(tournament.schedule, matchId, setScores, walkover, winnerIndex);
         break;
       }
       case Format.GROUPS_TO_BRACKET: {
@@ -338,7 +338,7 @@ export async function recordScore(
           match.scores = setScores;
           match.walkover = walkover;
           match.winnerId = determineWinner(
-            setScores,
+            winnerIndex,
             match.player1Id,
             match.player2Id,
           );
@@ -348,7 +348,7 @@ export async function recordScore(
           if (playoffs == null) {
             throw new Error('Playoffs not yet generated');
           }
-          recordPlayoffScore(playoffs, matchId, setScores, walkover, section);
+          recordPlayoffScore(playoffs, matchId, setScores, walkover, winnerIndex, section);
         }
         break;
       }

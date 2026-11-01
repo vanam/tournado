@@ -8,14 +8,13 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { DEFAULT_MAX_SETS } from '../constants';
-import { getSetTotals, getWalkoverSetWinner, hasWalkover } from '../utils/scoreUtils';
+import { DEFAULT_MAX_SETS, MAX_POINTS } from '../constants';
+import { getSetTotals, getWalkoverSetWinner, getScoreWinner, hasWalkover } from '../utils/scoreUtils';
 import { ScoreMode } from '../types';
 import type { Match, Player, Participant, SetScore } from '../types';
 import { getParticipantMembers } from '../utils/participantUtils';
 import { getWinnerName } from '../utils/scoreModalUtils';
 
-export const MAX_POINTS = 111;
 
 interface ScoreSideNameProps {
   readonly members: Player[];
@@ -49,14 +48,6 @@ interface ScoreModalProps {
   maxSets?: number;
   lockedWinnerId?: string | undefined;
 }
-
-// Pomocné funkce přesunuty mimo komponentu kvůli linteru
-function getWalkoverWinnerId(walkoverInfo: { winnerIndex: 0 | 1 } | null, match: Match): string | null {
-  if (!walkoverInfo) return null;
-  if (walkoverInfo.winnerIndex === 0) return match.player1Id;
-  return match.player2Id;
-}
-
 
 export const ScoreModal = ({
   match,
@@ -124,14 +115,6 @@ export const ScoreModal = ({
   }
 
   const walkoverInfo = getFirstWalkoverInfo(scores);
-  const setTotals = getSetTotals(scores, { scoringMode, maxSets });
-  const walkoverWinnerId = getWalkoverWinnerId(walkoverInfo, match);
-  const walkoverSetsProvided = isSetOnly ? setTotals.p1Sets + setTotals.p2Sets > 0 : true;
-  const walkoverWinnerHasMostSets = walkover
-    ? setTotals.p1Sets !== setTotals.p2Sets && walkoverSetsProvided
-    : true;
-  const walkoverValid = !walkover || (walkoverSetsProvided && walkoverWinnerHasMostSets);
-
   function updateScore(setIndex: number, playerIndex: 0 | 1, value: string): void {
     if (walkover && !isSetOnly) return;
     if (!isSetOnly && walkoverInfo && setIndex >= walkoverInfo.index) return;
@@ -184,16 +167,9 @@ export const ScoreModal = ({
   }
 
   function getWinner(): string | null {
-    if (!isSetOnly && walkoverInfo) return walkoverWinnerId;
-    if (canUseWalkover && walkover) {
-      if (!walkoverValid) return null;
-      if (setTotals.p1Sets > setTotals.p2Sets) return match.player1Id;
-      if (setTotals.p2Sets > setTotals.p1Sets) return match.player2Id;
-      return null;
-    }
-    const { p1Sets, p2Sets } = setTotals;
-    if (p1Sets > p2Sets) return match.player1Id;
-    if (p2Sets > p1Sets) return match.player2Id;
+    const side = getScoreWinner(scores, { scoringMode, maxSets });
+    if (side === 1) return match.player1Id;
+    if (side === 2) return match.player2Id;
     return null;
   }
 
