@@ -26,7 +26,9 @@ export const HistoryConfirmation = ({ tournament, review, isSaving, error, onCon
   const name = (id: string | null): string => players.find((player) => player.id === id)?.name ?? t('history.pending');
   const count = impact.deletedResults.length;
   let reason = t('history.changeReason', { next: name(impact.nextWinnerId), previous: name(impact.previousWinnerId) });
-  if (change.type === 'clear') reason = t('history.clearReason');
+  if (change.type === 'clear') {
+    reason = t(change.groupId && impact.deletedResults.some((row) => row.section) ? 'history.clearPlayoffsReason' : 'history.clearReason');
+  }
   if (change.type === 'reseed') reason = t('history.reseedReason');
   const title = change.type === 'score' ? 'history.confirmTitle' : 'history.clearTitle';
   const confirmLabel = t(count > 0 ? 'history.confirm' : 'history.confirmNoResults', { count });

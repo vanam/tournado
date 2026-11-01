@@ -9,7 +9,7 @@ import { playerSchema } from '../db/schemas/player';
 import { playerGroupSchema } from '../db/schemas/playerGroup';
 import type { DatabaseCollections, TournadoDatabase } from '../db';
 import type { GroupsToBracketTournament, PlayerGroup } from '../types';
-import { Format, ScoreMode } from '../types';
+import { Format, ScoreMode, BracketType } from '../types';
 import { createTournament, renameTournament } from './tournamentService';
 import { recordScore, clearScore, saveMatchChange, HistoryConfirmationRequiredError } from './matchService';
 import { createPlayer, updatePlayer, getPlayerProfile } from './playerService';
@@ -25,7 +25,7 @@ import type { MatchChange } from '../utils/matchChanges';
 import { hasPlayoffMismatch, planMatchChange } from '../utils/matchChanges';
 import { generateNextRound } from './swissService';
 import { canGenerateNextSwissRound, isSwissTournamentComplete } from '../utils/swissUtils';
-import { generatePlayoffs, getAdvancers } from './groupStageService';
+import { generatePlayoffs, getAdvancers, updateGroupStageSettings, PlayoffSettingsLockedError } from './groupStageService';
 
 vi.mock('../db', () => ({ getDatabase: vi.fn() }));
 let db: TournadoDatabase;
@@ -183,6 +183,27 @@ describe('persistent tournament operations', () => {
     const replayedFinal = confirmed.groupStagePlayoffs!.mainBracket!.rounds[0]![0]!;
     expect([replayedFinal.player1Id, replayedFinal.player2Id]).toContain(match.player1Id);
     expect(replayedFinal.winnerId).toBeNull();
+  });
+
+  it('rejects stale settings and makes initial playoff generation idempotent', async () => {
+    let tournament = await createTournament({ name: 'Delayed playoff requests', format: Format.GROUPS_TO_BRACKET,
+      players: names.slice(0, 4), groupCount: 2, qualifiers: [1, 1],
+    });
+    const untouched = await generatePlayoffs(tournament.id);
+    if (untouched.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    expect(untouched.groupStagePlayoffs).toBeUndefined();
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    for (const group of tournament.groupStage.groups) for (const match of group.schedule.rounds.flatMap((round) => round.matches)) {
+      await recordScore(tournament.id, match.id, [[3, 0]], false, group.id);
+    }
+    tournament = await generatePlayoffs(tournament.id);
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
+    const final = tournament.groupStagePlayoffs!.mainBracket!.rounds[0]![0]!;
+    const played = await recordScore(tournament.id, final.id, [[3, 0]], false, undefined, 'mainBracket');
+    expect(await generatePlayoffs(tournament.id)).toEqual(played);
+    await expect(updateGroupStageSettings(tournament.id, { qualifiers: [2, 2], bracketType: BracketType.DOUBLE_ELIM }))
+      .rejects.toThrow(PlayoffSettingsLockedError);
+    expect((await db.tournaments.findOne(tournament.id).exec())!.toMutableJSON()).toEqual(played);
   });
 
   it('preserves played playoffs on score-only tiebreak corrections until explicit recalculation', async () => {

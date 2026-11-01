@@ -1,4 +1,5 @@
 import { getDatabase } from '../db';
+import { listTournamentMatches } from '../utils/matchChanges';
 import { computeStandings } from '../utils/roundRobinUtils';
 import {
   getGroupAdvancers,
@@ -106,6 +107,10 @@ export async function generatePlayoffs(
     if (tournament.format !== Format.GROUPS_TO_BRACKET) {
       throw new Error('Tournament is not a Groups to Bracket format');
     }
+
+    // A delayed initial-generation request must never replace a draw another editor has played.
+    if (tournament.groupStagePlayoffs ?? tournament.groupStageBrackets) return tournament;
+    if (!isGroupStageComplete(tournament.groupStage)) return tournament;
 
     const storedParticipants = ensureParticipants(
       tournament.players,
@@ -350,6 +355,13 @@ export async function syncBracketParticipants(tournamentId: string): Promise<Syn
   return result;
 }
 
+export class PlayoffSettingsLockedError extends Error {
+  constructor() {
+    super('Playoff settings cannot change after a playoff match has been played');
+    this.name = 'PlayoffSettingsLockedError';
+  }
+}
+
 export interface UpdateGroupStageSettingsParams {
   qualifiers: number[];
   bracketType: BracketType;
@@ -368,9 +380,13 @@ export async function updateGroupStageSettings(
       throw new Error('Tournament is not a Groups to Bracket format');
     }
 
+    if (listTournamentMatches(tournament).some(({ section, match }) => section && match.player1Id && match.player2Id && match.winnerId)) {
+      throw new PlayoffSettingsLockedError();
+    }
     tournament.groupStage.settings.qualifiers = params.qualifiers;
     tournament.groupStage.settings.bracketType = params.bracketType;
     tournament.groupStagePlayoffs = null;
+    tournament.groupStageBrackets = null;
 
     return tournament;
   });

@@ -1,3 +1,4 @@
+import { showToast } from '../../utils/toastUtils';
 import { PlayoffRecalculation } from '../PlayoffRecalculation';
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Settings } from 'lucide-react';
@@ -19,7 +20,7 @@ import { getDoubleElimWinner } from '../../utils/doubleElimUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
-import { generatePlayoffs, updateGroupStageSettings } from '../../services/groupStageService';
+import { generatePlayoffs, updateGroupStageSettings, PlayoffSettingsLockedError } from '../../services/groupStageService';
 import { BracketType, ScoreMode } from '../../types';
 import type {
   Bracket,
@@ -90,15 +91,6 @@ function getMainWinner(playoffs: GroupStagePlayoffs | null, isDoubleElim: boolea
   return null;
 }
 
-function hasAnyBracket(playoffs: GroupStagePlayoffs | null, isDoubleElim: boolean): boolean {
-  if (!playoffs) return false;
-  if (isDoubleElim) {
-    return !!playoffs.mainDoubleElim || !!playoffs.consolationDoubleElim;
-  }
-  return !!playoffs.mainBracket || !!playoffs.consolationBracket;
-}
-
-
 interface GroupStageViewProps {
   onRegisterHeaderActions?: (node: ReactNode) => void;
 }
@@ -150,7 +142,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
 
   useEffect(() => {
     if (!groupComplete || !advancers || !groupStage) return;
-    if (hasAnyBracket(playoffs, isDoubleElim)) return;
+    if (playoffs) return;
     void generatePlayoffs(tournament.id).then(reloadTournament);
   }, [advancers, groupComplete, groupStage, playoffs, tournament, isDoubleElim, reloadTournament]);
 
@@ -230,7 +222,9 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
     void updateGroupStageSettings(tournamentId, {
       qualifiers: newQualifiers,
       bracketType: newBracketType,
-    }).then(reloadTournament);
+    }).then(reloadTournament).catch((error_: unknown) => {
+      showToast({ message: t(error_ instanceof PlayoffSettingsLockedError ? 'history.settingsLocked' : 'api.errorSave') });
+    });
   }
 
   function setGroupTab(groupId: string, nextTab: GroupTab): void {

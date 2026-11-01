@@ -2,6 +2,8 @@ import type { LanguageKey, TranslationMap } from '../types';
 
 export const historyTranslations: Record<LanguageKey, TranslationMap> = {
   en: {
+    'history.settingsLocked': 'A playoff match has been played since the settings were opened. The draw and results have been preserved.',
+    'history.clearPlayoffsReason': 'Clearing this result makes the group stage incomplete. Qualifiers and seeding are no longer final, so the entire playoff draw will be removed. All affected results are listed below.',
     'history.warningTitle': 'This change affects {{count}} played matches',
     'history.warningDescription': 'Their results will no longer be valid. Review the exact impact before saving.',
     'history.preview': 'Review impact',
@@ -28,6 +30,8 @@ export const historyTranslations: Record<LanguageKey, TranslationMap> = {
     'history.targetChanged': 'The participants in this match changed. Close the editor and open the match again before saving.',
   },
   cs: {
+    'history.settingsLocked': 'Mezitím byl odehrán zápas playoff. Nastavení nelze změnit, rozlosování i výsledky zůstaly zachované.',
+    'history.clearPlayoffsReason': 'Po smazání nebude skupinová fáze dokončená. Postupující ani nasazení už nebudou konečné, proto se odstraní celé playoff. Níže jsou všechny dotčené výsledky.',
     'history.warningTitle': 'Změna ovlivní odehrané zápasy: {{count}}',
     'history.warningDescription': 'Jejich výsledky už nebudou platné. Před uložením uvidíš, které se smažou a proč.',
     'history.preview': 'Zobrazit dopad',
@@ -54,6 +58,8 @@ export const historyTranslations: Record<LanguageKey, TranslationMap> = {
     'history.targetChanged': 'Účastníci tohoto zápasu se mezitím změnili. Zavři editor a před uložením zápas znovu otevři.',
   },
   de: {
+    'history.settingsLocked': 'Inzwischen wurde eine Playoff-Begegnung gespielt. Die Einstellungen wurden nicht geändert, Auslosung und Ergebnisse bleiben erhalten.',
+    'history.clearPlayoffsReason': 'Ohne dieses Ergebnis ist die Gruppenphase unvollständig. Qualifikanten und Setzung stehen nicht mehr endgültig fest. Die gesamte Playoff-Auslosung wird entfernt, alle betroffenen Ergebnisse sind unten aufgeführt.',
     'history.warningTitle': 'Diese Änderung betrifft {{count}} gespielte Begegnungen',
     'history.warningDescription': 'Ihre Ergebnisse sind dann nicht mehr gültig. Prüfe die Auswirkungen vor dem Speichern.',
     'history.preview': 'Auswirkungen prüfen',
@@ -80,6 +86,8 @@ export const historyTranslations: Record<LanguageKey, TranslationMap> = {
     'history.targetChanged': 'Die Teilnehmer dieser Begegnung haben sich geändert. Schließe den Editor und öffne die Begegnung erneut.',
   },
   es: {
+    'history.settingsLocked': 'Se ha disputado un partido de las eliminatorias mientras los ajustes estaban abiertos. Se han conservado el sorteo y los resultados.',
+    'history.clearPlayoffsReason': 'Al borrar este resultado, la fase de grupos quedará incompleta. Los clasificados y la siembra ya no serán definitivos, por lo que se eliminará todo el cuadro de eliminatorias. Todos los resultados afectados figuran a continuación.',
     'history.warningTitle': 'Este cambio afecta a {{count}} partidos disputados',
     'history.warningDescription': 'Sus resultados dejarán de ser válidos. Revisa el impacto antes de guardar.',
     'history.preview': 'Revisar impacto',
