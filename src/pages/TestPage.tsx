@@ -6,6 +6,9 @@ import {
   createTournament as createTournamentApi,
 } from '../services/tournamentService';
 import type {CreateTournamentRequest} from '../services/tournamentService';
+import {recordScore} from '../services/matchService';
+import {generatePlayoffs} from '../services/groupStageService';
+import {generateNextRound} from '../services/swissService';
 import {
   listPlayers as listPlayersApi,
   createPlayer as createPlayerApi,
@@ -15,7 +18,7 @@ import {
 } from '../services/playerGroupService';
 import {computeMinTotalRounds} from '../utils/swissUtils';
 import {BracketType, Format, ScoreMode} from '../types';
-import type {Player} from '../types';
+import type {Player, Tournament, Match, SetScore} from '../types';
 import {Button} from '@/components/ui/Button';
 import {Input} from '@/components/ui/Input';
 import {Label} from '@/components/ui/Label';
@@ -187,6 +190,153 @@ function findOption<T extends string>(options: readonly T[], value: string): T |
   return options.find((option) => option === value);
 }
 
+function getResolvedMaxSets(tournament: Tournament): number {
+  return Number.isFinite(tournament.maxSets) && (tournament.maxSets ?? 0) > 0 ? (tournament.maxSets as number) : DEFAULT_MAX_SETS;
+}
+
+function randomSetSummary(maxSets: number): SetScore {
+  const setsToWin = Math.ceil(maxSets / 2);
+  const winnerIsP1 = randomInt(0, 1) === 1;
+  const loserSets = randomInt(0, Math.max(0, setsToWin - 1));
+  return winnerIsP1 ? [setsToWin, loserSets] : [loserSets, setsToWin];
+}
+
+function randomWinningSet(winnerIndex: 0 | 1): SetScore {
+  const winnerPoints = randomInt(11, 21);
+  const loserPoints = randomInt(0, winnerPoints - 1);
+  return winnerIndex === 0 ? [winnerPoints, loserPoints] : [loserPoints, winnerPoints];
+}
+
+function randomPointSeries(maxSets: number): SetScore[] {
+  const setsToWin = Math.ceil(maxSets / 2);
+  const winnerIsP1 = randomInt(0, 1) === 1;
+  const loserSets = randomInt(0, Math.max(0, setsToWin - 1));
+  const winnerIndex: 0 | 1 = winnerIsP1 ? 0 : 1;
+  const loserIndex: 0 | 1 = winnerIsP1 ? 1 : 0;
+  const entries: SetScore[] = [];
+
+  for (let i = 0; i < setsToWin; i++) {
+    entries.push(randomWinningSet(winnerIndex));
+  }
+  for (let i = 0; i < loserSets; i++) {
+    entries.push(randomWinningSet(loserIndex));
+  }
+  return shuffle(entries);
+}
+
+function randomScoresForTournament(tournament: Tournament): SetScore[] {
+  const maxSets = getResolvedMaxSets(tournament);
+  if (tournament.scoringMode === ScoreMode.POINTS) {
+    return randomPointSeries(maxSets);
+  }
+  return [randomSetSummary(maxSets)];
+}
+
+interface PendingMatchRef {
+  matchId: string;
+  groupId?: string;
+}
+
+function isReadyMatch(match: Match): boolean {
+  return !match.dummy && match.winnerId === null && match.player1Id !== null && match.player2Id !== null;
+}
+
+function getPendingMatches(tournament: Tournament): PendingMatchRef[] {
+  switch (tournament.format) {
+    case Format.SINGLE_ELIM: {
+      const pending = tournament.bracket.rounds.flat().filter((match) => isReadyMatch(match)).map((match) => ({matchId: match.id}));
+      if (tournament.bracket.thirdPlaceMatch && isReadyMatch(tournament.bracket.thirdPlaceMatch)) {
+        pending.push({matchId: tournament.bracket.thirdPlaceMatch.id});
+      }
+      return pending;
+    }
+    case Format.DOUBLE_ELIM: {
+      return [
+        ...tournament.doubleElim.winners.rounds.flat(),
+        ...tournament.doubleElim.losers.rounds.flat(),
+        tournament.doubleElim.finals.grandFinal,
+        tournament.doubleElim.finals.resetFinal,
+      ]
+        .filter((match) => isReadyMatch(match))
+        .map((match) => ({matchId: match.id}));
+    }
+    case Format.ROUND_ROBIN:
+    case Format.SWISS: {
+      return tournament.schedule.rounds
+        .flatMap((round) => round.matches)
+          .filter((match) => isReadyMatch(match))
+          .map((match) => ({matchId: match.id}));
+    }
+    case Format.GROUPS_TO_BRACKET: {
+      const groupMatches = tournament.groupStage.groups.flatMap((group) =>
+        group.schedule.rounds
+          .flatMap((round) => round.matches)
+          .filter((match) => isReadyMatch(match))
+          .map((match) => ({matchId: match.id, groupId: group.id}))
+      );
+
+      const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
+      if (playoffs === null || playoffs === undefined) {
+        return groupMatches;
+      }
+
+      const playoffMatches = [
+        ...(playoffs.mainBracket?.rounds.flat() ?? []),
+        ...(playoffs.consolationBracket?.rounds.flat() ?? []),
+        ...(playoffs.mainDoubleElim?.winners.rounds.flat() ?? []),
+        ...(playoffs.mainDoubleElim?.losers.rounds.flat() ?? []),
+        ...(playoffs.consolationDoubleElim?.winners.rounds.flat() ?? []),
+        ...(playoffs.consolationDoubleElim?.losers.rounds.flat() ?? []),
+        ...(playoffs.mainBracket?.thirdPlaceMatch ? [playoffs.mainBracket.thirdPlaceMatch] : []),
+        ...(playoffs.consolationBracket?.thirdPlaceMatch ? [playoffs.consolationBracket.thirdPlaceMatch] : []),
+        ...(playoffs.mainDoubleElim ? [playoffs.mainDoubleElim.finals.grandFinal, playoffs.mainDoubleElim.finals.resetFinal] : []),
+        ...(playoffs.consolationDoubleElim ? [playoffs.consolationDoubleElim.finals.grandFinal, playoffs.consolationDoubleElim.finals.resetFinal] : []),
+      ]
+        .filter((match) => isReadyMatch(match))
+        .map((match) => ({matchId: match.id}));
+
+      return [...groupMatches, ...playoffMatches];
+    }
+  }
+}
+
+async function populateRandomResults(tournament: Tournament): Promise<Tournament> {
+  let current = tournament;
+  const maxIterations = 2000;
+
+  for (let i = 0; i < maxIterations; i++) {
+    if (current.format === Format.SWISS) {
+      const swissPending = getPendingMatches(current);
+      if (swissPending.length === 0 && current.schedule.rounds.length < current.totalRounds) {
+        current = await generateNextRound(current.id);
+        continue;
+      }
+    }
+
+    if (current.format === Format.GROUPS_TO_BRACKET) {
+      const groupPending = current.groupStage.groups.flatMap((group) =>
+        group.schedule.rounds.flatMap((round) => round.matches).filter((match) => isReadyMatch(match))
+      );
+      const playoffs = current.groupStagePlayoffs ?? current.groupStageBrackets;
+      if (groupPending.length === 0 && (playoffs === null || playoffs === undefined)) {
+        current = await generatePlayoffs(current.id);
+        continue;
+      }
+    }
+
+    const pending = getPendingMatches(current);
+    if (pending.length === 0) {
+      return current;
+    }
+
+    for (const {matchId, groupId} of pending) {
+      current = await recordScore(current.id, matchId, randomScoresForTournament(current), false, groupId);
+    }
+  }
+
+  throw new Error(`Failed to populate all random results for tournament ${tournament.id}.`);
+}
+
 export const TestPage = (): ReactElement => {
   const navigate = useNavigate();
 
@@ -199,6 +349,7 @@ export const TestPage = (): ReactElement => {
   const [qualifiersPerGroup, setQualifiersPerGroup] = useState(2);
   const [bracketType, setBracketType] = useState(BracketType.SINGLE_ELIM);
   const [useLibraryPlayers, setUseLibraryPlayers] = useState(false);
+  const [withRandomResults, setWithRandomResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string[] | null>(null);
   const [libraryMsg, setLibraryMsg] = useState<string | null>(null);
@@ -215,8 +366,8 @@ export const TestPage = (): ReactElement => {
       setError('Min participants must be at least 2.');
       return;
     }
-    if (maxPlayers > 26) {
-      setError('Max participants must be at most 26.');
+    if (maxPlayers > 36) {
+      setError('Max participants must be at most 36.');
       return;
     }
     if (minPlayers > maxPlayers) {
@@ -235,7 +386,10 @@ export const TestPage = (): ReactElement => {
           }
           const players = await samplePlayers(n, teamSize, useLibraryPlayers);
           const req = buildRequest(players, teamSize, n, fmt, scoringMode, groupCount, qualifiersPerGroup, bracketType);
-          const tournament = await createTournamentApi(req);
+          let tournament = await createTournamentApi(req);
+          if (withRandomResults) {
+            tournament = await populateRandomResults(tournament);
+          }
           created.push(tournament.name);
         }
       }
@@ -413,6 +567,15 @@ export const TestPage = (): ReactElement => {
             onChange={(e: ChangeEvent<HTMLInputElement>) => { setUseLibraryPlayers(e.target.checked); }}
           />
           Use library players (fills gaps with A/B/C... if library is too small)
+        </Label>
+
+        <Label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+          <input
+            type="checkbox"
+            checked={withRandomResults}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => { setWithRandomResults(e.target.checked); }}
+          />
+          Also generate random results for all matches
         </Label>
 
         {error !== null && <p className="text-[var(--color-accent)] text-sm">{error}</p>}
