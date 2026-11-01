@@ -1,12 +1,7 @@
-import { getTournamentPlayoffs } from '../utils/tournamentCompatibility';
 import { getDatabase } from '../db';
-import { findBracketMatch, findDoubleElimMatch } from '../utils/matchFinders';
-import { canEditMatch } from '../utils/bracketUtils';
-import { canEditDoubleElimMatch } from '../utils/doubleElimUtils';
 import { planMatchChange, requiresHistoryConfirmation } from '../utils/matchChanges';
 import type { MatchChange, MatchChangeImpact, PlayoffSection } from '../utils/matchChanges';
-import { Format } from '../types';
-import type { GroupsToBracketTournament, SetScore, Tournament } from '../types';
+import type { SetScore, Tournament } from '../types';
 export type { PlayoffSection } from '../utils/matchChanges';
 
 export class HistoryConfirmationRequiredError extends Error {
@@ -39,73 +34,4 @@ export async function recordScore(tournamentId: string, matchId: string, scores:
 
 export async function clearScore(tournamentId: string, matchId: string, groupId?: string, section?: PlayoffSection): Promise<Tournament> {
   return saveMatchChange(tournamentId, { type: 'clear', matchId, ...(groupId && { groupId }), ...(section && { section }) });
-}
-
-function checkGroupStageEditable(
-  tournament: GroupsToBracketTournament,
-  matchId: string,
-): boolean {
-  const playoffs = getTournamentPlayoffs(tournament);
-  if (playoffs == null) {
-    return true;
-  }
-  if (
-    playoffs.mainBracket &&
-    findBracketMatch(playoffs.mainBracket, matchId) !== null
-  ) {
-    return canEditMatch(playoffs.mainBracket, matchId);
-  }
-  if (
-    playoffs.mainDoubleElim &&
-    findDoubleElimMatch(playoffs.mainDoubleElim, matchId) !== null
-  ) {
-    return canEditDoubleElimMatch(playoffs.mainDoubleElim, matchId);
-  }
-  if (
-    playoffs.consolationBracket &&
-    findBracketMatch(playoffs.consolationBracket, matchId) !== null
-  ) {
-    return canEditMatch(playoffs.consolationBracket, matchId);
-  }
-  if (
-    playoffs.consolationDoubleElim &&
-    findDoubleElimMatch(playoffs.consolationDoubleElim, matchId) !== null
-  ) {
-    return canEditDoubleElimMatch(playoffs.consolationDoubleElim, matchId);
-  }
-  return true;
-}
-
-export async function isMatchEditable(
-  tournamentId: string,
-  matchId: string,
-): Promise<boolean> {
-  const db = await getDatabase();
-  const doc = await db.tournaments.findOne(tournamentId).exec();
-  if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
-
-  const tournament = doc.toMutableJSON();
-  let editable = false;
-
-  switch (tournament.format) {
-    case Format.SINGLE_ELIM: {
-      editable = canEditMatch(tournament.bracket, matchId);
-      break;
-    }
-    case Format.DOUBLE_ELIM: {
-      editable = canEditDoubleElimMatch(tournament.doubleElim, matchId);
-      break;
-    }
-    case Format.ROUND_ROBIN:
-    case Format.SWISS: {
-      editable = true;
-      break;
-    }
-    case Format.GROUPS_TO_BRACKET: {
-      editable = checkGroupStageEditable(tournament, matchId);
-      break;
-    }
-  }
-
-  return editable;
 }

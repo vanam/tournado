@@ -11,7 +11,7 @@ import type { DatabaseCollections, TournadoDatabase } from '../db';
 import type { GroupsToBracketTournament, PlayerGroup } from '../types';
 import { Format, ScoreMode, BracketType } from '../types';
 import { createTournament, getTournament, renameTournament } from './tournamentService';
-import { recordScore, clearScore, saveMatchChange, isMatchEditable, HistoryConfirmationRequiredError } from './matchService';
+import { recordScore, clearScore, saveMatchChange, HistoryConfirmationRequiredError } from './matchService';
 import { createPlayer, updatePlayer, getPlayerProfile } from './playerService';
 import {
   createPlayerGroup,
@@ -79,7 +79,6 @@ describe('persistent tournament operations', () => {
     expect(read.groupStageBrackets).toBeNull();
     expect((await db.tournaments.findOne(legacy.id).exec())!.toMutableJSON()).toMatchObject({ groupStagePlayoffs: null });
     const match = legacy.groupStageBrackets!.mainBracket!.rounds[0]![0]!;
-    expect(await isMatchEditable(legacy.id, match.id)).toBe(true);
     const saved = await recordScore(legacy.id, match.id, [[3, 0]], false, undefined, 'mainBracket');
     if (saved.format !== Format.GROUPS_TO_BRACKET) throw new Error('Wrong format');
     expect(saved.groupStageBrackets).toBeNull();

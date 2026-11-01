@@ -1,5 +1,5 @@
 import { normalizeTournament } from '../utils/tournamentCompatibility';
-import { getTournamentSummary, readTournament } from '../utils/tournamentStatus';
+import { type getTournamentSummary, readTournament } from '../utils/tournamentStatus';
 import { getDatabase } from '../db';
 import { generateBracket } from '../utils/bracketUtils';
 import { generateDoubleElim } from '../utils/doubleElimUtils';
@@ -13,8 +13,6 @@ import {
   getParticipantPlayers,
 } from '../utils/participantUtils';
 import { restoreTournamentMembership } from '../utils/tournamentPreparation';
-import { computeTournamentProgress } from '../utils/progressUtils';
-import { getTournamentResults } from '../utils/resultsUtils';
 import { TOURNAMENT_VERSION } from '../utils/dataPortability';
 import { Format } from '../types';
 import type {
@@ -27,7 +25,6 @@ import type {
   GroupsToBracketTournament,
   ScoreMode,
   BracketType,
-  RankedResult,
 } from '../types';
 
 export type TournamentSummary = ReturnType<typeof getTournamentSummary>;
@@ -53,26 +50,6 @@ export interface CreateTournamentRequest {
   consolation?: boolean;
   bracketType?: BracketType;
   swissRounds?: number;
-}
-
-export async function listTournaments(filters?: {
-  format?: Format;
-  status?: 'active' | 'completed';
-}): Promise<TournamentSummary[]> {
-  const db = await getDatabase();
-  const docs = await db.tournaments.find().exec();
-  let tournaments = docs.map((d) => getTournamentSummary(d.toMutableJSON()));
-
-  if (filters?.format) {
-    tournaments = tournaments.filter((t) => t.format === filters.format);
-  }
-  if (filters?.status === 'completed') {
-    tournaments = tournaments.filter((t) => t.winnerId != null);
-  } else if (filters?.status === 'active') {
-    tournaments = tournaments.filter((t) => t.winnerId == null);
-  }
-
-  return tournaments;
 }
 
 export async function createTournament(
@@ -224,26 +201,6 @@ export async function duplicateTournament(id: string): Promise<Tournament> {
   return cloned;
 }
 
-export async function getTournamentProgress(
-  id: string,
-): Promise<{ completed: number; total: number }> {
-  const db = await getDatabase();
-  const doc = await db.tournaments.findOne(id).exec();
-  if (!doc) throw new Error(`Tournament ${id} not found`);
-  const tournament = doc.toMutableJSON();
-  return computeTournamentProgress(tournament);
-}
-
-export async function getTournamentResultsById(
-  id: string,
-): Promise<RankedResult[]> {
-  const db = await getDatabase();
-  const doc = await db.tournaments.findOne(id).exec();
-  if (!doc) throw new Error(`Tournament ${id} not found`);
-  const tournament = doc.toMutableJSON();
-  return getTournamentResults(tournament);
-}
-
 export async function renameTournament(
   tournamentId: string,
   newName: string,
@@ -257,28 +214,6 @@ export async function renameTournament(
 
   await doc.incrementalModify((tournament) => {
     tournament.name = trimmedName;
-
-    return tournament;
-  });
-}
-
-export async function renameTournamentPlayer(
-  tournamentId: string,
-  playerId: string,
-  name: string,
-): Promise<void> {
-  const trimmedName = name.trim();
-  if (!trimmedName) throw new Error('Name is required');
-
-  const db = await getDatabase();
-  const doc = await db.tournaments.findOne(tournamentId).exec();
-  if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
-
-  await doc.incrementalModify((tournament) => {
-    const player = tournament.players.find((p) => p.id === playerId);
-    if (player === undefined) throw new Error(`Player ${playerId} not found`);
-
-    player.name = trimmedName;
 
     return tournament;
   });
