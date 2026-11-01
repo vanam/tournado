@@ -5,7 +5,7 @@ import { Settings } from 'lucide-react';
 import { TabBar } from '../common/TabBar';
 import { WinnerBanner } from '../common/WinnerBanner';
 import { FinalResultsTable } from '../common/FinalResultsTable';
-import { buildBracketResults, buildDoubleElimResults, offsetResults, sortResults } from '../../utils/resultsUtils';
+import { evaluateTournament } from '../../utils/tournamentStatus';
 import { GroupAdvancersPanel } from './GroupAdvancersPanel';
 import { GroupStageGroups } from './GroupStageGroups';
 import { GroupStageSettingsModal } from './GroupStageSettingsModal';
@@ -16,15 +16,11 @@ import {
   getGroupPlayers,
 } from '../../utils/groupStageUtils';
 import { findGroupMatch, findBracketMatch, findDoubleElimMatch } from '../../utils/matchFinders';
-import { getDoubleElimWinner } from '../../utils/doubleElimUtils';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
 import { generatePlayoffs, updateGroupStageSettings, PlayoffSettingsLockedError } from '../../services/groupStageService';
 import { BracketType, ScoreMode } from '../../types';
-import type {
-  GroupStagePlayoffs,
-} from '../../types';
 import { useGroupStageStandings, useGroupComplete, useAdvancers, useWildcardIds, useGroupPlacementByPlayerId } from '../../utils/useGroupStage';
 import { getPlayoffState } from '../../utils/playoffLifecycle';
 import { Button } from '@/components/ui/Button';
@@ -45,21 +41,6 @@ interface EditingState {
   matchId: string;
 }
 
-
-function getMainWinner(playoffs: GroupStagePlayoffs | null, isDoubleElim: boolean): string | null {
-  if (!playoffs) return null;
-  if (isDoubleElim && playoffs.mainDoubleElim) {
-    return getDoubleElimWinner(playoffs.mainDoubleElim);
-  }
-  if (playoffs.mainBracket) {
-    const lastRound = playoffs.mainBracket.rounds.at(-1);
-    if (lastRound) {
-      const finalMatch = lastRound[0];
-      return finalMatch?.winnerId ?? null;
-    }
-  }
-  return null;
-}
 
 interface GroupStageViewProps {
   onRegisterHeaderActions?: (node: ReactNode) => void;
@@ -100,11 +81,8 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
   const wildcardIds = useWildcardIds(advancers);
   const groupPlacementByPlayerId = useGroupPlacementByPlayerId(advancers, groupStage);
 
-  const winnerId = useMemo(() => {
-    if (!tournament) return null;
-    if (tournament.winnerId) return tournament.winnerId;
-    return getMainWinner(playoffs, isDoubleElim);
-  }, [playoffs, tournament, isDoubleElim]);
+  const evaluation = useMemo(() => tournament ? evaluateTournament(tournament) : null, [tournament]);
+  const winnerId = evaluation?.winnerId ?? evaluation?.playoffWinnerId;
 
   const winner = useMemo(
     () => (winnerId ? participants.find((p) => p.id === winnerId) : null),
@@ -158,33 +136,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
     return participants;
   }, [editing, groupStage, participants]);
 
-  const finalResults = useMemo(() => {
-    if (mainTab !== 'results') return [];
-    let mainResults: { playerId: string; name: string; rankStart?: number; rankEnd?: number }[] = [];
-    let consolationResults: { playerId: string; name: string; rankStart?: number; rankEnd?: number }[] = [];
-
-    if (playoffs) {
-      if (isDoubleElim && playoffs.mainDoubleElim) {
-        mainResults = buildDoubleElimResults(playoffs.mainDoubleElim, participants);
-      } else if (playoffs.mainBracket) {
-        mainResults = buildBracketResults(playoffs.mainBracket, participants);
-      }
-
-      if (isDoubleElim && playoffs.consolationDoubleElim) {
-        consolationResults = offsetResults(
-          buildDoubleElimResults(playoffs.consolationDoubleElim, participants),
-          mainResults.length
-        );
-      } else if (playoffs.consolationBracket) {
-        consolationResults = offsetResults(
-          buildBracketResults(playoffs.consolationBracket, participants),
-          mainResults.length
-        );
-      }
-    }
-
-    return sortResults([...mainResults, ...consolationResults]);
-  }, [mainTab, playoffs, participants, isDoubleElim]);
+  const finalResults = mainTab === 'results' ? (evaluation?.results ?? []) : [];
 
   function handleSaveSettings(newQualifiers: number[], newBracketType: BracketType): void {
     if (!tournament) return;

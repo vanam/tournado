@@ -1,4 +1,4 @@
-import { updateTournamentStatus } from '../utils/tournamentStatus';
+import { getTournamentSummary, readTournament } from '../utils/tournamentStatus';
 import { getDatabase } from '../db';
 import { generateBracket } from '../utils/bracketUtils';
 import { generateDoubleElim } from '../utils/doubleElimUtils';
@@ -29,16 +29,7 @@ import type {
   RankedResult,
 } from '../types';
 
-export interface TournamentSummary {
-  id: string;
-  name: string;
-  format: Format;
-  createdAt: string;
-  completedAt: string | null | undefined;
-  winnerId: string | null | undefined;
-  playerCount: number;
-  teamSize: number;
-}
+export type TournamentSummary = ReturnType<typeof getTournamentSummary>;
 
 export interface CreateTournamentRequest {
   name: string;
@@ -63,42 +54,24 @@ export interface CreateTournamentRequest {
   swissRounds?: number;
 }
 
-function toSummary(t: Tournament): TournamentSummary {
-  updateTournamentStatus(t);
-  return {
-    id: t.id,
-    name: t.name,
-    format: t.format,
-    createdAt: t.createdAt,
-    completedAt: t.completedAt ?? null,
-    winnerId: t.winnerId ?? null,
-    playerCount: t.players.length,
-    teamSize: t.teamSize ?? 1,
-  };
-}
-
 export async function listTournaments(filters?: {
   format?: Format;
   status?: 'active' | 'completed';
 }): Promise<TournamentSummary[]> {
   const db = await getDatabase();
   const docs = await db.tournaments.find().exec();
-  let tournaments = docs.map((d) => {
-    const value = d.toMutableJSON();
-    updateTournamentStatus(value);
-    return value;
-  });
+  let tournaments = docs.map((d) => getTournamentSummary(d.toMutableJSON()));
 
   if (filters?.format) {
     tournaments = tournaments.filter((t) => t.format === filters.format);
   }
   if (filters?.status === 'completed') {
-    tournaments = tournaments.filter((t) => t.completedAt != null);
+    tournaments = tournaments.filter((t) => t.winnerId != null);
   } else if (filters?.status === 'active') {
-    tournaments = tournaments.filter((t) => t.completedAt == null);
+    tournaments = tournaments.filter((t) => t.winnerId == null);
   }
 
-  return tournaments.map((t) => toSummary(t));
+  return tournaments;
 }
 
 export async function createTournament(
@@ -255,7 +228,7 @@ export async function getTournament(id: string): Promise<Tournament> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(id).exec();
   if (!doc) throw new Error(`Tournament ${id} not found`);
-  return doc.toMutableJSON();
+  return readTournament(doc.toMutableJSON());
 }
 
 export async function deleteTournament(id: string): Promise<void> {

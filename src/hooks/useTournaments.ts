@@ -1,22 +1,8 @@
-import { updateTournamentStatus } from '../utils/tournamentStatus';
+import { getTournamentSummary, readTournament } from '../utils/tournamentStatus';
 import { useEffect, useState } from 'react';
 import { useDatabase } from '../context/databaseContext';
 import type { TournamentSummary } from '../services/tournamentService';
 import type { Format, Tournament } from '../types';
-
-function toSummary(t: Tournament): TournamentSummary {
-  updateTournamentStatus(t);
-  return {
-    id: t.id,
-    name: t.name,
-    format: t.format,
-    createdAt: t.createdAt,
-    completedAt: t.completedAt ?? null,
-    winnerId: t.winnerId ?? null,
-    playerCount: t.players.length,
-    teamSize: t.teamSize ?? 1,
-  };
-}
 
 export function useTournaments(filters?: {
   format?: Format;
@@ -34,10 +20,10 @@ export function useTournaments(filters?: {
       ? db.tournaments.find({ selector: { format } })
       : db.tournaments.find();
     const subscription = query.$.subscribe((docs) => {
-      let results = docs.map((d) => { const value = d.toMutableJSON(); updateTournamentStatus(value); return value; });
-      if (status === 'completed') results = results.filter((t) => t.completedAt != null);
-      else if (status === 'active') results = results.filter((t) => t.completedAt == null);
-      setTournaments(results.map((t) => toSummary(t)));
+      let results = docs.map((d) => getTournamentSummary(d.toMutableJSON()));
+      if (status === 'completed') results = results.filter((t) => t.winnerId != null);
+      else if (status === 'active') results = results.filter((t) => t.winnerId == null);
+      setTournaments(results);
       setIsLoading(false);
     });
     return (): void => { subscription.unsubscribe(); };
@@ -58,8 +44,7 @@ export function useTournamentById(id: string): {
     const query = db.tournaments.findOne(id);
     const subscription = query.$.subscribe((doc) => {
       const value = doc?.toMutableJSON() ?? null;
-      if (value) updateTournamentStatus(value);
-      setTournament(value);
+      setTournament(value ? readTournament(value) : null);
       setIsLoading(false);
     });
     return (): void => { subscription.unsubscribe(); };

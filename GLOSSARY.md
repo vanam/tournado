@@ -14,3 +14,6 @@ Reconciliation of playoff entrants with current group standings. Results that de
 
 **History correction**:
 An edit to a recorded result together with its consequences for dependent matches or later rounds.
+
+**Tournament evaluation**:
+Derivation of current progress, ranked results and winner from recorded matches. Completion time records when completion was saved, not when results were viewed.

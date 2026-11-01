@@ -1,7 +1,6 @@
 import { getDatabase } from '../db';
 import { ensureParticipants } from '../utils/participantUtils';
-import { updateTournamentStatus } from '../utils/tournamentStatus';
-import { getTournamentResults } from '../utils/resultsUtils';
+import { evaluateTournament } from '../utils/tournamentStatus';
 import { parseBulkInput } from '../utils/importUtils';
 import { PLAYER_VERSION } from '../utils/dataPortability';
 import type { Format, PlayerLibraryEntry } from '../types';
@@ -139,11 +138,10 @@ export async function getPlayerProfile(playerId: string): Promise<PlayerProfile>
     );
     if (!playerInTournament) continue;
 
-    const results = getTournamentResults(tournament);
+    const { results, winnerId } = evaluateTournament(tournament);
     const playerIds = new Set(tournament.players.filter((p) => p.libraryId === playerId || p.id === playerId).map((p) => p.id));
     const participant = ensureParticipants(tournament.players, tournament.participants).find((p) => p.playerIds.some((id) => playerIds.has(id)));
     const playerResult = results.find((r) => r.playerId === participant?.id);
-    updateTournamentStatus(tournament);
 
     const entry: PlayerProfile['tournaments'][number] = {
       tournamentId: tournament.id,
@@ -152,7 +150,7 @@ export async function getPlayerProfile(playerId: string): Promise<PlayerProfile>
       teamSize: tournament.teamSize ?? 1,
       playerCount: tournament.players.length,
       createdAt: tournament.createdAt,
-      isCompleted: !!tournament.winnerId,
+      isCompleted: !!winnerId,
     };
     if (playerResult?.rankStart !== undefined) entry.rankStart = playerResult.rankStart;
     if (playerResult?.rankEnd !== undefined) entry.rankEnd = playerResult.rankEnd;
