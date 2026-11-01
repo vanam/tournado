@@ -5,7 +5,7 @@ import { computeSwissStandings, buildSwissResults } from './swissUtils';
 import { ensureParticipants, getParticipantPlayers } from './participantUtils';
 import { DEFAULT_MAX_SETS } from '../constants';
 import { Format, BracketType, ScoreMode } from '../types';
-import type { Player, Bracket, RoundRobinSchedule, StandingsRow, RankedResult, DoubleElim, Match, Tournament } from '../types';
+import type { Player, Bracket, RoundRobinSchedule, StandingsRow, RankedResult, DoubleElim, DoubleElimMatch, Match, Tournament } from '../types';
 
 interface TieKeyRow {
   points?: number | undefined;
@@ -93,20 +93,46 @@ export function collectBracketPlayerIds(bracket: Bracket | null): Set<string> {
   return ids;
 }
 
-function assignRanksFromEliminations(eliminationGroups: string[][], totalPlayers: number): { rankByPlayer: Map<string, RankInfo> } {
+/** Counts possible eliminations from slot sources, independently of recorded results and BYEs. */
+function getEliminationCapacity(rounds: DoubleElimMatch[][], loserSources = new Map<string, boolean>()): {
+  capacities: number[];
+  possibleLosers: Map<string, boolean>;
+} {
+  const feeders = new Map<string, boolean[]>();
+  const possibleLosers = new Map<string, boolean>();
+  const capacities = rounds.map((round, roundIndex) => {
+    let capacity = 0;
+    for (const match of round) {
+      if (match.dummy) continue;
+      const seededInputs = roundIndex === 0 ? [!!match.player1Id, !!match.player2Id] : [];
+      const inputs = match.winnersSources
+        ? match.winnersSources.map((id) => loserSources.get(id) ?? false)
+        : seededInputs;
+      inputs.push(...(feeders.get(match.id) ?? []));
+      const canLose = inputs.filter(Boolean).length === 2;
+      possibleLosers.set(match.id, canLose);
+      if (canLose) capacity++;
+      if (match.nextMatchId) {
+        const nextInputs = feeders.get(match.nextMatchId) ?? [];
+        nextInputs.push(inputs.some(Boolean));
+        feeders.set(match.nextMatchId, nextInputs);
+      }
+    }
+    return capacity;
+  });
+  return { capacities, possibleLosers };
+}
+
+function assignRanksFromEliminations(eliminationGroups: string[][], totalPlayers: number, capacities: number[]): { rankByPlayer: Map<string, RankInfo> } {
   const rankByPlayer = new Map<string, RankInfo>();
   let current = totalPlayers;
-
-  for (const group of eliminationGroups) {
-    if (group.length === 0) continue;
-    const rankStart = current - group.length + 1;
-    const rankEnd = current;
+  for (const [index, group] of eliminationGroups.entries()) {
+    const rankStart = current - (capacities[index] ?? 0) + 1;
     for (const playerId of group) {
-      rankByPlayer.set(playerId, { rankStart, rankEnd });
+      rankByPlayer.set(playerId, { rankStart, rankEnd: current });
     }
     current = rankStart - 1;
   }
-
   return { rankByPlayer };
 }
 
@@ -155,7 +181,7 @@ export function buildBracketResults(bracket: Bracket | null, players: Player[]):
     eliminatedByRound[roundIndex] = roundElims;
   }
 
-  const { rankByPlayer } = assignRanksFromEliminations(eliminatedByRound, playerIds.length);
+  const { rankByPlayer } = assignRanksFromEliminations(eliminatedByRound, playerIds.length, getEliminationCapacity(bracket.rounds).capacities);
   const winnerId = getBracketWinner(bracket);
   if (winnerId) {
     rankByPlayer.set(winnerId, { rankStart: 1, rankEnd: 1 });
@@ -212,7 +238,7 @@ export function buildDoubleElimResults(doubleElim: DoubleElim | null, players: P
   const losses = new Map(playerIds.map((id) => [id, 0]));
   const eliminated = new Set<string>();
   const losersRounds = doubleElim.losers.rounds;
-  const eliminationGroups: string[][] = Array.from({ length: losersRounds.length + 2 }, () => []);
+  const eliminationGroups: string[][] = Array.from({ length: losersRounds.length + 1 }, () => []);
 
   const recordLoss = (match: Match | undefined | null): void => {
     if (!match?.winnerId) return;
@@ -247,9 +273,11 @@ export function buildDoubleElimResults(doubleElim: DoubleElim | null, players: P
 
   const finalsStage = losersRounds.length;
   recordElimination(doubleElim.finals.grandFinal, finalsStage);
-  recordElimination(doubleElim.finals.resetFinal, finalsStage + 1);
+  recordElimination(doubleElim.finals.resetFinal, finalsStage);
 
-  const { rankByPlayer } = assignRanksFromEliminations(eliminationGroups, playerIds.length);
+  const { possibleLosers } = getEliminationCapacity(doubleElim.winners.rounds);
+  const { capacities } = getEliminationCapacity(losersRounds, possibleLosers);
+  const { rankByPlayer } = assignRanksFromEliminations(eliminationGroups, playerIds.length, [...capacities, 1]);
   const winnerId = getDoubleElimWinner(doubleElim);
   if (winnerId) {
     rankByPlayer.set(winnerId, { rankStart: 1, rankEnd: 1 });

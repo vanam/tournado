@@ -64,6 +64,25 @@ describe('buildStandingsResults', () => {
 });
 
 describe('buildBracketResults', () => {
+  it.each([[5, 5, 5], [8, 5, 8], [12, 9, 12]])(
+    'keeps first-round ranks stable for %i players with BYEs', (count, rankStart, rankEnd) => {
+      const players = makePlayers(count);
+      const bracket = generateBracket(players);
+      const first = bracket.rounds[0]!.find((match) => match.player1Id && match.player2Id)!;
+      advanceWinner(bracket, first.id, first.player1Id!, [[3, 0]]);
+      const placement = (): RankedResult | undefined => buildBracketResults(bracket, players).find((row) => row.playerId === first.player2Id);
+      expect(placement()).toMatchObject({ rankStart, rankEnd });
+      for (const round of bracket.rounds) {
+        for (const match of round) {
+          if (!match.winnerId && match.player1Id && match.player2Id) {
+            advanceWinner(bracket, match.id, match.player1Id, [[3, 0]]);
+            expect(placement()).toMatchObject({ rankStart, rankEnd });
+          }
+        }
+      }
+    },
+  );
+
   it('ranks players based on eliminations and winner', () => {
     const players = makePlayers(4);
     let bracket = generateBracket(players);
@@ -90,6 +109,42 @@ describe('buildBracketResults', () => {
 });
 
 describe('buildDoubleElimResults', () => {
+  it.each([2, 5, 8, 12])('keeps double-elimination ranks stable for %i players through the reset', (count) => {
+    const players = makePlayers(count);
+    const de = generateDoubleElim(players);
+    const knownRanks = new Map<string, { rankStart: number; rankEnd: number }>();
+    const checkRanks = (): void => {
+      for (const row of buildDoubleElimResults(de, players)) {
+        if (row.rankStart === undefined || row.rankEnd === undefined) continue;
+        const rank = { rankStart: row.rankStart, rankEnd: row.rankEnd };
+        if (knownRanks.has(row.playerId)) expect(rank).toEqual(knownRanks.get(row.playerId));
+        knownRanks.set(row.playerId, rank);
+      }
+    };
+    for (const round of de.winners.rounds) {
+      for (const match of round) {
+        if (!match.winnerId && match.player1Id && match.player2Id) advanceDoubleElim(de, match.id, match.player1Id, [[3, 0]]);
+      }
+    }
+    for (const round of de.losers.rounds) {
+      for (const match of round) {
+        if (!match.winnerId && match.player1Id && match.player2Id) {
+          advanceDoubleElim(de, match.id, match.player1Id, [[3, 0]]);
+          checkRanks();
+        }
+      }
+    }
+    const grand = de.finals.grandFinal;
+    advanceDoubleElim(de, grand.id, grand.player2Id!, [[0, 3]]);
+    checkRanks();
+    const reset = de.finals.resetFinal;
+    advanceDoubleElim(de, reset.id, reset.player1Id!, [[3, 0]]);
+    checkRanks();
+    expect(knownRanks.size).toBe(count);
+    expect(knownRanks.get(reset.player2Id!)).toEqual({ rankStart: 2, rankEnd: 2 });
+    expect(knownRanks.get(reset.player1Id!)).toEqual({ rankStart: 1, rankEnd: 1 });
+  });
+
   it('ranks players with a clear champion', () => {
     const players = makePlayers(4);
     let doubleElim = generateDoubleElim(players);
