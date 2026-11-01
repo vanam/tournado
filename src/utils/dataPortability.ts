@@ -1,3 +1,8 @@
+import Ajv from 'ajv';
+import { tournamentSchema } from '../db/schemas/tournament';
+import { playerSchema } from '../db/schemas/player';
+import { playerGroupSchema } from '../db/schemas/playerGroup';
+import { isValidTournament } from './validation';
 import type { Tournament } from '../types';
 import type { PlayerLibraryEntry, PlayerGroup } from '../types/playerLibrary';
 import { getDatabase } from '../db';
@@ -20,6 +25,23 @@ export interface ExportPayload {
   tournaments: Tournament[];
   players: PlayerLibraryEntry[];
   groups: PlayerGroup[];
+}
+
+const validator = new Ajv({ strict: false });
+const validTournamentSchema = validator.compile<Tournament>(tournamentSchema);
+const validPlayerSchema = validator.compile<PlayerLibraryEntry>(playerSchema);
+const validGroupSchema = validator.compile<PlayerGroup>(playerGroupSchema);
+
+export function validateImportEntities(payload: ExportPayload): void {
+  if (payload.tournaments.some((t) => t.version === TOURNAMENT_VERSION && (!validTournamentSchema(t) || !isValidTournament(t)))
+    || payload.players.some((p) => p.version === PLAYER_VERSION && !validPlayerSchema(p))
+    || payload.groups.some((g) => g.version === GROUP_VERSION && !validGroupSchema(g))) {
+    throw new Error('Invalid import entity');
+  }
+}
+
+function isVersionedRecord(value: unknown): boolean {
+  return typeof value === 'object' && value !== null && 'version' in value && Number.isInteger(value.version);
 }
 
 export async function buildExportPayload(
@@ -65,17 +87,24 @@ export function parseExportFile(text: string): ExportPayload | null {
     if (
       typeof parsed !== 'object' ||
       parsed === null ||
-      typeof (parsed as Record<string, unknown>)['version'] !== 'number'
+      !('version' in parsed) || !Number.isInteger(parsed.version) ||
+      !('exportedAt' in parsed) || typeof parsed.exportedAt !== 'string' ||
+      !('tournaments' in parsed) || !Array.isArray(parsed.tournaments) || !parsed.tournaments.every((entry) => isVersionedRecord(entry)) ||
+      !('players' in parsed) || !Array.isArray(parsed.players) || !parsed.players.every((entry) => isVersionedRecord(entry)) ||
+      !('groups' in parsed) || !Array.isArray(parsed.groups) || !parsed.groups.every((entry) => isVersionedRecord(entry))
     ) {
       return null;
     }
-    return parsed as ExportPayload;
+    const payload = parsed as ExportPayload;
+    validateImportEntities(payload);
+    return payload;
   } catch {
     return null;
   }
 }
 
 export async function importPayload(payload: ExportPayload): Promise<ImportResult> {
+  validateImportEntities(payload);
   const compatTournaments = payload.tournaments.filter(
     (t) => t.version === TOURNAMENT_VERSION,
   );

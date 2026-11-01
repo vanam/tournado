@@ -1,18 +1,35 @@
 import { getDatabase } from '../db';
 import { computeStandings } from '../utils/roundRobinUtils';
-import { getGroupAdvancers, buildGroupStagePlayoffs, getGroupPlayers } from '../utils/groupStageUtils';
-import { ensureParticipants, getParticipantPlayers } from '../utils/participantUtils';
+import {
+  getGroupAdvancers,
+  buildGroupStagePlayoffs,
+  getGroupPlayers,
+} from '../utils/groupStageUtils';
+import {
+  ensureParticipants,
+  getParticipantPlayers,
+} from '../utils/participantUtils';
 import {
   getBracketParticipantAtSeed,
   hasPlayerPlayedBracketMatch,
 } from '../utils/bracketUtils';
-import {
-  hasPlayerPlayedDoubleElimMatch,
-} from '../utils/doubleElimUtils';
+import { hasPlayerPlayedDoubleElimMatch } from '../utils/doubleElimUtils';
 import { Format } from '../types';
-import type { Match, BracketType, Bracket, DoubleElim, GroupStagePlayoffs, Tournament, StandingsRow, GroupAdvancersResult } from '../types';
+import type {
+  Match,
+  BracketType,
+  Bracket,
+  DoubleElim,
+  GroupStagePlayoffs,
+  Tournament,
+  StandingsRow,
+  GroupAdvancersResult,
+} from '../types';
 
-export async function getGroupStandings(tournamentId: string, groupId: string): Promise<StandingsRow[]> {
+export async function getGroupStandings(
+  tournamentId: string,
+  groupId: string,
+): Promise<StandingsRow[]> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
@@ -27,8 +44,14 @@ export async function getGroupStandings(tournamentId: string, groupId: string): 
     throw new Error(`Group ${groupId} not found`);
   }
 
-  const storedParticipants = ensureParticipants(tournament.players, tournament.participants);
-  const participantPlayers = getParticipantPlayers(tournament.players, storedParticipants);
+  const storedParticipants = ensureParticipants(
+    tournament.players,
+    tournament.participants,
+  );
+  const participantPlayers = getParticipantPlayers(
+    tournament.players,
+    storedParticipants,
+  );
   const groupPlayers = getGroupPlayers(group, participantPlayers);
   const standings = computeStandings(group.schedule, groupPlayers, {
     scoringMode: tournament.scoringMode,
@@ -38,7 +61,9 @@ export async function getGroupStandings(tournamentId: string, groupId: string): 
   return standings;
 }
 
-export async function getAdvancers(tournamentId: string): Promise<GroupAdvancersResult> {
+export async function getAdvancers(
+  tournamentId: string,
+): Promise<GroupAdvancersResult> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
@@ -48,37 +73,60 @@ export async function getAdvancers(tournamentId: string): Promise<GroupAdvancers
     throw new Error('Tournament is not a Groups to Bracket format');
   }
 
-  const storedParticipants = ensureParticipants(tournament.players, tournament.participants);
-  const participantPlayers = getParticipantPlayers(tournament.players, storedParticipants);
-  const advancers = getGroupAdvancers(tournament.groupStage, participantPlayers, {
-    scoringMode: tournament.scoringMode,
-    maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
-  });
+  const storedParticipants = ensureParticipants(
+    tournament.players,
+    tournament.participants,
+  );
+  const participantPlayers = getParticipantPlayers(
+    tournament.players,
+    storedParticipants,
+  );
+  const advancers = getGroupAdvancers(
+    tournament.groupStage,
+    participantPlayers,
+    {
+      scoringMode: tournament.scoringMode,
+      maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
+    },
+  );
 
   return advancers;
 }
 
-export async function generatePlayoffs(tournamentId: string): Promise<Tournament> {
+export async function generatePlayoffs(
+  tournamentId: string,
+): Promise<Tournament> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
 
-  const tournament = doc.toMutableJSON();
-  if (tournament.format !== Format.GROUPS_TO_BRACKET) {
-    throw new Error('Tournament is not a Groups to Bracket format');
-  }
+  const saved = await doc.incrementalModify((tournament) => {
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) {
+      throw new Error('Tournament is not a Groups to Bracket format');
+    }
 
-  const storedParticipants = ensureParticipants(tournament.players, tournament.participants);
-  const participantPlayers = getParticipantPlayers(tournament.players, storedParticipants);
-  const playoffs = buildGroupStagePlayoffs(tournament.groupStage, participantPlayers, {
-    scoringMode: tournament.scoringMode,
-    maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
+    const storedParticipants = ensureParticipants(
+      tournament.players,
+      tournament.participants,
+    );
+    const participantPlayers = getParticipantPlayers(
+      tournament.players,
+      storedParticipants,
+    );
+    const playoffs = buildGroupStagePlayoffs(
+      tournament.groupStage,
+      participantPlayers,
+      {
+        scoringMode: tournament.scoringMode,
+        maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
+      },
+    );
+
+    tournament.groupStagePlayoffs = playoffs;
+
+    return tournament;
   });
-
-  tournament.groupStagePlayoffs = playoffs;
-
-  await doc.incrementalModify(() => tournament);
-  return tournament;
+  return saved.toMutableJSON();
 }
 
 export interface SyncBracketResult {
@@ -87,7 +135,8 @@ export interface SyncBracketResult {
   blockedPlayers: string[];
 }
 
-type BracketTarget = 'main' | 'mainDoubleElim' | 'consolation' | 'consolationDoubleElim';
+type BracketTarget =
+  'main' | 'mainDoubleElim' | 'consolation' | 'consolationDoubleElim';
 type SwapEntry = { oldId: string; newId: string; target: BracketTarget };
 
 function collectBracketSwaps(
@@ -95,7 +144,7 @@ function collectBracketSwaps(
   newAdvancerIds: string[],
   target: Extract<BracketTarget, 'main' | 'consolation'>,
   swaps: SwapEntry[],
-  blockedPlayers: string[]
+  blockedPlayers: string[],
 ): void {
   const round0 = bracket.rounds[0];
   if (!round0) return;
@@ -119,7 +168,7 @@ function collectDoubleElimSwaps(
   newAdvancerIds: string[],
   target: Extract<BracketTarget, 'mainDoubleElim' | 'consolationDoubleElim'>,
   swaps: SwapEntry[],
-  blockedPlayers: string[]
+  blockedPlayers: string[],
 ): void {
   const round0 = doubleElim.winners.rounds[0];
   if (!round0) return;
@@ -138,9 +187,19 @@ function collectDoubleElimSwaps(
   }
 }
 
-export function applySwaps(playoffs: GroupStagePlayoffs, swaps: SwapEntry[]): void {
-  const replaceMatches = (target: BracketTarget, matches: (Match | null | undefined)[]): void => {
-    const replacements = new Map(swaps.filter((swap) => swap.target === target).map((swap) => [swap.oldId, swap.newId]));
+export function applySwaps(
+  playoffs: GroupStagePlayoffs,
+  swaps: SwapEntry[],
+): void {
+  const replaceMatches = (
+    target: BracketTarget,
+    matches: (Match | null | undefined)[],
+  ): void => {
+    const replacements = new Map(
+      swaps
+        .filter((swap) => swap.target === target)
+        .map((swap) => [swap.oldId, swap.newId]),
+    );
     for (const match of matches) {
       if (!match) continue;
       for (const key of ['player1Id', 'player2Id', 'winnerId'] as const) {
@@ -150,12 +209,23 @@ export function applySwaps(playoffs: GroupStagePlayoffs, swaps: SwapEntry[]): vo
     }
   };
   for (const target of ['main', 'consolation'] as const) {
-    const bracket = target === 'main' ? playoffs.mainBracket : playoffs.consolationBracket;
-    if (bracket) replaceMatches(target, [...bracket.rounds.flat(), bracket.thirdPlaceMatch]);
+    const bracket =
+      target === 'main' ? playoffs.mainBracket : playoffs.consolationBracket;
+    if (bracket)
+      replaceMatches(target, [
+        ...bracket.rounds.flat(),
+        bracket.thirdPlaceMatch,
+      ]);
   }
   for (const target of ['mainDoubleElim', 'consolationDoubleElim'] as const) {
     const bracket = playoffs[target];
-    if (bracket) replaceMatches(target, [...bracket.winners.rounds.flat(), ...bracket.losers.rounds.flat(), bracket.finals.grandFinal, bracket.finals.resetFinal]);
+    if (bracket)
+      replaceMatches(target, [
+        ...bracket.winners.rounds.flat(),
+        ...bracket.losers.rounds.flat(),
+        bracket.finals.grandFinal,
+        bracket.finals.resetFinal,
+      ]);
   }
 }
 
@@ -167,58 +237,106 @@ export function applySwaps(playoffs: GroupStagePlayoffs, swaps: SwapEntry[]): vo
  *   real bracket match), all swaps are applied and the tournament is saved.
  * - If ANY changed position is unsafe, no swaps are applied and `blocked` is returned.
  */
-export async function syncBracketParticipants(tournamentId: string): Promise<SyncBracketResult> {
+export async function syncBracketParticipants(
+  tournamentId: string,
+): Promise<SyncBracketResult> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
 
-  const tournament = doc.toMutableJSON();
-  if (tournament.format !== Format.GROUPS_TO_BRACKET) {
-    return { updated: false, blocked: false, blockedPlayers: [] };
-  }
+  let result: SyncBracketResult = {
+    updated: true,
+    blocked: false,
+    blockedPlayers: [],
+  };
+  await doc.incrementalModify((tournament) => {
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) {
+      result = { updated: false, blocked: false, blockedPlayers: [] };
+      return tournament;
+    }
 
-  const playoffs = tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
-  if (!playoffs) {
-    return { updated: false, blocked: false, blockedPlayers: [] };
-  }
+    const playoffs =
+      tournament.groupStagePlayoffs ?? tournament.groupStageBrackets;
+    if (!playoffs) {
+      result = { updated: false, blocked: false, blockedPlayers: [] };
+      return tournament;
+    }
 
-  const storedParticipants = ensureParticipants(tournament.players, tournament.participants);
-  const participantPlayers = getParticipantPlayers(tournament.players, storedParticipants);
-  const newAdvancers = getGroupAdvancers(tournament.groupStage, participantPlayers, {
-    scoringMode: tournament.scoringMode,
-    maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
+    const storedParticipants = ensureParticipants(
+      tournament.players,
+      tournament.participants,
+    );
+    const participantPlayers = getParticipantPlayers(
+      tournament.players,
+      storedParticipants,
+    );
+    const newAdvancers = getGroupAdvancers(
+      tournament.groupStage,
+      participantPlayers,
+      {
+        scoringMode: tournament.scoringMode,
+        maxSets: tournament.groupStageMaxSets ?? tournament.maxSets,
+      },
+    );
+
+    const swaps: SwapEntry[] = [];
+    const blockedPlayers: string[] = [];
+
+    const mainIds = newAdvancers.mainWithLucky.map((e) => e.id);
+    const consolationIds = newAdvancers.consolation.map((e) => e.id);
+
+    if (playoffs.mainBracket) {
+      collectBracketSwaps(
+        playoffs.mainBracket,
+        mainIds,
+        'main',
+        swaps,
+        blockedPlayers,
+      );
+    }
+    if (playoffs.mainDoubleElim) {
+      collectDoubleElimSwaps(
+        playoffs.mainDoubleElim,
+        mainIds,
+        'mainDoubleElim',
+        swaps,
+        blockedPlayers,
+      );
+    }
+    if (playoffs.consolationBracket) {
+      collectBracketSwaps(
+        playoffs.consolationBracket,
+        consolationIds,
+        'consolation',
+        swaps,
+        blockedPlayers,
+      );
+    }
+    if (playoffs.consolationDoubleElim) {
+      collectDoubleElimSwaps(
+        playoffs.consolationDoubleElim,
+        consolationIds,
+        'consolationDoubleElim',
+        swaps,
+        blockedPlayers,
+      );
+    }
+
+    if (blockedPlayers.length > 0) {
+      result = { updated: false, blocked: true, blockedPlayers };
+      return tournament;
+    }
+    if (swaps.length === 0) {
+      result = { updated: false, blocked: false, blockedPlayers: [] };
+      return tournament;
+    }
+
+    applySwaps(playoffs, swaps);
+    tournament.groupStagePlayoffs = playoffs;
+
+    return tournament;
   });
-
-  const swaps: SwapEntry[] = [];
-  const blockedPlayers: string[] = [];
-
-  const mainIds = newAdvancers.mainWithLucky.map((e) => e.id);
-  const consolationIds = newAdvancers.consolation.map((e) => e.id);
-
-  if (playoffs.mainBracket) {
-    collectBracketSwaps(playoffs.mainBracket, mainIds, 'main', swaps, blockedPlayers);
-  }
-  if (playoffs.mainDoubleElim) {
-    collectDoubleElimSwaps(playoffs.mainDoubleElim, mainIds, 'mainDoubleElim', swaps, blockedPlayers);
-  }
-  if (playoffs.consolationBracket) {
-    collectBracketSwaps(playoffs.consolationBracket, consolationIds, 'consolation', swaps, blockedPlayers);
-  }
-  if (playoffs.consolationDoubleElim) {
-    collectDoubleElimSwaps(playoffs.consolationDoubleElim, consolationIds, 'consolationDoubleElim', swaps, blockedPlayers);
-  }
-
-  if (blockedPlayers.length > 0) {
-    return { updated: false, blocked: true, blockedPlayers };
-  }
-  if (swaps.length === 0) {
-    return { updated: false, blocked: false, blockedPlayers: [] };
-  }
-
-  applySwaps(playoffs, swaps);
-  tournament.groupStagePlayoffs = playoffs;
-  await doc.incrementalModify(() => tournament);
-  return { updated: true, blocked: false, blockedPlayers: [] };
+  return result;
 }
 
 export interface UpdateGroupStageSettingsParams {
@@ -234,14 +352,15 @@ export async function updateGroupStageSettings(
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (doc === null) throw new Error(`Tournament ${tournamentId} not found`);
 
-  const tournament = doc.toMutableJSON();
-  if (tournament.format !== Format.GROUPS_TO_BRACKET) {
-    throw new Error('Tournament is not a Groups to Bracket format');
-  }
+  await doc.incrementalModify((tournament) => {
+    if (tournament.format !== Format.GROUPS_TO_BRACKET) {
+      throw new Error('Tournament is not a Groups to Bracket format');
+    }
 
-  tournament.groupStage.settings.qualifiers = params.qualifiers;
-  tournament.groupStage.settings.bracketType = params.bracketType;
-  tournament.groupStagePlayoffs = null;
+    tournament.groupStage.settings.qualifiers = params.qualifiers;
+    tournament.groupStage.settings.bracketType = params.bracketType;
+    tournament.groupStagePlayoffs = null;
 
-  await doc.incrementalModify(() => tournament);
+    return tournament;
+  });
 }

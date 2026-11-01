@@ -16,6 +16,7 @@ import {
   listPlayerGroups,
   createPlayerGroup,
   updatePlayerGroup,
+  deleteAllPlayerGroups,
   deletePlayerGroup,
   reorderPlayerGroups,
 } from '../services/playerGroupService';
@@ -268,7 +269,7 @@ export const PlayerLibraryPage = (): ReactElement => {
       const parsed = Number(eloRaw);
       eloNum = Number.isInteger(parsed) && parsed >= 1 && parsed <= 9999 ? parsed : undefined;
     }
-    const patch = eloNum === undefined ? { name: trimmed } : { name: trimmed, elo: eloNum };
+    const patch = { name: trimmed, elo: eloNum ?? null };
     void updatePlayerApi(editingPlayerId, patch).then(reloadLibrary);
     setEditingPlayerId(null);
     setEditingPlayerName('');
@@ -316,8 +317,7 @@ export const PlayerLibraryPage = (): ReactElement => {
 
   function handleDeleteAllGroups(): void {
     setSelectedGroupId(null);
-    const ids = library.groups.map((g) => g.id);
-    void Promise.all(ids.map((id) => deletePlayerGroup(id))).then(reloadLibrary);
+    void deleteAllPlayerGroups().then(reloadLibrary);
     setShowDeleteAllGroupsConfirm(false);
   }
 

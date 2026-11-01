@@ -11,7 +11,7 @@ import {useAnalytics} from '../utils/analytics';
 import {computeMinTotalRounds} from '../utils/swissUtils';
 import {distributePlayersToGroups, indexToGroupLabel} from '../utils/groupStageUtils';
 import type {BaseGroup} from '../utils/groupStageUtils';
-import {allParticipantsComplete, buildParticipants, getParticipantPlayers} from '../utils/participantUtils';
+import {getMemberIndexes, allParticipantsComplete, buildParticipants, getParticipantPlayers} from '../utils/participantUtils';
 import {PlayerInput} from '../components/PlayerInput';
 import { showToast } from '../utils/toastUtils';
 import {ParticipantPlayerInput} from '../components/common/ParticipantPlayerInput';
@@ -293,6 +293,7 @@ export const CreateTournamentPage = (): ReactElement => {
         ...(p.elo !== undefined && { elo: p.elo }),
         ...(p.libraryId !== undefined && { libraryId: p.libraryId }),
       })),
+      participantPlayerIndexes: getMemberIndexes(participants, players.map((p) => p.id)),
       teamSize,
       scoringMode: data.scoringMode,
       maxSets: data.maxSets,
@@ -300,6 +301,7 @@ export const CreateTournamentPage = (): ReactElement => {
       bracketMaxSets: data.bracketMaxSets,
     };
     if (data.format === Format.GROUPS_TO_BRACKET) {
+      req.groupParticipantIndexes = getMemberIndexes(customGroups ?? distributePlayersToGroups(participantPlayers, data.groupCount), participants.map((p) => p.id));
       req.groupCount = data.groupCount;
       req.qualifiers = qualifiers;
       req.consolation = data.consolation;

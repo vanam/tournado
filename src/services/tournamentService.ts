@@ -1,19 +1,32 @@
+import { updateTournamentStatus } from '../utils/tournamentStatus';
 import { getDatabase } from '../db';
 import { generateBracket } from '../utils/bracketUtils';
 import { generateDoubleElim } from '../utils/doubleElimUtils';
 import { generateSchedule } from '../utils/roundRobinUtils';
-import { generateSwissInitialSchedule, computeMinTotalRounds } from '../utils/swissUtils';
-import { createGroupStage } from '../utils/groupStageUtils';
-import { buildParticipants, getParticipantPlayers } from '../utils/participantUtils';
+import {
+  generateSwissInitialSchedule,
+  computeMinTotalRounds,
+} from '../utils/swissUtils';
+import { createGroupStage, indexToGroupLabel } from '../utils/groupStageUtils';
+import {
+  buildParticipants,
+  getParticipantPlayers,
+} from '../utils/participantUtils';
 import { computeTournamentProgress } from '../utils/progressUtils';
 import { getTournamentResults } from '../utils/resultsUtils';
 import { TOURNAMENT_VERSION } from '../utils/dataPortability';
 import { Format } from '../types';
 import type {
-  Player, Tournament,
-  SingleElimTournament, DoubleElimTournament, RoundRobinTournament,
-  SwissTournament, GroupsToBracketTournament,
-  ScoreMode, BracketType, RankedResult,
+  Player,
+  Tournament,
+  SingleElimTournament,
+  DoubleElimTournament,
+  RoundRobinTournament,
+  SwissTournament,
+  GroupsToBracketTournament,
+  ScoreMode,
+  BracketType,
+  RankedResult,
 } from '../types';
 
 export interface TournamentSummary {
@@ -30,7 +43,14 @@ export interface TournamentSummary {
 export interface CreateTournamentRequest {
   name: string;
   format: Format;
-  players: Array<{ name: string; seed?: number; elo?: number; libraryId?: string }>;
+  players: Array<{
+    name: string;
+    seed?: number;
+    elo?: number;
+    libraryId?: string;
+  }>;
+  participantPlayerIndexes?: number[][];
+  groupParticipantIndexes?: number[][];
   teamSize?: number;
   scoringMode?: ScoreMode;
   maxSets?: number;
@@ -44,6 +64,7 @@ export interface CreateTournamentRequest {
 }
 
 function toSummary(t: Tournament): TournamentSummary {
+  updateTournamentStatus(t);
   return {
     id: t.id,
     name: t.name,
@@ -56,24 +77,33 @@ function toSummary(t: Tournament): TournamentSummary {
   };
 }
 
-export async function listTournaments(filters?: { format?: Format; status?: 'active' | 'completed' }): Promise<TournamentSummary[]> {
+export async function listTournaments(filters?: {
+  format?: Format;
+  status?: 'active' | 'completed';
+}): Promise<TournamentSummary[]> {
   const db = await getDatabase();
   const docs = await db.tournaments.find().exec();
-  let tournaments = docs.map(d => d.toMutableJSON());
+  let tournaments = docs.map((d) => {
+    const value = d.toMutableJSON();
+    updateTournamentStatus(value);
+    return value;
+  });
 
   if (filters?.format) {
-    tournaments = tournaments.filter(t => t.format === filters.format);
+    tournaments = tournaments.filter((t) => t.format === filters.format);
   }
   if (filters?.status === 'completed') {
-    tournaments = tournaments.filter(t => t.completedAt != null);
+    tournaments = tournaments.filter((t) => t.completedAt != null);
   } else if (filters?.status === 'active') {
-    tournaments = tournaments.filter(t => t.completedAt == null);
+    tournaments = tournaments.filter((t) => t.completedAt == null);
   }
 
   return tournaments.map((t) => toSummary(t));
 }
 
-export async function createTournament(body: CreateTournamentRequest): Promise<Tournament> {
+export async function createTournament(
+  body: CreateTournamentRequest,
+): Promise<Tournament> {
   const { name, format, players: playerInputs, teamSize = 1 } = body;
 
   if (!name || !Array.isArray(playerInputs) || playerInputs.length < 2) {
@@ -91,14 +121,36 @@ export async function createTournament(body: CreateTournamentRequest): Promise<T
     return player;
   });
 
-  const participants = buildParticipants(players, teamSize, []);
+  const participants = body.participantPlayerIndexes
+    ? body.participantPlayerIndexes.map((indexes, index) => ({
+        id:
+          teamSize === 1
+            ? (players[indexes[0] ?? -1]?.id ?? '')
+            : crypto.randomUUID(),
+        playerIds: indexes.map((i) => players[i]?.id ?? ''),
+        seed: index + 1,
+      }))
+    : buildParticipants(players, teamSize, []);
+  const members = participants.flatMap((p) => p.playerIds);
+  if (
+    members.length !== players.length ||
+    new Set(members).size !== players.length ||
+    members.includes('') ||
+    participants.some((p) => p.playerIds.length !== teamSize)
+  ) {
+    throw new Error(
+      'Each player must belong to exactly one complete participant',
+    );
+  }
   const participantPlayers = getParticipantPlayers(players, participants);
 
   function applyOptionalFields<T extends Tournament>(t: T): T {
     if (body.scoringMode !== undefined) t.scoringMode = body.scoringMode;
     if (body.maxSets !== undefined) t.maxSets = body.maxSets;
-    if (body.groupStageMaxSets !== undefined) t.groupStageMaxSets = body.groupStageMaxSets;
-    if (body.bracketMaxSets !== undefined) t.bracketMaxSets = body.bracketMaxSets;
+    if (body.groupStageMaxSets !== undefined)
+      t.groupStageMaxSets = body.groupStageMaxSets;
+    if (body.bracketMaxSets !== undefined)
+      t.bracketMaxSets = body.bracketMaxSets;
     return t;
   }
 
@@ -119,34 +171,77 @@ export async function createTournament(body: CreateTournamentRequest): Promise<T
   switch (format) {
     case Format.SINGLE_ELIM: {
       const bracket = generateBracket(participantPlayers);
-      tournament = applyOptionalFields({ ...shared, format: Format.SINGLE_ELIM, bracket } satisfies SingleElimTournament);
+      tournament = applyOptionalFields({
+        ...shared,
+        format: Format.SINGLE_ELIM,
+        bracket,
+      } satisfies SingleElimTournament);
       break;
     }
     case Format.DOUBLE_ELIM: {
       const doubleElim = generateDoubleElim(participantPlayers);
-      tournament = applyOptionalFields({ ...shared, format: Format.DOUBLE_ELIM, doubleElim } satisfies DoubleElimTournament);
+      tournament = applyOptionalFields({
+        ...shared,
+        format: Format.DOUBLE_ELIM,
+        doubleElim,
+      } satisfies DoubleElimTournament);
       break;
     }
     case Format.ROUND_ROBIN: {
       const schedule = generateSchedule(participantPlayers);
-      tournament = applyOptionalFields({ ...shared, format: Format.ROUND_ROBIN, schedule } satisfies RoundRobinTournament);
+      tournament = applyOptionalFields({
+        ...shared,
+        format: Format.ROUND_ROBIN,
+        schedule,
+      } satisfies RoundRobinTournament);
       break;
     }
     case Format.SWISS: {
       const schedule = generateSwissInitialSchedule(participantPlayers);
-      const totalRounds = body.swissRounds ?? computeMinTotalRounds(participantPlayers.length);
-      tournament = applyOptionalFields({ ...shared, format: Format.SWISS, schedule, totalRounds } satisfies SwissTournament);
+      const totalRounds =
+        body.swissRounds ?? computeMinTotalRounds(participantPlayers.length);
+      tournament = applyOptionalFields({
+        ...shared,
+        format: Format.SWISS,
+        schedule,
+        totalRounds,
+      } satisfies SwissTournament);
       break;
     }
     case Format.GROUPS_TO_BRACKET: {
       const groupCount = body.groupCount ?? 2;
-      const groupStage = createGroupStage(participantPlayers, {
-        groupCount,
-        qualifiers: body.qualifiers,
-        consolation: body.consolation,
-        bracketType: body.bracketType,
-      });
-      tournament = applyOptionalFields({ ...shared, format: Format.GROUPS_TO_BRACKET, groupStage } satisfies GroupsToBracketTournament);
+      const customGroups = body.groupParticipantIndexes?.map(
+        (indexes, index) => ({
+          id: `g${index + 1}`,
+          name: `Group ${indexToGroupLabel(index)}`,
+          playerIds: indexes.map((i) => participants[i]?.id ?? ''),
+        }),
+      );
+      const groupMembers = customGroups?.flatMap((group) => group.playerIds);
+      if (
+        customGroups &&
+        (customGroups.length !== groupCount ||
+          groupMembers?.length !== participants.length ||
+          new Set(groupMembers).size !== participants.length ||
+          groupMembers.includes(''))
+      ) {
+        throw new Error('Each participant must belong to exactly one group');
+      }
+      const groupStage = createGroupStage(
+        participantPlayers,
+        {
+          groupCount,
+          qualifiers: body.qualifiers,
+          consolation: body.consolation,
+          bracketType: body.bracketType,
+        },
+        customGroups,
+      );
+      tournament = applyOptionalFields({
+        ...shared,
+        format: Format.GROUPS_TO_BRACKET,
+        groupStage,
+      } satisfies GroupsToBracketTournament);
       break;
     }
   }
@@ -172,7 +267,7 @@ export async function deleteTournament(id: string): Promise<void> {
 export async function deleteAllTournaments(): Promise<void> {
   const db = await getDatabase();
   const docs = await db.tournaments.find().exec();
-  await Promise.all(docs.map(d => d.remove()));
+  await Promise.all(docs.map((d) => d.remove()));
 }
 
 export async function duplicateTournament(id: string): Promise<Tournament> {
@@ -192,7 +287,9 @@ export async function duplicateTournament(id: string): Promise<Tournament> {
   return cloned;
 }
 
-export async function getTournamentProgress(id: string): Promise<{ completed: number; total: number }> {
+export async function getTournamentProgress(
+  id: string,
+): Promise<{ completed: number; total: number }> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(id).exec();
   if (!doc) throw new Error(`Tournament ${id} not found`);
@@ -200,7 +297,9 @@ export async function getTournamentProgress(id: string): Promise<{ completed: nu
   return computeTournamentProgress(tournament);
 }
 
-export async function getTournamentResultsById(id: string): Promise<RankedResult[]> {
+export async function getTournamentResultsById(
+  id: string,
+): Promise<RankedResult[]> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(id).exec();
   if (!doc) throw new Error(`Tournament ${id} not found`);
@@ -208,7 +307,10 @@ export async function getTournamentResultsById(id: string): Promise<RankedResult
   return getTournamentResults(tournament);
 }
 
-export async function renameTournament(tournamentId: string, newName: string): Promise<void> {
+export async function renameTournament(
+  tournamentId: string,
+  newName: string,
+): Promise<void> {
   const trimmedName = newName.trim();
   if (!trimmedName) throw new Error('Name is required');
 
@@ -216,12 +318,18 @@ export async function renameTournament(tournamentId: string, newName: string): P
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
 
-  const tournament = doc.toMutableJSON();
-  tournament.name = trimmedName;
-  await doc.incrementalModify(() => tournament);
+  await doc.incrementalModify((tournament) => {
+    tournament.name = trimmedName;
+
+    return tournament;
+  });
 }
 
-export async function renameTournamentPlayer(tournamentId: string, playerId: string, name: string): Promise<void> {
+export async function renameTournamentPlayer(
+  tournamentId: string,
+  playerId: string,
+  name: string,
+): Promise<void> {
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error('Name is required');
 
@@ -229,12 +337,14 @@ export async function renameTournamentPlayer(tournamentId: string, playerId: str
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
 
-  const tournament = doc.toMutableJSON();
-  const player = tournament.players.find((p) => p.id === playerId);
-  if (player === undefined) throw new Error(`Player ${playerId} not found`);
+  await doc.incrementalModify((tournament) => {
+    const player = tournament.players.find((p) => p.id === playerId);
+    if (player === undefined) throw new Error(`Player ${playerId} not found`);
 
-  player.name = trimmedName;
-  await doc.incrementalModify(() => tournament);
+    player.name = trimmedName;
+
+    return tournament;
+  });
 }
 
 export async function updateTournamentPlayer(
@@ -250,15 +360,17 @@ export async function updateTournamentPlayer(
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
 
-  const tournament = doc.toMutableJSON();
-  const player = tournament.players.find((p) => p.id === playerId);
-  if (player === undefined) throw new Error(`Player ${playerId} not found`);
+  await doc.incrementalModify((tournament) => {
+    const player = tournament.players.find((p) => p.id === playerId);
+    if (player === undefined) throw new Error(`Player ${playerId} not found`);
 
-  player.name = trimmedName;
-  if (elo === undefined) {
-    delete player.elo;
-  } else {
-    player.elo = elo;
-  }
-  await doc.incrementalModify(() => tournament);
+    player.name = trimmedName;
+    if (elo === undefined) {
+      delete player.elo;
+    } else {
+      player.elo = elo;
+    }
+
+    return tournament;
+  });
 }

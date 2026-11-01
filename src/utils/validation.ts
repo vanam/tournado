@@ -22,7 +22,7 @@ function isString(value: unknown): value is string {
 }
 
 function isNumber(value: unknown): value is number {
-  return typeof value === 'number' && !Number.isNaN(value);
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
 function isBoolean(value: unknown): value is boolean {
@@ -80,13 +80,13 @@ function isValidMatch(value: unknown): value is Match {
   if (!isString(value['id'])) return false;
   if ('player1Id' in value && !isNullish(value['player1Id']) && !isString(value['player1Id'])) return false;
   if ('player2Id' in value && !isNullish(value['player2Id']) && !isString(value['player2Id'])) return false;
-  if ('scores' in value && !isArray(value['scores'])) return false;
+  if (!isArray(value['scores'])) return false;
   if ('scores' in value && isArray(value['scores']) && !value['scores'].every((s) => isValidSetScore(s))) return false;
   if ('winnerId' in value && !isNullish(value['winnerId']) && !isString(value['winnerId'])) return false;
-  if ('walkover' in value && !isBoolean(value['walkover'])) return false;
+  if (!isBoolean(value['walkover'])) return false;
   if ('nextMatchId' in value && !isNullish(value['nextMatchId']) && !isString(value['nextMatchId'])) return false;
   if ('position' in value && !isNullish(value['position']) && !isNumber(value['position'])) return false;
-  if ('dummy' in value && !isBoolean(value['dummy'])) return false;
+  if (!isBoolean(value['dummy'])) return false;
   return true;
 }
 

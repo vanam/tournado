@@ -1,3 +1,4 @@
+import { sortPlayerGroups } from '../services/playerGroupService';
 import { useEffect, useState } from 'react';
 import { useDatabase } from '../context/databaseContext';
 import type { PlayerLibraryEntry, PlayerGroup } from '../types';
@@ -35,7 +36,7 @@ export function usePlayerGroups(): {
   useEffect(() => {
     const query = db.playerGroups.find();
     const subscription = query.$.subscribe((docs) => {
-      setGroups(docs.map((d) => d.toJSON() as PlayerGroup));
+      setGroups(sortPlayerGroups(docs.map((d) => d.toJSON() as PlayerGroup)));
       setIsLoading(false);
     });
     return (): void => { subscription.unsubscribe(); };

@@ -1,9 +1,11 @@
+import { updateTournamentStatus } from '../utils/tournamentStatus';
 import { useEffect, useState } from 'react';
 import { useDatabase } from '../context/databaseContext';
 import type { TournamentSummary } from '../services/tournamentService';
 import type { Format, Tournament } from '../types';
 
 function toSummary(t: Tournament): TournamentSummary {
+  updateTournamentStatus(t);
   return {
     id: t.id,
     name: t.name,
@@ -32,7 +34,7 @@ export function useTournaments(filters?: {
       ? db.tournaments.find({ selector: { format } })
       : db.tournaments.find();
     const subscription = query.$.subscribe((docs) => {
-      let results = docs.map((d) => d.toMutableJSON());
+      let results = docs.map((d) => { const value = d.toMutableJSON(); updateTournamentStatus(value); return value; });
       if (status === 'completed') results = results.filter((t) => t.completedAt != null);
       else if (status === 'active') results = results.filter((t) => t.completedAt == null);
       setTournaments(results.map((t) => toSummary(t)));
@@ -55,7 +57,9 @@ export function useTournamentById(id: string): {
   useEffect(() => {
     const query = db.tournaments.findOne(id);
     const subscription = query.$.subscribe((doc) => {
-      setTournament(doc ? doc.toMutableJSON() : null);
+      const value = doc?.toMutableJSON() ?? null;
+      if (value) updateTournamentStatus(value);
+      setTournament(value);
       setIsLoading(false);
     });
     return (): void => { subscription.unsubscribe(); };

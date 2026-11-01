@@ -74,3 +74,8 @@ export function ensureParticipants(players: Player[], participants: Participant[
   if (participants !== undefined && participants.length > 0) return participants;
   return buildParticipants(players, 1, []);
 }
+
+/** Serializes form membership without relying on transient IDs. */
+export function getMemberIndexes(groups: { playerIds: string[] }[], ids: string[]): number[][] {
+  return groups.map((group) => group.playerIds.map((id) => ids.indexOf(id)));
+}

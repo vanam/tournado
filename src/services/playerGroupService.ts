@@ -5,7 +5,7 @@ import type { PlayerGroup } from '../types';
 export async function listPlayerGroups(): Promise<PlayerGroup[]> {
   const db = await getDatabase();
   const docs = await db.playerGroups.find().exec();
-  return docs.map(d => d.toJSON() as PlayerGroup);
+  return sortPlayerGroups(docs.map(d => d.toJSON() as PlayerGroup));
 }
 
 export async function createPlayerGroup(name: string): Promise<PlayerGroup> {
@@ -19,9 +19,8 @@ export async function updatePlayerGroup(id: string, name: string): Promise<Playe
   const db = await getDatabase();
   const doc = await db.playerGroups.findOne(id).exec();
   if (!doc) throw new Error(`Group ${id} not found`);
-  const updated = { ...doc.toMutableJSON(), name };
-  await doc.incrementalModify(() => updated);
-  return updated;
+  const updated = await doc.incrementalPatch({ name });
+  return updated.toMutableJSON();
 }
 
 export async function deletePlayerGroup(id: string): Promise<void> {
@@ -31,11 +30,10 @@ export async function deletePlayerGroup(id: string): Promise<void> {
 
   const playerDocs = await db.players.find().exec();
   for (const pDoc of playerDocs) {
-    const player = pDoc.toMutableJSON();
-    if (player.groupIds.includes(id)) {
+    await pDoc.incrementalModify((player) => {
       player.groupIds = player.groupIds.filter(gid => gid !== id);
-      await pDoc.incrementalModify(() => player);
-    }
+      return player;
+    });
   }
 }
 
@@ -45,11 +43,7 @@ export async function deleteAllPlayerGroups(): Promise<void> {
   await Promise.all(groupDocs.map(d => d.remove()));
   const playerDocs = await db.players.find().exec();
   for (const pDoc of playerDocs) {
-    const player = pDoc.toMutableJSON();
-    if (player.groupIds.length > 0) {
-      player.groupIds = [];
-      await pDoc.incrementalModify(() => player);
-    }
+    await pDoc.incrementalPatch({ groupIds: [] });
   }
 }
 
@@ -57,8 +51,16 @@ export async function reorderPlayerGroups(ids: string[]): Promise<PlayerGroup[]>
   const db = await getDatabase();
   const docs = await db.playerGroups.find().exec();
   const groupMap = new Map(docs.map(d => [d.toJSON().id, d.toJSON() as PlayerGroup]));
+  await Promise.all(ids.map(async (id, order) => {
+    const doc = docs.find((d) => d.primary === id);
+    if (doc) await doc.incrementalPatch({ order });
+  }));
   return ids.flatMap(id => {
     const g = groupMap.get(id);
     return g ? [g] : [];
   });
+}
+
+export function sortPlayerGroups(groups: PlayerGroup[]): PlayerGroup[] {
+  return groups.toSorted((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id));
 }

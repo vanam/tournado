@@ -1,4 +1,5 @@
 export interface PlayerGroup {
+  order?: number;
   id: string;
   name: string;
   version: number;

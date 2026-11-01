@@ -1,10 +1,14 @@
 import { createRxDatabase, addRxPlugin } from 'rxdb';
+import { RxDBMigrationSchemaPlugin } from 'rxdb/plugins/migration-schema';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { wrappedValidateZSchemaStorage } from 'rxdb/plugins/validate-z-schema';
 import { tournamentSchema } from './schemas/tournament';
 import { playerSchema } from './schemas/player';
 import { playerGroupSchema } from './schemas/playerGroup';
+import type { PlayerGroup } from '../types';
 import type { DatabaseCollections, TournadoDatabase } from './collections';
+
+addRxPlugin(RxDBMigrationSchemaPlugin);
 
 let dbPromise: Promise<TournadoDatabase> | null = null;
 
@@ -24,7 +28,7 @@ async function _createDatabase(): Promise<TournadoDatabase> {
   await db.addCollections({
     tournaments: { schema: tournamentSchema },
     players: { schema: playerSchema },
-    playerGroups: { schema: playerGroupSchema },
+    playerGroups: { schema: playerGroupSchema, migrationStrategies: { 1: (doc: PlayerGroup): PlayerGroup => doc } },
   });
 
   return db;

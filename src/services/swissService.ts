@@ -1,31 +1,37 @@
 import { getDatabase } from '../db';
-import { generateNextSwissRound, isCurrentRoundComplete } from '../utils/swissUtils';
+import {
+  generateNextSwissRound,
+  isCurrentRoundComplete,
+} from '../utils/swissUtils';
 import { Format } from '../types';
 import type { Tournament } from '../types';
 
-export async function generateNextRound(tournamentId: string): Promise<Tournament> {
+export async function generateNextRound(
+  tournamentId: string,
+): Promise<Tournament> {
   const db = await getDatabase();
   const doc = await db.tournaments.findOne(tournamentId).exec();
   if (!doc) throw new Error(`Tournament ${tournamentId} not found`);
 
-  const tournament = doc.toMutableJSON();
-  if (tournament.format !== Format.SWISS) {
-    throw new Error('Tournament is not a Swiss format');
-  }
+  const saved = await doc.incrementalModify((tournament) => {
+    if (tournament.format !== Format.SWISS) {
+      throw new Error('Tournament is not a Swiss format');
+    }
 
-  if (!isCurrentRoundComplete(tournament.schedule)) {
-    throw new Error('Current round is not complete');
-  }
+    if (!isCurrentRoundComplete(tournament.schedule)) {
+      throw new Error('Current round is not complete');
+    }
 
-  if (tournament.schedule.rounds.length >= tournament.totalRounds) {
-    throw new Error('All rounds have been played');
-  }
+    if (tournament.schedule.rounds.length >= tournament.totalRounds) {
+      throw new Error('All rounds have been played');
+    }
 
-  const round = generateNextSwissRound(tournament);
-  tournament.schedule.rounds.push(round);
+    const round = generateNextSwissRound(tournament);
+    tournament.schedule.rounds.push(round);
 
-  await doc.incrementalModify(() => tournament);
-  return tournament;
+    return tournament;
+  });
+  return saved.toMutableJSON();
 }
 
 export async function isRoundComplete(tournamentId: string): Promise<boolean> {

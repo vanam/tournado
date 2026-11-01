@@ -1,4 +1,6 @@
 import { getDatabase } from '../db';
+import { ensureParticipants } from '../utils/participantUtils';
+import { updateTournamentStatus } from '../utils/tournamentStatus';
 import { getTournamentResults } from '../utils/resultsUtils';
 import { parseBulkInput } from '../utils/importUtils';
 import { PLAYER_VERSION } from '../utils/dataPortability';
@@ -45,7 +47,7 @@ export async function createPlayer(name: string, elo?: number, groupIds: string[
 
 export async function updatePlayer(
   id: string,
-  patch: { name?: string; elo?: number; groupIds?: string[] },
+  patch: { name?: string; elo?: number | null; groupIds?: string[] },
   translate: (key: string) => string = (k) => k
 ): Promise<PlayerLibraryEntry> {
   const db = await getDatabase();
@@ -64,9 +66,14 @@ export async function updatePlayer(
     patch = { ...patch, name: trimmedName };
   }
 
-  const updated = { ...doc.toMutableJSON(), ...patch } as PlayerLibraryEntry;
-  await doc.incrementalModify(() => updated);
-  return updated;
+  const updated = await doc.incrementalModify((current) => {
+    if (patch.name !== undefined) current.name = patch.name;
+    if (patch.groupIds !== undefined) current.groupIds = patch.groupIds;
+    if (patch.elo === null) delete current.elo;
+    else if (patch.elo !== undefined) current.elo = patch.elo;
+    return current;
+  });
+  return updated.toMutableJSON();
 }
 
 export async function deletePlayer(id: string): Promise<void> {
@@ -133,14 +140,10 @@ export async function getPlayerProfile(playerId: string): Promise<PlayerProfile>
     if (!playerInTournament) continue;
 
     const results = getTournamentResults(tournament);
-    const playerResult = results.find(
-      (r) => {
-        const matchingPlayer = tournament.players.find(
-          (p) => p.id === r.playerId || p.libraryId === r.playerId
-        );
-        return matchingPlayer?.libraryId === playerId || matchingPlayer?.id === playerId;
-      }
-    );
+    const playerIds = new Set(tournament.players.filter((p) => p.libraryId === playerId || p.id === playerId).map((p) => p.id));
+    const participant = ensureParticipants(tournament.players, tournament.participants).find((p) => p.playerIds.some((id) => playerIds.has(id)));
+    const playerResult = results.find((r) => r.playerId === participant?.id);
+    updateTournamentStatus(tournament);
 
     const entry: PlayerProfile['tournaments'][number] = {
       tournamentId: tournament.id,
