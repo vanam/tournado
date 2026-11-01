@@ -11,7 +11,7 @@ import sonarjs from 'eslint-plugin-sonarjs'
 import unicorn from 'eslint-plugin-unicorn'
 
 export default defineConfig([
-  globalIgnores(['dist', 'dev-dist', 'src/swApi.ts']),
+  globalIgnores(['dist', 'dev-dist', 'storybook-static', 'src/swApi.ts']),
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {

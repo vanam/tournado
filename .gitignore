@@ -12,3 +12,7 @@ dev-dist
 telemetry-id
 
 .claude
+
+storybook-static
+playwright-report
+test-results

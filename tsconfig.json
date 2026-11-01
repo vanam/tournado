@@ -58,6 +58,8 @@
 
   "include": [
     "src",
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
     "src/types",
     "vite.config.js",
     "eslint.config.js"

@@ -76,7 +76,7 @@ All formats support both **singles and doubles** play.
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 24.12 or newer
+- [Node.js](https://nodejs.org/) 24.15 or newer
 
 ### Install & Run
 
@@ -106,11 +106,11 @@ npm run deploy
 
 | Category | Technology                          |
 |---|-------------------------------------|
-| UI framework | React 19, TypeScript 5.9            |
-| Build tool | Vite 7                              |
+| UI framework | React 19, TypeScript 6            |
+| Build tool | Vite 8                              |
 | Routing | React Router DOM 7                  |
 | Styling | Tailwind CSS 4, shadcn/ui, Radix UI |
-| Local database | RxDB 16 + Dexie (IndexedDB)         |
+| Local database | RxDB 17 + Dexie (IndexedDB)         |
 | Forms | React Hook Form 7, AJV 8            |
 | Internationalization | Custom i18n (EN, CS, DE, ES)        |
 | PWA | Vite PWA Plugin + Workbox           |
@@ -133,3 +133,24 @@ Tournado deliberately avoids a backend. These are intentional decisions, not lim
 ## License
 
 [GPL-3.0](./LICENSE)
+
+
+## Storybook
+
+```sh
+npm run storybook          # Development catalog on port 6006
+npm run build:storybook    # Coverage + typecheck + static catalog in storybook-static
+npm run test:storybook     # Render every story and run interactions in Chromium
+```
+
+Install Chromium once with `npx playwright install chromium`. Linux CI also needs browser system dependencies (`npx playwright install --with-deps chromium`).
+
+The catalog covers all component and page modules, with 221 stories across primitives, player entry, dialogs, tournament formats, standings, playoffs and complete pages. Theme and language toolbars use the application's real providers. Stories include singles/doubles, incomplete teams, BYEs, walkovers, shared ranks, empty data, completed tournaments and grand-final resets.
+
+Storybook uses an isolated RxDB memory database, disabled analytics and a service-worker stub. It never opens or migrates the application's IndexedDB database. Page/service interactions share the same seeded memory database, reset before each story. Documentation examples render in separate iframes so portals and database state stay isolated. The documentation build has its own 1.6 MB chunk budget for Storybook and the lazy-loaded accessibility engine. The application retains Vite's default budget.
+
+Autodocs combines public subcomponents where appropriate, such as the Card, Table and Select families.
+
+CSF modules use JavaScript with checked JSDoc types, with typed TypeScript fixtures and interactive harnesses. This preserves the repository's prohibition on default exports in TypeScript while using Storybook's required CSF default export. `npm run check:storybook` fails if a component/page module has no documented story owner.
+
+See [review corrections and dependency compatibility](docs/review-fixes.md) for the reviewed defects and tooling version constraints.

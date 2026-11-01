@@ -34,3 +34,18 @@ jobs:
 
       - name: Test
         run: npm run test
+
+      - name: Build Storybook
+        run: npm run build:storybook
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test Storybook
+        run: npm run test:storybook
+
+      - name: Upload Storybook
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook
+          path: ./storybook-static
