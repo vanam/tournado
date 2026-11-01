@@ -476,28 +476,27 @@ export function generateNextSwissRound(tournament: SwissTournament): Round {
   const byePlayerId = assignByeForRound(standings, schedule);
   const prevOpponents = getPreviousOpponents(schedule);
 
-  const orderedIds = standings
-    .map((r) => r.playerId)
-    .filter((id) => id !== byePlayerId);
+  // Prefer the lowest eligible BYE, but try other fresh BYEs before allowing rematches.
+  const byeCandidates = byePlayerId === null ? [null] : [
+    byePlayerId,
+    ...standings.toReversed().map((row) => row.playerId).filter(
+      (id) => id !== byePlayerId && !prevOpponents.get(id)?.has(BYE_PLAYER_ID),
+    ),
+  ];
+  for (const candidate of byeCandidates) {
+    const orderedIds = standings.map((row) => row.playerId).filter((id) => id !== candidate);
+    const paired = pairRound(orderedIds, prevOpponents, idGen, idPrefix, roundNumber);
+    if (paired !== null) return { roundNumber, byePlayerId: candidate, matches: paired };
+  }
 
-  const paired = pairRound(orderedIds, prevOpponents, idGen, idPrefix, roundNumber);
-
-  let matches: Match[];
-  if (paired === null) {
-    matches = [];
-    for (let i = 0; i < orderedIds.length - 1; i += 2) {
-      const p1 = orderedIds[i];
-      const p2 = orderedIds[i + 1];
-      if (!p1 || !p2) continue;
-      matches.push(
-        createMatch(idGen.nextId(idPrefix), {
-          player1Id: p1,
-          player2Id: p2,
-        })
-      );
-    }
-  } else {
-    matches = paired;
+  // Opponents are exhausted for every eligible BYE. Retain the preferred BYE for the fallback.
+  const orderedIds = standings.map((row) => row.playerId).filter((id) => id !== byePlayerId);
+  const matches: Match[] = [];
+  for (let i = 0; i < orderedIds.length - 1; i += 2) {
+    const p1 = orderedIds[i];
+    const p2 = orderedIds[i + 1];
+    if (!p1 || !p2) continue;
+    matches.push(createMatch(idGen.nextId(idPrefix), { player1Id: p1, player2Id: p2 }));
   }
 
   return { roundNumber, byePlayerId, matches };
