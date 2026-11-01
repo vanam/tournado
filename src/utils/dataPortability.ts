@@ -1,4 +1,4 @@
-import Ajv from 'ajv';
+import { getValidator } from 'rxdb/plugins/validate-z-schema';
 import { tournamentSchema } from '../db/schemas/tournament';
 import { playerSchema } from '../db/schemas/player';
 import { playerGroupSchema } from '../db/schemas/playerGroup';
@@ -27,15 +27,16 @@ export interface ExportPayload {
   groups: PlayerGroup[];
 }
 
-const validator = new Ajv({ strict: false });
-const validTournamentSchema = validator.compile<Tournament>(tournamentSchema);
-const validPlayerSchema = validator.compile<PlayerLibraryEntry>(playerSchema);
-const validGroupSchema = validator.compile<PlayerGroup>(playerGroupSchema);
+// Reuse the CSP-safe validator used by storage. AJV compilation generates JavaScript at runtime.
+type DocumentValidator = (document: unknown) => readonly unknown[];
+const validateTournament: DocumentValidator = getValidator(tournamentSchema);
+const validatePlayer: DocumentValidator = getValidator(playerSchema);
+const validateGroup: DocumentValidator = getValidator(playerGroupSchema);
 
 export function validateImportEntities(payload: ExportPayload): void {
-  if (payload.tournaments.some((t) => t.version === TOURNAMENT_VERSION && (!validTournamentSchema(t) || !isValidTournament(t)))
-    || payload.players.some((p) => p.version === PLAYER_VERSION && !validPlayerSchema(p))
-    || payload.groups.some((g) => g.version === GROUP_VERSION && !validGroupSchema(g))) {
+  if (payload.tournaments.some((t) => t.version === TOURNAMENT_VERSION && (validateTournament(t).length > 0 || !isValidTournament(t)))
+    || payload.players.some((p) => p.version === PLAYER_VERSION && validatePlayer(p).length > 0)
+    || payload.groups.some((g) => g.version === GROUP_VERSION && validateGroup(g).length > 0)) {
     throw new Error('Invalid import entity');
   }
 }

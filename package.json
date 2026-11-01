@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:csp": "node scripts/check-production-csp.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
