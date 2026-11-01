@@ -189,6 +189,9 @@ function updateNextMatchSlot(nextMatch: Match, feedIndex: number, winnerId: stri
 }
 
 function tryAutoAdvance(nextMatch: Match, prevRound: Match[], feedIndex: number): void {
+  // Double-elimination entries also wait for losers from the winners bracket.
+  // Their own synchronizer resolves these sources before allowing a BYE.
+  if ('winnersSources' in nextMatch && Array.isArray(nextMatch.winnersSources) && nextMatch.winnersSources.length > 0) return;
   const realMatches = prevRound.filter(m => !isDummyMatch(m));
   const feederAIdx = Math.floor(feedIndex / 2) * 2;
   const feederA = realMatches[feederAIdx];
