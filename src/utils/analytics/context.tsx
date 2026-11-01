@@ -32,7 +32,7 @@ export const AnalyticsProvider = ({ config, children }: AnalyticsProviderProps):
   });
 
   useEffect(() => {
-    if (config.disableTracking ?? document.querySelector(`script[src*="googletagmanager.com/gtag/js?id=${config.measurementId}"]`)) {
+    if (config.disableTracking ?? document.querySelector(`script[src*="googletagmanager.com/gtag/js?id=${CSS.escape(config.measurementId)}"]`)) {
       return;
     }
     const script = document.createElement("script");

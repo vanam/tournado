@@ -183,6 +183,10 @@ function buildRequest(
   return req;
 }
 
+function findOption<T extends string>(options: readonly T[], value: string): T | undefined {
+  return options.find((option) => option === value);
+}
+
 export const TestPage = (): ReactElement => {
   const navigate = useNavigate();
 
@@ -274,7 +278,7 @@ export const TestPage = (): ReactElement => {
           <select
             id="test-format"
             value={format}
-            onChange={(e: ChangeEvent<HTMLSelectElement>) => { setFormat(e.target.value as Format | 'ALL'); }}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) => { setFormat(findOption(Object.values(Format), e.target.value) ?? 'ALL'); }}
             className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
           >
             <option value="ALL">All formats</option>
@@ -291,7 +295,7 @@ export const TestPage = (): ReactElement => {
           <select
             id="test-scoring"
             value={scoringMode}
-            onChange={(e: ChangeEvent<HTMLSelectElement>) => { setScoringMode(e.target.value as ScoreMode); }}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) => { setScoringMode(findOption(Object.values(ScoreMode), e.target.value) ?? ScoreMode.SETS); }}
             className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
           >
             <option value={ScoreMode.SETS}>Sets</option>
@@ -392,7 +396,7 @@ export const TestPage = (): ReactElement => {
               <select
                 id="test-bracket-type"
                 value={bracketType}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => { setBracketType(e.target.value as BracketType); }}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => { setBracketType(findOption(Object.values(BracketType), e.target.value) ?? BracketType.SINGLE_ELIM); }}
                 className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
               >
                 <option value={BracketType.SINGLE_ELIM}>Single elimination</option>

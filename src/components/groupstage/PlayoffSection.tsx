@@ -7,7 +7,7 @@ interface PlayoffSectionProps {
   readonly playoffs: GroupStagePlayoffs | null;
   readonly isDoubleElim: boolean;
   readonly players: Player[];
-  readonly wildCardIds: Set<string> | null;
+  readonly wildcardIds: Set<string> | null;
   readonly groupPlacementByPlayerId: Map<string, string> | null;
   readonly scoringMode: ScoreMode;
   readonly maxSets: number;
@@ -21,7 +21,7 @@ export const PlayoffSection = ({
   playoffs,
   isDoubleElim,
   players,
-  wildCardIds,
+  wildcardIds,
   groupPlacementByPlayerId,
   scoringMode,
   maxSets,
@@ -48,7 +48,7 @@ export const PlayoffSection = ({
           title={t('groupStage.mainBracket')}
           bracket={playoffs.mainBracket}
           players={players}
-          wildCardIds={wildCardIds}
+          wildcardIds={wildcardIds}
           scoringMode={scoringMode}
           maxSets={maxSets}
           groupPlacementByPlayerId={groupPlacementByPlayerId}
@@ -61,7 +61,7 @@ export const PlayoffSection = ({
           title={t('groupStage.mainBracket')}
           doubleElim={playoffs.mainDoubleElim}
           players={players}
-          wildCardIds={wildCardIds}
+          wildcardIds={wildcardIds}
           scoringMode={scoringMode}
           maxSets={maxSets}
           groupPlacementByPlayerId={groupPlacementByPlayerId}
@@ -74,7 +74,7 @@ export const PlayoffSection = ({
           title={t('groupStage.consolationBracket')}
           bracket={playoffs.consolationBracket}
           players={players}
-          wildCardIds={wildCardIds}
+          wildcardIds={wildcardIds}
           scoringMode={scoringMode}
           maxSets={maxSets}
           groupPlacementByPlayerId={groupPlacementByPlayerId}
@@ -87,7 +87,7 @@ export const PlayoffSection = ({
           title={t('groupStage.consolationBracket')}
           doubleElim={playoffs.consolationDoubleElim}
           players={players}
-          wildCardIds={wildCardIds}
+          wildcardIds={wildcardIds}
           scoringMode={scoringMode}
           maxSets={maxSets}
           groupPlacementByPlayerId={groupPlacementByPlayerId}

@@ -21,13 +21,7 @@ function buildCriteriaRows(
   const details = player.tiebreakDetails;
   const applied = Array.isArray(player.tiebreakApplied)
     ? player.tiebreakApplied.filter((key): key is GroupStageCriteriaKey =>
-        key === 'winRate' ||
-        key === 'setRatio' ||
-        key === 'pointRatio' ||
-        key === 'opponentAvgRank' ||
-        key === 'relativeRank' ||
-        key === 'fairPlay' ||
-        key === 'lottery'
+        ['winRate', 'setRatio', 'pointRatio', 'opponentAvgRank', 'relativeRank', 'fairPlay', 'lottery'].includes(key)
       )
     : [];
   const labelMap: Record<GroupStageCriteriaKey, string> = {

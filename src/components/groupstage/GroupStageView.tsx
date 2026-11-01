@@ -29,7 +29,7 @@ import type {
   GroupStagePlayoffs,
   SetScore,
 } from '../../types';
-import { useGroupStageStandings, useGroupComplete, useAdvancers, useWildCardIds, useGroupPlacementByPlayerId } from '../../utils/useGroupStage';
+import { useGroupStageStandings, useGroupComplete, useAdvancers, useWildcardIds, useGroupPlacementByPlayerId } from '../../utils/useGroupStage';
 import { Button } from '@/components/ui/Button';
 
 type MainTab = 'tournament' | 'results';
@@ -137,7 +137,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
   const standingsByGroup = useGroupStageStandings(groupStage, participants, scoringMode, groupStageMaxSets);
   const groupComplete = useGroupComplete(groupStage);
   const advancers = useAdvancers(groupComplete, groupStage, participants, scoringMode, groupStageMaxSets);
-  const wildCardIds = useWildCardIds(advancers);
+  const wildcardIds = useWildcardIds(advancers);
   const groupPlacementByPlayerId = useGroupPlacementByPlayerId(advancers, groupStage);
 
   const winnerId = useMemo(() => {
@@ -337,7 +337,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
             allPlayers={players}
             participants={storedParticipants}
             standingsByGroup={standingsByGroup}
-            wildCardIds={wildCardIds}
+            wildcardIds={wildcardIds}
             groupTabs={groupTabs}
             onGroupTabChange={setGroupTab}
             onEditMatch={handleGroupEditMatch}
@@ -360,7 +360,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
             playoffs={playoffs}
             isDoubleElim={isDoubleElim}
             players={participants}
-            wildCardIds={wildCardIds}
+            wildcardIds={wildcardIds}
             groupPlacementByPlayerId={groupPlacementByPlayerId}
             scoringMode={scoringMode}
             maxSets={bracketMaxSets}

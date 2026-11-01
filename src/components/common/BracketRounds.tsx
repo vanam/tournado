@@ -15,7 +15,7 @@ interface BracketRoundsProps {
   onEditMatch?: (match: Match) => void;
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
-  wildCardIds?: Set<string> | null | undefined;
+  wildcardIds?: Set<string> | null | undefined;
   canEditMatchFn?: (bracket: Bracket, matchId: string) => boolean;
   groupPlacementByPlayerId?: Map<string, string> | null | undefined;
   showSeedNumbers?: boolean | undefined;
@@ -31,7 +31,7 @@ interface RoundMatchProps {
   onEditMatch?: ((match: Match) => void) | undefined;
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
-  wildCardIds?: Set<string> | null | undefined;
+  wildcardIds?: Set<string> | null | undefined;
   canEditMatchFn?: ((bracket: Bracket, matchId: string) => boolean) | undefined;
   groupPlacementByPlayerId?: Map<string, string> | null | undefined;
   showSeedNumbers?: boolean | undefined;
@@ -47,7 +47,7 @@ const RoundMatch = ({
   onEditMatch,
   scoringMode,
   maxSets,
-  wildCardIds,
+  wildcardIds,
   canEditMatchFn,
   groupPlacementByPlayerId,
   showSeedNumbers,
@@ -74,7 +74,7 @@ const RoundMatch = ({
         players={players}
         participants={participants}
         canEdit={editable}
-        wildCardIds={wildCardIds}
+        wildcardIds={wildcardIds}
         scoringMode={scoringMode}
         maxSets={maxSets}
         roundIndex={roundIndex}
@@ -96,7 +96,7 @@ interface BracketRoundProps {
   onEditMatch?: ((match: Match) => void) | undefined;
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
-  wildCardIds?: Set<string> | null | undefined;
+  wildcardIds?: Set<string> | null | undefined;
   canEditMatchFn?: ((bracket: Bracket, matchId: string) => boolean) | undefined;
   groupPlacementByPlayerId?: Map<string, string> | null | undefined;
   showSeedNumbers?: boolean | undefined;
@@ -112,7 +112,7 @@ const BracketRound = ({
   onEditMatch,
   scoringMode,
   maxSets,
-  wildCardIds,
+  wildcardIds,
   canEditMatchFn,
   groupPlacementByPlayerId,
   showSeedNumbers,
@@ -144,7 +144,7 @@ const BracketRound = ({
             onEditMatch={onEditMatch}
             scoringMode={scoringMode}
             maxSets={maxSets}
-            wildCardIds={wildCardIds}
+            wildcardIds={wildcardIds}
             canEditMatchFn={canEditMatchFn}
             groupPlacementByPlayerId={groupPlacementByPlayerId}
             showSeedNumbers={showSeedNumbers}
@@ -162,7 +162,7 @@ export const BracketRounds = ({
   onEditMatch,
   scoringMode,
   maxSets,
-  wildCardIds,
+  wildcardIds,
   canEditMatchFn,
   groupPlacementByPlayerId,
   showSeedNumbers,
@@ -193,7 +193,7 @@ export const BracketRounds = ({
             onEditMatch={onEditMatch}
             scoringMode={scoringMode}
             maxSets={maxSets}
-            wildCardIds={wildCardIds}
+            wildcardIds={wildcardIds}
             canEditMatchFn={canEditMatchFn}
             groupPlacementByPlayerId={groupPlacementByPlayerId}
             showSeedNumbers={showSeedNumbers}

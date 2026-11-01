@@ -12,7 +12,7 @@ interface MatchCardProps {
   participants?: Participant[] | undefined;
   canEdit: boolean;
   onClick?: () => void;
-  wildCardIds?: Set<string> | null | undefined;
+  wildcardIds?: Set<string> | null | undefined;
   scoringMode?: ScoreMode | undefined;
   maxSets?: number | undefined;
   roundIndex: number;
@@ -26,7 +26,7 @@ interface PlayerInfoProps {
   player: Player | undefined;
   placement: string | null;
   seed: string | null;
-  isWildCard: boolean | undefined;
+  isWildcard: boolean | undefined;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 const PlayerInfo = ({
@@ -34,7 +34,7 @@ const PlayerInfo = ({
   player,
   placement,
   seed,
-  isWildCard,
+  isWildcard,
   t,
 }: PlayerInfoProps): ReactElement | null => {
   if (members.length > 0) {
@@ -49,7 +49,7 @@ const PlayerInfo = ({
               <span className="mr-2 text-[10px] font-semibold text-[var(--color-muted)]">{seed}</span>
             )}
             {m.name}
-            {i === 0 && isWildCard && (
+            {i === 0 && isWildcard && (
               <Badge variant="accent" className="ml-2 text-[10px] px-1.5 py-0.5">{t('groupStage.wildCardBadge')}</Badge>
             )}
             {m.elo != null && (
@@ -72,7 +72,7 @@ const PlayerInfo = ({
         <span className="mr-2 text-[10px] font-semibold text-[var(--color-muted)]">{seed}</span>
       )}
       {player.name}
-      {isWildCard && (
+      {isWildcard && (
         <Badge variant="accent" className="ml-2 text-[10px] px-1.5 py-0.5">{t('groupStage.wildCardBadge')}</Badge>
       )}
       {player.elo != null && (
@@ -132,12 +132,12 @@ export interface MatchSideNameProps {
   readonly playerId: string | null;
   readonly placement: string | null;
   readonly seed: string | null;
-  readonly isWildCard: boolean | undefined;
+  readonly isWildcard: boolean | undefined;
   readonly t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-export const MatchSideName = ({ members, player, playerId, placement, seed, isWildCard, t }: MatchSideNameProps): ReactElement => {
-  const info = PlayerInfo({ members, player, placement, seed, isWildCard, t });
+export const MatchSideName = ({ members, player, playerId, placement, seed, isWildcard, t }: MatchSideNameProps): ReactElement => {
+  const info = PlayerInfo({ members, player, placement, seed, isWildcard, t });
   if (info) return info;
   return <>{getPlayerName(playerId, t)}</>;
 };
@@ -148,7 +148,7 @@ export const MatchCard = ({
   participants,
   canEdit,
   onClick,
-  wildCardIds,
+  wildcardIds,
   scoringMode = ScoreMode.SETS,
   maxSets,
   roundIndex,
@@ -166,8 +166,8 @@ export const MatchCard = ({
     : [];
   const p1Participant = participants?.find((p) => p.id === match.player1Id);
   const p2Participant = participants?.find((p) => p.id === match.player2Id);
-  const isWildCard1 = match.player1Id ? wildCardIds?.has(match.player1Id) : undefined;
-  const isWildCard2 = match.player2Id ? wildCardIds?.has(match.player2Id) : undefined;
+  const isWildcard1 = match.player1Id ? wildcardIds?.has(match.player1Id) : undefined;
+  const isWildcard2 = match.player2Id ? wildcardIds?.has(match.player2Id) : undefined;
   const isBye = !match.player1Id || !match.player2Id;
   const isPlayable = match.player1Id && match.player2Id && canEdit;
   const showPoints = scoringMode === ScoreMode.POINTS;
@@ -216,7 +216,7 @@ export const MatchCard = ({
             playerId={match.player1Id}
             placement={p1Placement}
             seed={p1Seed}
-            isWildCard={isWildCard1}
+            isWildcard={isWildcard1}
             t={t}
           />
         </span>
@@ -241,7 +241,7 @@ export const MatchCard = ({
             playerId={match.player2Id}
             placement={p2Placement}
             seed={p2Seed}
-            isWildCard={isWildCard2}
+            isWildcard={isWildcard2}
             t={t}
           />
         </span>

@@ -90,7 +90,7 @@ export default defineConfig([
         assert: 'either',
         depth: 3,
       }],
-      'unicorn/filename-case': ['error', {'case': 'camelCase'}],
+      'unicorn/filename-case': ['error', {'case': 'camelCase', checkDirectories: false}],
       'unicorn/no-null': 'off',
       'unicorn/prefer-global-this': 'off',
       'unicorn/prevent-abbreviations': 'off',
@@ -112,6 +112,7 @@ export default defineConfig([
         'error',
         {
           case: 'pascalCase',
+          checkDirectories: false,
         },
       ],
     },

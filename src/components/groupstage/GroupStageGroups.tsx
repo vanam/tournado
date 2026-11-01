@@ -20,7 +20,7 @@ interface GroupStageGroupsProps {
   readonly allPlayers?: Player[] | undefined;
   readonly participants?: Participant[] | undefined;
   readonly standingsByGroup: GroupStandingsEntry[];
-  readonly wildCardIds: Set<string> | null;
+  readonly wildcardIds: Set<string> | null;
   readonly groupTabs: Record<string, GroupTab>;
   readonly onGroupTabChange: (groupId: string, tab: GroupTab) => void;
   readonly onEditMatch: (groupId: string, matchId: string) => void;
@@ -34,7 +34,7 @@ export const GroupStageGroups = ({
   allPlayers,
   participants,
   standingsByGroup,
-  wildCardIds,
+  wildcardIds,
   groupTabs,
   onGroupTabChange,
   onEditMatch,
@@ -90,7 +90,7 @@ export const GroupStageGroups = ({
               participants={participants}
               standings={standings ?? []}
               qualifierCount={qualifierCount}
-              wildCardIds={wildCardIds}
+              wildcardIds={wildcardIds}
               activeTab={activeTab}
               onTabChange={(tab): void => { onGroupTabChange(group.id, tab); }}
               onEditMatch={(match): void => { onEditMatch(group.id, match.id); }}

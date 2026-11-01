@@ -4,8 +4,8 @@ import { parseBulkInput } from './importUtils';
 describe('parseBulkInput', () => {
   // ── Valid inputs ────────────────────────────────────────────────────────────
 
-  it('parses a player with valid ELO', () => {
-    const { parsed, errors } = parseBulkInput('Alice (ELO 1500)', []);
+  it.each(['Alice (ELO 1500)', 'Alice (elo 1500)', 'Alice (ELO  1500)', 'Alice (ELO 1500)  '])("parses valid ELO input %s", (input) => {
+    const { parsed, errors } = parseBulkInput(input, []);
     expect(errors).toHaveLength(0);
     expect(parsed).toEqual([{ name: 'Alice', elo: 1500 }]);
   });
@@ -16,23 +16,11 @@ describe('parseBulkInput', () => {
     expect(parsed).toEqual([{ name: 'Bob' }]);
   });
 
-  it('is case-insensitive for ELO keyword', () => {
-    const { parsed, errors } = parseBulkInput('Alice (elo 1500)', []);
-    expect(errors).toHaveLength(0);
-    expect(parsed).toEqual([{ name: 'Alice', elo: 1500 }]);
-  });
 
-  it('allows extra space inside ELO annotation', () => {
-    const { parsed, errors } = parseBulkInput('Alice (ELO  1500)', []);
-    expect(errors).toHaveLength(0);
-    expect(parsed).toEqual([{ name: 'Alice', elo: 1500 }]);
-  });
 
-  it('allows trailing whitespace after ELO annotation', () => {
-    const { parsed, errors } = parseBulkInput('Alice (ELO 1500)  ', []);
-    expect(errors).toHaveLength(0);
-    expect(parsed).toEqual([{ name: 'Alice', elo: 1500 }]);
-  });
+
+
+
 
   it('parses multiple valid players', () => {
     const input = 'Alice (ELO 1500)\nBob\nCarol (ELO 1200)';
@@ -54,50 +42,26 @@ describe('parseBulkInput', () => {
 
   // ── ELO format errors ───────────────────────────────────────────────────────
 
-  it('rejects negative float ELO', () => {
-    const { errors } = parseBulkInput('Petr (ELO -12.0)', []);
+  it.each(['Petr (ELO -12.0)', 'Petr (ELO 12.0)', 'Petr (ELO)', 'Petr (ELO 0)', 'Petr (ELO -12)', 'Petr (ELO +12)', 'Petr (ELO abc)', 'Petr (ELO 1 500)', 'Petr (ELO 1.5e3)'])("parses invalid ELO input %s", (input) => {
+    const { errors } = parseBulkInput(input, []);
     expect(errors).toEqual([{ line: 1, msgKey: 'players.importErrorElo' }]);
   });
 
-  it('rejects positive float ELO', () => {
-    const { errors } = parseBulkInput('Petr (ELO 12.0)', []);
-    expect(errors).toEqual([{ line: 1, msgKey: 'players.importErrorElo' }]);
-  });
 
-  it('rejects empty ELO content', () => {
-    const { errors } = parseBulkInput('Petr (ELO)', []);
-    expect(errors).toEqual([{ line: 1, msgKey: 'players.importErrorElo' }]);
-  });
 
-  it('rejects zero ELO', () => {
-    const { errors } = parseBulkInput('Petr (ELO 0)', []);
-    expect(errors).toEqual([{ line: 1, msgKey: 'players.importErrorElo' }]);
-  });
 
-  it('rejects negative integer ELO', () => {
-    const { errors } = parseBulkInput('Petr (ELO -12)', []);
-    expect(errors).toEqual([{ line: 1, msgKey: 'players.importErrorElo' }]);
-  });
 
-  it('rejects ELO with leading plus sign', () => {
-    const { errors } = parseBulkInput('Petr (ELO +12)', []);
-    expect(errors).toEqual([{ line: 1, msgKey: 'players.importErrorElo' }]);
-  });
 
-  it('rejects alphabetic ELO content', () => {
-    const { errors } = parseBulkInput('Petr (ELO abc)', []);
-    expect(errors).toEqual([{ line: 1, msgKey: 'players.importErrorElo' }]);
-  });
 
-  it('rejects ELO with space inside number', () => {
-    const { errors } = parseBulkInput('Petr (ELO 1 500)', []);
-    expect(errors).toEqual([{ line: 1, msgKey: 'players.importErrorElo' }]);
-  });
 
-  it('rejects scientific notation ELO', () => {
-    const { errors } = parseBulkInput('Petr (ELO 1.5e3)', []);
-    expect(errors).toEqual([{ line: 1, msgKey: 'players.importErrorElo' }]);
-  });
+
+
+
+
+
+
+
+
 
   it('reports empty name when only ELO annotation present', () => {
     const { errors } = parseBulkInput('(ELO 100)', []);
@@ -107,7 +71,7 @@ describe('parseBulkInput', () => {
   // ── Other errors ────────────────────────────────────────────────────────────
 
   it('reports error for empty name without ELO', () => {
-    const { errors } = parseBulkInput('   ', []);
+    const { errors } = parseBulkInput(' '.repeat(3), []);
     // blank line is skipped, so no error and no parsed
     expect(errors).toHaveLength(0);
   });

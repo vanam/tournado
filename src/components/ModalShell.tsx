@@ -22,10 +22,10 @@ function shouldIgnoreEnterTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
   const tag = target.tagName.toLowerCase();
-  if (tag === 'textarea' || tag === 'button' || tag === 'a') return true;
+  if (['textarea', 'button', 'a'].includes(tag)) return true;
   if (tag === 'input') {
     const type = (target.getAttribute('type') ?? '').toLowerCase();
-    return type === 'button' || type === 'submit' || type === 'reset';
+    return ['button', 'submit', 'reset'].includes(type);
   }
   return tag === 'select';
 }

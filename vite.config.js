@@ -14,26 +14,17 @@ export default defineConfig({
     }
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
-        manualChunks(id) {
-          if (id.includes('node_modules/rxdb')) return 'database';
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
-            return 'react-vendor';
-          }
-          if (id.includes('node_modules/@radix-ui')) {
-            return 'radix-ui';
-          }
-          if (id.includes('node_modules/lucide-react')) {
-            return 'icons';
-          }
-          if (id.includes('node_modules/react-hook-form')) {
-            return 'forms';
-          }
-          if (id.includes('node_modules/sonner')) {
-            return 'notifications';
-          }
+        codeSplitting: {
+          groups: [
+            { name: 'database', test: /node_modules[\\/]rxdb/ },
+            { name: 'react-vendor', test: /node_modules[\\/](?:react|react-dom|react-router)/ },
+            { name: 'radix-ui', test: /node_modules[\\/]@radix-ui/ },
+            { name: 'icons', test: /node_modules[\\/]lucide-react/ },
+            { name: 'notifications', test: /node_modules[\\/]sonner/ },
+          ],
         }
       }
     }

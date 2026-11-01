@@ -42,11 +42,37 @@ export type TournamentFormValues = {
   swissRounds: number;
 };
 
+function initialTournamentState(source: Tournament | null): { form: TournamentFormValues; players: Player[]; teamSize: number; participants: Participant[] } {
+  const group = source?.format === Format.GROUPS_TO_BRACKET ? source.groupStage.settings : null;
+  const form: TournamentFormValues = {
+    name: source?.name ?? '', format: source?.format ?? Format.SINGLE_ELIM,
+    scoringMode: source?.scoringMode ?? ScoreMode.SETS, maxSets: source?.maxSets ?? DEFAULT_MAX_SETS,
+    groupStageMaxSets: source?.groupStageMaxSets ?? DEFAULT_MAX_SETS, bracketMaxSets: source?.bracketMaxSets ?? DEFAULT_MAX_SETS,
+    groupCount: group?.groupCount ?? 2, consolation: group?.consolation ?? false, bracketType: group?.bracketType ?? BracketType.SINGLE_ELIM,
+    qualifiers: (group?.qualifiers ?? [2, 2]).map((value) => ({ value })),
+    playerName: '', playerElo: 1000, useElo: source?.players.some((p) => p.elo !== undefined) ?? false,
+    swissRounds: source?.format === Format.SWISS ? source.totalRounds : 1,
+  };
+  const players = source?.players.map((p, i) => ({ ...p, id: crypto.randomUUID(), seed: i + 1 })) ?? [];
+  const teamSize = source?.teamSize ?? 1;
+  const idMap = new Map(source?.players.map((p, i) => [p.id, players[i]?.id ?? '']));
+  const participants = source?.participants?.map((p, i) => ({ id: crypto.randomUUID(), seed: i + 1, playerIds: p.playerIds.map((id) => idMap.get(id) ?? id) })) ?? buildParticipants(players, teamSize, []);
+  return { form, players, teamSize, participants };
+}
+
+function normalizeMaxSets(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_MAX_SETS;
+  return Math.max(1, parsed);
+}
+
 export const CreateTournamentPage = (): ReactElement => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
   const { tracker } = useAnalytics();
+  const duplicate = (location.state as { duplicate?: Tournament } | null)?.duplicate ?? null;
+  const [initial] = useState(() => initialTournamentState(duplicate));
 
   usePageTitle(t('create.title'));
 
@@ -59,104 +85,20 @@ export const CreateTournamentPage = (): ReactElement => {
     trigger,
     getValues,
     resetField,
-    reset,
     formState: { errors },
   } = useForm<TournamentFormValues>({
-    defaultValues: {
-      name: '',
-      format: Format.SINGLE_ELIM,
-      scoringMode: ScoreMode.SETS,
-      maxSets: DEFAULT_MAX_SETS,
-      groupStageMaxSets: DEFAULT_MAX_SETS,
-      bracketMaxSets: DEFAULT_MAX_SETS,
-      groupCount: 2,
-      consolation: false,
-      bracketType: BracketType.SINGLE_ELIM,
-      qualifiers: [{ value: 2 }, { value: 2 }],
-      playerName: '',
-      playerElo: 1000,
-      useElo: false,
-      swissRounds: 1,
-    },
+    defaultValues: initial.form,
   });
 
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [teamSize, setTeamSize] = useState(1);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [players, setPlayers] = useState<Player[]>(initial.players);
+  const [teamSize, setTeamSize] = useState(initial.teamSize);
+  const [participants, setParticipants] = useState<Participant[]>(initial.participants);
 
   const {
     fields: qualifierFields,
     append: appendQualifier,
     remove: removeQualifiers,
   } = useFieldArray({ control, name: 'qualifiers' });
-
-  const duplicate = (location.state as { duplicate?: Tournament } | null)?.duplicate ?? null;
-
-  useEffect(() => {
-    if (duplicate === null) return;
-    const src = duplicate;
-    const useElo = src.players.some((p) => p.elo !== undefined);
-    const commonFields = {
-      name: src.name,
-      format: src.format,
-      scoringMode: src.scoringMode ?? ScoreMode.SETS,
-      maxSets: src.maxSets ?? DEFAULT_MAX_SETS,
-      playerName: '',
-      playerElo: 1000,
-      useElo,
-    };
-    if (src.format === Format.GROUPS_TO_BRACKET) {
-      const settings = src.groupStage.settings;
-      reset({
-        ...commonFields,
-        groupStageMaxSets: src.groupStageMaxSets ?? DEFAULT_MAX_SETS,
-        bracketMaxSets: src.bracketMaxSets ?? DEFAULT_MAX_SETS,
-        groupCount: settings.groupCount,
-        consolation: settings.consolation,
-        bracketType: settings.bracketType ?? BracketType.SINGLE_ELIM,
-        qualifiers: settings.qualifiers.map((v) => ({ value: v })),
-        swissRounds: 1,
-      });
-    } else if (src.format === Format.SWISS) {
-      reset({
-        ...commonFields,
-        groupStageMaxSets: DEFAULT_MAX_SETS,
-        bracketMaxSets: DEFAULT_MAX_SETS,
-        groupCount: 2,
-        consolation: false,
-        bracketType: BracketType.SINGLE_ELIM,
-        qualifiers: [{ value: 2 }, { value: 2 }],
-        swissRounds: src.totalRounds,
-      });
-    } else {
-      reset({
-        ...commonFields,
-        groupStageMaxSets: DEFAULT_MAX_SETS,
-        bracketMaxSets: DEFAULT_MAX_SETS,
-        groupCount: 2,
-        consolation: false,
-        bracketType: BracketType.SINGLE_ELIM,
-        qualifiers: [{ value: 2 }, { value: 2 }],
-        swissRounds: 1,
-      });
-    }
-    const dupPlayers = src.players.map((p, i) => ({ ...p, id: crypto.randomUUID(), seed: i + 1 }));
-    const dupTeamSize = src.teamSize ?? 1;
-    setTeamSize(dupTeamSize);
-    setPlayers(dupPlayers);
-    if (src.participants && src.participants.length > 0) {
-      // Remap old player IDs to new player IDs sequentially
-      const idMap = new Map(src.players.map((p, i) => [p.id, dupPlayers[i]?.id ?? '']));
-      setParticipants(src.participants.map((p, pi) => ({
-        id: crypto.randomUUID(),
-        playerIds: p.playerIds.map((pid) => idMap.get(pid) ?? pid),
-        seed: pi + 1,
-      })));
-    } else {
-      setParticipants(buildParticipants(dupPlayers, dupTeamSize, []));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const format = useWatch({ control, name: 'format' });
   const scoringMode = useWatch({ control, name: 'scoringMode' });
@@ -214,11 +156,7 @@ export const CreateTournamentPage = (): ReactElement => {
     resetField('playerElo');
   }
 
-  function normalizeMaxSets(value: string): number {
-    const parsed = Number.parseInt(value, 10);
-    if (!Number.isFinite(parsed)) return DEFAULT_MAX_SETS;
-    return Math.max(1, parsed);
-  }
+
 
   function handleGroupCountChange(value: string): void {
     const count = Math.max(1, Number.parseInt(value, 10) || 1);

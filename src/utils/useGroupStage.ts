@@ -46,7 +46,7 @@ export function useAdvancers(
   }, [groupComplete, groupStage, players, scoringMode, maxSets]);
 }
 
-export function useWildCardIds(advancers: { luckyLosers: GroupAdvancerEntry[] } | null): Set<string> | null {
+export function useWildcardIds(advancers: { luckyLosers: GroupAdvancerEntry[] } | null): Set<string> | null {
   return useMemo(() => {
     if (!advancers) return null;
     return new Set(advancers.luckyLosers.map((entry) => entry.id));

@@ -64,7 +64,7 @@ const commonProps = {
   groupIndex: 0,
   standings: [],
   qualifierCount: 1,
-  wildCardIds: null,
+  wildcardIds: null,
   activeTab: 'schedule' as const,
   onTabChange: (): void => { /* no-op */ },
   onEditMatch: (): void => { /* no-op */ },

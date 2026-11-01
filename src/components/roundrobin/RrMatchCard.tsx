@@ -65,7 +65,7 @@ export const RRMatchCard = ({
             playerId={match.player1Id}
             placement={null}
             seed={null}
-            isWildCard={undefined}
+            isWildcard={undefined}
             t={t}
           />
         </span>
@@ -90,7 +90,7 @@ export const RRMatchCard = ({
             playerId={match.player2Id}
             placement={null}
             seed={null}
-            isWildCard={undefined}
+            isWildcard={undefined}
             t={t}
           />
         </span>

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 interface StandingsTableProps {
   standings: StandingsRow[];
   highlightCount?: number | string;
-  wildCardIds?: Set<string> | null;
+  wildcardIds?: Set<string> | null;
   scoringMode?: ScoreMode;
 }
 
@@ -20,12 +20,7 @@ function buildCriteriaRows(
   showBalls: boolean
 ): CriteriaRow<RoundRobinCriteriaKey>[] {
   const filteredApplied = applied.filter((key): key is RoundRobinCriteriaKey =>
-    key === 'headToHead' ||
-    key === 'headToHeadSetDiff' ||
-    key === 'headToHeadSetsWon' ||
-    key === 'setDiff' ||
-    key === 'setsWon' ||
-    key === 'pointsDiff'
+    ['headToHead', 'headToHeadSetDiff', 'headToHeadSetsWon', 'setDiff', 'setsWon', 'pointsDiff'].includes(key)
   );
 
   const labelMap: Record<RoundRobinCriteriaKey, string> = {
@@ -114,18 +109,18 @@ const ExpandIcon = ({ isExpanded }: { isExpanded: boolean }): ReactElement => (
 interface PlayerNameCellProps {
   name: string;
   libraryId: string | undefined;
-  isWildCard: boolean;
+  isWildcard: boolean;
   elo: number | null | undefined;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-const PlayerNameCell = ({ name, libraryId, isWildCard, elo, t }: PlayerNameCellProps): ReactElement => (
+const PlayerNameCell = ({ name, libraryId, isWildcard, elo, t }: PlayerNameCellProps): ReactElement => (
   <TableCell className="py-2.5 pr-3 font-medium">
     <span className="inline-flex items-center gap-2">
       {libraryId === undefined
         ? <span>{name}</span>
         : <Link to={`/players/${libraryId}`} className="hover:text-[var(--color-primary)] hover:underline transition-colors">{name}</Link>}
-      {isWildCard && (
+      {isWildcard && (
         <Badge variant="accent" className="text-[10px] px-1.5 py-0.5">{t('groupStage.wildCardBadge')}</Badge>
       )}
       {elo != null && (
@@ -162,7 +157,7 @@ interface StandingsTableRowProps {
   row: StandingsRow;
   rank: number;
   isDirectQualifier: boolean;
-  isWildCard: boolean;
+  isWildcard: boolean;
   hasTiebreak: boolean;
   isExpanded: boolean;
   showBalls: boolean;
@@ -174,7 +169,7 @@ const StandingsTableRow = ({
   row,
   rank,
   isDirectQualifier,
-  isWildCard,
+  isWildcard,
   hasTiebreak,
   isExpanded,
   showBalls,
@@ -184,7 +179,7 @@ const StandingsTableRow = ({
   let rowClass = '';
   if (isDirectQualifier) {
     rowClass = 'bg-[var(--color-soft)]';
-  } else if (isWildCard) {
+  } else if (isWildcard) {
     rowClass = 'bg-[var(--color-accent-soft)]';
   }
 
@@ -211,7 +206,7 @@ const StandingsTableRow = ({
           {hasTiebreak && <ExpandIcon isExpanded={isExpanded} />}
           {rank}
         </TableCell>
-        <PlayerNameCell name={row.name} libraryId={row.libraryId} isWildCard={isWildCard} elo={row.elo} t={t} />
+        <PlayerNameCell name={row.name} libraryId={row.libraryId} isWildcard={isWildcard} elo={row.elo} t={t} />
         <TableCell className="py-2.5 pr-3 text-center tabular-nums">{row.played}</TableCell>
         <TableCell className="py-2.5 pr-3 text-center tabular-nums">{row.wins}</TableCell>
         <TableCell className="py-2.5 pr-3 text-center tabular-nums">{row.losses}</TableCell>
@@ -241,7 +236,7 @@ const StandingsTableRow = ({
 export const StandingsTable = ({
   standings,
   highlightCount = 0,
-  wildCardIds,
+  wildcardIds,
   scoringMode = ScoreMode.SETS,
 }: StandingsTableProps): ReactElement => {
   const { t } = useTranslation();
@@ -271,7 +266,7 @@ export const StandingsTable = ({
           const isDirectQualifier =
             (row.played > 0 || isSinglePlayerGroup) &&
             (i === 0 || (qualifierCount > 0 && i < qualifierCount));
-          const isWildCard = wildCardIds?.has(row.playerId) ?? false;
+          const isWildcard = wildcardIds?.has(row.playerId) ?? false;
           const hasTiebreak = row.tiebreakDetails != null && row.tiebreakDetails.tiebreakApplied.length > 0;
           const isExpanded = expandedId === row.playerId;
 
@@ -285,7 +280,7 @@ export const StandingsTable = ({
               row={row}
               rank={i + 1}
               isDirectQualifier={isDirectQualifier}
-              isWildCard={isWildCard}
+              isWildcard={isWildcard}
               hasTiebreak={hasTiebreak}
               isExpanded={isExpanded}
               showBalls={showBalls}

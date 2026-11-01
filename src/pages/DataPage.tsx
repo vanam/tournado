@@ -418,7 +418,7 @@ export const DataPage = (): ReactElement => {
           aria-label={t('data.importSelectFile')}
         />
 
-        {importState.status === 'idle' || importState.status === 'success' || importState.status === 'error' ? (
+        {['idle', 'success', 'error'].includes(importState.status) ? (
           <div className="space-y-3">
             <Button
               variant="primary-outlined"

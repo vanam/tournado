@@ -67,49 +67,20 @@ describe('generateSchedule', () => {
     }
   });
 
-  it('every pair plays exactly once for 4 players', () => {
-    const players = makePlayers(4);
-    const schedule = generateSchedule(players);
-    const pairs = new Set();
-    for (const round of schedule.rounds) {
-      for (const match of round.matches) {
-        const pair = [match.player1Id ?? '', match.player2Id ?? ''].toSorted((a, b) => a.localeCompare(b)).join('-');
-        expect(pairs.has(pair)).toBe(false);
-        pairs.add(pair);
-      }
+  it.each([4, 5, 6])('every pair plays exactly once for %i players', (count) => {
+    const schedule = generateSchedule(makePlayers(count));
+    const pairs = new Set<string>();
+    for (const round of schedule.rounds) for (const match of round.matches) {
+      const pair = [match.player1Id ?? '', match.player2Id ?? ''].toSorted((a, b) => a.localeCompare(b)).join('-');
+      expect(pairs.has(pair)).toBe(false);
+      pairs.add(pair);
     }
-    // C(4,2) = 6 pairs
-    expect(pairs.size).toBe(6);
+    expect(pairs.size).toBe(count * (count - 1) / 2);
   });
 
-  it('every pair plays exactly once for 5 players', () => {
-    const players = makePlayers(5);
-    const schedule = generateSchedule(players);
-    const pairs = new Set();
-    for (const round of schedule.rounds) {
-      for (const match of round.matches) {
-        const pair = [match.player1Id ?? '', match.player2Id ?? ''].toSorted((a, b) => a.localeCompare(b)).join('-');
-        expect(pairs.has(pair)).toBe(false);
-        pairs.add(pair);
-      }
-    }
-    // C(5,2) = 10 pairs
-    expect(pairs.size).toBe(10);
-  });
 
-  it('every pair plays exactly once for 6 players', () => {
-    const players = makePlayers(6);
-    const schedule = generateSchedule(players);
-    const pairs = new Set();
-    for (const round of schedule.rounds) {
-      for (const match of round.matches) {
-        const pair = [match.player1Id ?? '', match.player2Id ?? ''].toSorted((a, b) => a.localeCompare(b)).join('-');
-        expect(pairs.has(pair)).toBe(false);
-        pairs.add(pair);
-      }
-    }
-    expect(pairs.size).toBe(15);
-  });
+
+
 
   it('each player has exactly one bye across all rounds for 5 players', () => {
     const players = makePlayers(5);
@@ -1037,8 +1008,8 @@ describe('unresolved ties', () => {
   });
 
   describe('tiebreakApplied for all players in tie group', () => {
-    it('sets tiebreakApplied for all 4 players with no matches (all tied at 0 points)', () => {
-      const players = makePlayers(4);
+    it.each([4, 5])('sets tiebreakApplied for all %i players with no matches', (count) => {
+      const players = makePlayers(count);
       const schedule = generateSchedule(players);
 
       const standings = computeStandings(schedule, players);
@@ -1049,17 +1020,7 @@ describe('unresolved ties', () => {
       expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied === firstApplied)).toBe(true);
     });
 
-    it('sets tiebreakApplied for all 5 players with no matches (all tied at 0 points)', () => {
-      const players = makePlayers(5);
-      const schedule = generateSchedule(players);
 
-      const standings = computeStandings(schedule, players);
-
-      expect(standings.every(s => s.points === 0)).toBe(true);
-      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied.length > 0)).toBe(true);
-      const firstApplied = standings[0]!.tiebreakDetails!.tiebreakApplied;
-      expect(standings.every(s => s.tiebreakDetails!.tiebreakApplied === firstApplied)).toBe(true);
-    });
 
     it('sets tiebreakApplied for all players in 3-way tie with equal criteria', () => {
       const players = makePlayers(3);

@@ -624,7 +624,7 @@ export const PlayerLibraryPage = (): ReactElement => {
                     <div
                       className="contents"
                       onBlur={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                        if (!e.currentTarget.contains(e.relatedTarget)) {
                           handleSaveEditPlayer();
                         }
                       }}

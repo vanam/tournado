@@ -19,7 +19,7 @@ interface GroupCardProps {
   readonly participants?: Participant[] | undefined;
   readonly standings: StandingsRow[];
   readonly qualifierCount: number;
-  readonly wildCardIds: Set<string> | null;
+  readonly wildcardIds: Set<string> | null;
   readonly activeTab: GroupTab;
   readonly onTabChange: (tab: GroupTab) => void;
   readonly onEditMatch: (match: { id: string }) => void;
@@ -36,7 +36,7 @@ export const GroupCard = ({
   participants,
   standings,
   qualifierCount,
-  wildCardIds,
+  wildcardIds,
   activeTab,
   onTabChange,
   onEditMatch,
@@ -82,7 +82,7 @@ export const GroupCard = ({
         <StandingsTable
           standings={standings}
           highlightCount={qualifierCount}
-          wildCardIds={wildCardIds}
+          wildcardIds={wildcardIds}
           scoringMode={scoringMode}
         />
       )}

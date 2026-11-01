@@ -11,7 +11,7 @@ interface BracketPanelProps {
   readonly bracket: Bracket | null;
   readonly players: Player[];
   readonly onEditMatch: (match: Match) => void;
-  readonly wildCardIds?: Set<string> | null;
+  readonly wildcardIds?: Set<string> | null;
   readonly scoringMode?: ScoreMode;
   readonly maxSets?: number;
   readonly groupPlacementByPlayerId?: Map<string, string> | null;
@@ -22,7 +22,7 @@ interface DoubleElimPanelProps {
   readonly doubleElim: DoubleElim | null;
   readonly players: Player[];
   readonly onEditMatch: (matchId: string) => void;
-  readonly wildCardIds?: Set<string> | null;
+  readonly wildcardIds?: Set<string> | null;
   readonly scoringMode?: ScoreMode;
   readonly maxSets?: number;
   readonly groupPlacementByPlayerId?: Map<string, string> | null;
@@ -33,7 +33,7 @@ export const BracketPanel = ({
   bracket,
   players,
   onEditMatch,
-  wildCardIds,
+  wildcardIds,
   scoringMode,
   maxSets,
   groupPlacementByPlayerId,
@@ -50,7 +50,7 @@ export const BracketPanel = ({
       <BracketRounds
         bracket={bracket}
         players={players}
-        wildCardIds={wildCardIds}
+        wildcardIds={wildcardIds}
         scoringMode={scoringMode}
         maxSets={maxSets}
         groupPlacementByPlayerId={groupPlacementByPlayerId}
@@ -64,7 +64,7 @@ export const BracketPanel = ({
           <MatchCard
             match={tpm}
             players={players}
-            wildCardIds={wildCardIds}
+            wildcardIds={wildcardIds}
             canEdit={canEditMatch(bracket, tpm.id)}
             onClick={() => { onEditMatch(tpm); }}
             scoringMode={scoringMode}
@@ -82,7 +82,7 @@ export const DoubleElimPanel = ({
   doubleElim,
   players,
   onEditMatch,
-  wildCardIds,
+  wildcardIds,
   scoringMode,
   maxSets,
   groupPlacementByPlayerId,
@@ -99,7 +99,7 @@ export const DoubleElimPanel = ({
         <BracketRounds
           bracket={doubleElim.winners}
           players={players}
-          wildCardIds={wildCardIds}
+          wildcardIds={wildcardIds}
           scoringMode={scoringMode}
           maxSets={maxSets}
           groupPlacementByPlayerId={groupPlacementByPlayerId}
@@ -112,7 +112,7 @@ export const DoubleElimPanel = ({
         <BracketRounds
           bracket={doubleElim.losers}
           players={players}
-          wildCardIds={wildCardIds}
+          wildcardIds={wildcardIds}
           scoringMode={scoringMode}
           maxSets={maxSets}
           groupPlacementByPlayerId={groupPlacementByPlayerId}
@@ -126,7 +126,7 @@ export const DoubleElimPanel = ({
           <MatchCard
             match={doubleElim.finals.grandFinal}
             players={players}
-            wildCardIds={wildCardIds}
+            wildcardIds={wildcardIds}
             canEdit={canEditDoubleElimMatch(doubleElim, doubleElim.finals.grandFinal.id)}
             onClick={() => { onEditMatch(doubleElim.finals.grandFinal.id); }}
             scoringMode={scoringMode}
@@ -137,7 +137,7 @@ export const DoubleElimPanel = ({
             <MatchCard
               match={doubleElim.finals.resetFinal}
               players={players}
-              wildCardIds={wildCardIds}
+              wildcardIds={wildcardIds}
               canEdit={canEditDoubleElimMatch(doubleElim, doubleElim.finals.resetFinal.id)}
               onClick={() => { onEditMatch(doubleElim.finals.resetFinal.id); }}
               scoringMode={scoringMode}
