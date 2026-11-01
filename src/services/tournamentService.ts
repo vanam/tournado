@@ -7,11 +7,11 @@ import {
   generateSwissInitialSchedule,
   computeMinTotalRounds,
 } from '../utils/swissUtils';
-import { createGroupStage, indexToGroupLabel } from '../utils/groupStageUtils';
+import { createGroupStage } from '../utils/groupStageUtils';
 import {
-  buildParticipants,
   getParticipantPlayers,
 } from '../utils/participantUtils';
+import { restoreTournamentMembership } from '../utils/tournamentPreparation';
 import { computeTournamentProgress } from '../utils/progressUtils';
 import { getTournamentResults } from '../utils/resultsUtils';
 import { TOURNAMENT_VERSION } from '../utils/dataPortability';
@@ -94,27 +94,7 @@ export async function createTournament(
     return player;
   });
 
-  const participants = body.participantPlayerIndexes
-    ? body.participantPlayerIndexes.map((indexes, index) => ({
-        id:
-          teamSize === 1
-            ? (players[indexes[0] ?? -1]?.id ?? '')
-            : crypto.randomUUID(),
-        playerIds: indexes.map((i) => players[i]?.id ?? ''),
-        seed: index + 1,
-      }))
-    : buildParticipants(players, teamSize, []);
-  const members = participants.flatMap((p) => p.playerIds);
-  if (
-    members.length !== players.length ||
-    new Set(members).size !== players.length ||
-    members.includes('') ||
-    participants.some((p) => p.playerIds.length !== teamSize)
-  ) {
-    throw new Error(
-      'Each player must belong to exactly one complete participant',
-    );
-  }
+  const { participants, customGroups } = restoreTournamentMembership(players, body);
   const participantPlayers = getParticipantPlayers(players, participants);
 
   function applyOptionalFields<T extends Tournament>(t: T): T {
@@ -183,23 +163,6 @@ export async function createTournament(
     }
     case Format.GROUPS_TO_BRACKET: {
       const groupCount = body.groupCount ?? 2;
-      const customGroups = body.groupParticipantIndexes?.map(
-        (indexes, index) => ({
-          id: `g${index + 1}`,
-          name: `Group ${indexToGroupLabel(index)}`,
-          playerIds: indexes.map((i) => participants[i]?.id ?? ''),
-        }),
-      );
-      const groupMembers = customGroups?.flatMap((group) => group.playerIds);
-      if (
-        customGroups &&
-        (customGroups.length !== groupCount ||
-          groupMembers?.length !== participants.length ||
-          new Set(groupMembers).size !== participants.length ||
-          groupMembers.includes(''))
-      ) {
-        throw new Error('Each participant must belong to exactly one group');
-      }
       const groupStage = createGroupStage(
         participantPlayers,
         {

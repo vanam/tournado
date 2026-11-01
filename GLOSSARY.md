@@ -17,3 +17,6 @@ An edit to a recorded result together with its consequences for dependent matche
 
 **Tournament evaluation**:
 Derivation of current progress, ranked results and winner from recorded matches. Completion time records when completion was saved, not when results were viewed.
+
+**Tournament preparation**:
+The editable arrangement of players into participants and groups before a tournament is created. Each player belongs to one complete participant, and each grouped participant belongs to one group.

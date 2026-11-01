@@ -61,25 +61,20 @@ export const TournamentPreview = ({
     [format, players, groupCount],
   );
 
-  const [localGroups, setLocalGroups] = useState<BaseGroup[] | null>(
-    externalGroups ?? groups,
-  );
-  const [prevGroups, setPrevGroups] = useState(groups);
+  // Standalone previews can own edits. Creation supplies groups from its draft.
+  const [localGroups, setLocalGroups] = useState<{ source: BaseGroup[]; groups: BaseGroup[] } | null>(null);
+  const standaloneGroups = groups !== null && localGroups !== null && localGroups.source === groups ? localGroups.groups : groups;
+  const displayGroups = externalGroups === undefined ? standaloneGroups : externalGroups;
   const [drag, setDrag] = useState<{
     playerId: string;
     fromGroupIndex: number;
+    groups: BaseGroup[];
   } | null>(null);
   const [overGroupIndex, setOverGroupIndex] = useState<number | null>(null);
-
-  if (prevGroups !== groups) {
-    setPrevGroups(groups);
-    setLocalGroups(externalGroups ?? groups);
-    setDrag(null);
-    setOverGroupIndex(null);
-  }
+  const activeDrag = drag !== null && displayGroups !== null && drag.groups === displayGroups ? drag : null;
 
   function handleDragStart(playerId: string, fromGroupIndex: number): void {
-    setDrag({ playerId, fromGroupIndex });
+    if (displayGroups) setDrag({ playerId, fromGroupIndex, groups: displayGroups });
   }
 
   function handleGroupDragOver(
@@ -97,14 +92,14 @@ export const TournamentPreview = ({
   }
 
   function handleGroupDrop(toGroupIndex: number): void {
-    if (!drag || !localGroups) {
+    if (!activeDrag || !displayGroups) {
       setDrag(null);
       setOverGroupIndex(null);
       return;
     }
-    const { playerId, fromGroupIndex } = drag;
+    const { playerId, fromGroupIndex } = activeDrag;
     if (fromGroupIndex !== toGroupIndex) {
-      const newGroups = localGroups.map((g, i) => ({
+      const newGroups = displayGroups.map((g, i) => ({
         ...g,
         playerIds: getUpdatedPlayerIds(
           g.playerIds,
@@ -114,7 +109,7 @@ export const TournamentPreview = ({
           playerId,
         ),
       }));
-      setLocalGroups(newGroups);
+      if (externalGroups === undefined && groups) setLocalGroups({ source: groups, groups: newGroups });
       onGroupsChange?.(newGroups);
     }
     setDrag(null);
@@ -125,8 +120,6 @@ export const TournamentPreview = ({
     setDrag(null);
     setOverGroupIndex(null);
   }
-
-  const displayGroups = localGroups ?? groups;
 
   if (!bracket && !doubleElim && !displayGroups) return null;
 
@@ -157,7 +150,7 @@ export const TournamentPreview = ({
                 handleGroupDrop(i);
               }}
               className={`border rounded-xl p-4 transition-colors ${
-                overGroupIndex === i && drag?.fromGroupIndex !== i
+                activeDrag && overGroupIndex === i && activeDrag.fromGroupIndex !== i
                   ? 'border-[var(--color-primary)] bg-[var(--color-soft)]'
                   : 'border-[var(--color-border)]'
               }`}
@@ -168,7 +161,7 @@ export const TournamentPreview = ({
               <ul className="space-y-1 min-h-[2rem]">
                 {group.playerIds.map((pid, rank) => {
                   const player = players.find((p) => p.id === pid);
-                  const isDragging = drag?.playerId === pid;
+                  const isDragging = activeDrag?.playerId === pid;
                   return (
                     <li
                       key={pid}

@@ -9,15 +9,15 @@ import {createTournament as createTournamentApi} from '../services/tournamentSer
 import type {CreateTournamentRequest} from '../services/tournamentService';
 import {useAnalytics} from '../utils/analytics';
 import {computeMinTotalRounds} from '../utils/swissUtils';
-import {distributePlayersToGroups, indexToGroupLabel} from '../utils/groupStageUtils';
-import type {BaseGroup} from '../utils/groupStageUtils';
-import {getMemberIndexes, allParticipantsComplete, buildParticipants, getParticipantPlayers} from '../utils/participantUtils';
+import {indexToGroupLabel} from '../utils/groupStageUtils';
+import {allParticipantsComplete, getParticipantPlayers} from '../utils/participantUtils';
+import {createTournamentPreparation, changePreparationPlayers, changePreparationTeamSize, changePreparationGroups, getPreparationGroups, serializeTournamentPreparation} from '../utils/tournamentPreparation';
 import {PlayerInput} from '../components/PlayerInput';
 import { showToast } from '../utils/toastUtils';
 import {ParticipantPlayerInput} from '../components/common/ParticipantPlayerInput';
 import {TournamentPreview} from '../components/TournamentPreview';
 import {BracketType, Format, ScoreMode} from '../types';
-import type {Player, Participant, Tournament} from '../types';
+import type {Player, Tournament} from '../types';
 import { Button } from '@/components/ui/Button';
 import { FieldGroupLabel } from '@/components/ui/FieldGroupLabel';
 import { Input } from '@/components/ui/Input';
@@ -42,9 +42,9 @@ export type TournamentFormValues = {
   swissRounds: number;
 };
 
-function initialTournamentState(source: Tournament | null): { form: TournamentFormValues; players: Player[]; teamSize: number; participants: Participant[] } {
+function initialTournamentForm(source: Tournament | null): TournamentFormValues {
   const group = source?.format === Format.GROUPS_TO_BRACKET ? source.groupStage.settings : null;
-  const form: TournamentFormValues = {
+  return {
     name: source?.name ?? '', format: source?.format ?? Format.SINGLE_ELIM,
     scoringMode: source?.scoringMode ?? ScoreMode.SETS, maxSets: source?.maxSets ?? DEFAULT_MAX_SETS,
     groupStageMaxSets: source?.groupStageMaxSets ?? DEFAULT_MAX_SETS, bracketMaxSets: source?.bracketMaxSets ?? DEFAULT_MAX_SETS,
@@ -53,11 +53,6 @@ function initialTournamentState(source: Tournament | null): { form: TournamentFo
     playerName: '', playerElo: 1000, useElo: source?.players.some((p) => p.elo !== undefined) ?? false,
     swissRounds: source?.format === Format.SWISS ? source.totalRounds : 1,
   };
-  const players = source?.players.map((p, i) => ({ ...p, id: crypto.randomUUID(), seed: i + 1 })) ?? [];
-  const teamSize = source?.teamSize ?? 1;
-  const idMap = new Map(source?.players.map((p, i) => [p.id, players[i]?.id ?? '']));
-  const participants = source?.participants?.map((p, i) => ({ id: crypto.randomUUID(), seed: i + 1, playerIds: p.playerIds.map((id) => idMap.get(id) ?? id) })) ?? buildParticipants(players, teamSize, []);
-  return { form, players, teamSize, participants };
 }
 
 function normalizeMaxSets(value: string): number {
@@ -72,7 +67,7 @@ export const CreateTournamentPage = (): ReactElement => {
   const { t } = useTranslation();
   const { tracker } = useAnalytics();
   const duplicate = (location.state as { duplicate?: Tournament } | null)?.duplicate ?? null;
-  const [initial] = useState(() => initialTournamentState(duplicate));
+  const [initial] = useState(() => initialTournamentForm(duplicate));
 
   usePageTitle(t('create.title'));
 
@@ -87,12 +82,11 @@ export const CreateTournamentPage = (): ReactElement => {
     resetField,
     formState: { errors },
   } = useForm<TournamentFormValues>({
-    defaultValues: initial.form,
+    defaultValues: initial,
   });
 
-  const [players, setPlayers] = useState<Player[]>(initial.players);
-  const [teamSize, setTeamSize] = useState(initial.teamSize);
-  const [participants, setParticipants] = useState<Participant[]>(initial.participants);
+  const [draft, setDraft] = useState(() => createTournamentPreparation(duplicate));
+  const { players, teamSize, participants } = draft;
 
   const {
     fields: qualifierFields,
@@ -118,23 +112,7 @@ export const CreateTournamentPage = (): ReactElement => {
     }
   }, [participantCount, format, swissMinRounds, swissMaxRounds, swissRounds, setValue]);
 
-  // Custom group assignments stored with their context so they auto-invalidate when inputs change.
-  const [customGroupsState, setCustomGroupsState] = useState<{
-    groups: BaseGroup[];
-    players: Player[];
-    participants: Participant[];
-    format: Format;
-    groupCount: number;
-  } | null>(null);
-
-  const customGroups =
-    customGroupsState !== null &&
-    customGroupsState.players === players &&
-    customGroupsState.participants === participants &&
-    customGroupsState.format === format &&
-    customGroupsState.groupCount === groupCount
-      ? customGroupsState.groups
-      : null;
+  const groups = getPreparationGroups(draft, format, groupCount);
 
   async function handleAddPlayer(): Promise<void> {
     const valid = await trigger('playerName');
@@ -150,8 +128,7 @@ export const CreateTournamentPage = (): ReactElement => {
     };
     if (useEloValue && Number.isFinite(eloValue)) newPlayer.elo = eloValue;
     const newPlayers = [...players, newPlayer];
-    setPlayers(newPlayers);
-    setParticipants(buildParticipants(newPlayers, teamSize, participants));
+    setDraft((current) => changePreparationPlayers(current, newPlayers));
     resetField('playerName');
     resetField('playerElo');
   }
@@ -192,7 +169,7 @@ export const CreateTournamentPage = (): ReactElement => {
     const qualifiers = data.qualifiers.map((q) => q.value);
 
     if (data.format === Format.GROUPS_TO_BRACKET) {
-      const groups = customGroups ?? distributePlayersToGroups(participantPlayers, data.groupCount);
+      const groups = getPreparationGroups(draft, data.format, data.groupCount) ?? [];
       for (const [i, group] of groups.entries()) {
         const required = qualifiers[i] ?? 0;
         if (required > 0 && group.playerIds.length < required) {
@@ -231,15 +208,13 @@ export const CreateTournamentPage = (): ReactElement => {
         ...(p.elo !== undefined && { elo: p.elo }),
         ...(p.libraryId !== undefined && { libraryId: p.libraryId }),
       })),
-      participantPlayerIndexes: getMemberIndexes(participants, players.map((p) => p.id)),
-      teamSize,
+      ...serializeTournamentPreparation(draft, data.format, data.groupCount),
       scoringMode: data.scoringMode,
       maxSets: data.maxSets,
       groupStageMaxSets: data.groupStageMaxSets,
       bracketMaxSets: data.bracketMaxSets,
     };
     if (data.format === Format.GROUPS_TO_BRACKET) {
-      req.groupParticipantIndexes = getMemberIndexes(customGroups ?? distributePlayersToGroups(participantPlayers, data.groupCount), participants.map((p) => p.id));
       req.groupCount = data.groupCount;
       req.qualifiers = qualifiers;
       req.consolation = data.consolation;
@@ -499,9 +474,7 @@ export const CreateTournamentPage = (): ReactElement => {
                       className="sr-only"
                       checked={teamSize === size}
                       onChange={() => {
-                        setTeamSize(size);
-                        setPlayers([]);
-                        setParticipants([]);
+                        setDraft(changePreparationTeamSize(size));
                       }}
                     />
                     {size === 1 ? t('create.singles') : t('create.doubles')}
@@ -513,8 +486,7 @@ export const CreateTournamentPage = (): ReactElement => {
               <PlayerInput
                 players={players}
                 setPlayers={(newPlayers) => {
-                  setPlayers(newPlayers);
-                  setParticipants(buildParticipants(newPlayers, 1, participants));
+                  setDraft((current) => changePreparationPlayers(current, newPlayers));
                 }}
                 register={register}
                 errors={errors}
@@ -582,8 +554,7 @@ export const CreateTournamentPage = (): ReactElement => {
                   participants={participants}
                   useElo={useElo}
                   onPlayersChange={(newPlayers, newParticipants) => {
-                    setPlayers(newPlayers);
-                    setParticipants(newParticipants);
+                    setDraft((current) => changePreparationPlayers(current, newPlayers, newParticipants));
                   }}
                 />
               </div>
@@ -596,31 +567,9 @@ export const CreateTournamentPage = (): ReactElement => {
           format={format}
           players={getParticipantPlayers(players, participants)}
           groupCount={groupCount}
-          externalGroups={customGroups}
-          onGroupsChange={(groups) => {
-            const orderedIds = groups.flatMap((g) => g.playerIds);
-            const currentParticipantPlayers = getParticipantPlayers(players, participants);
-            const reordered = orderedIds
-              .map((id) => currentParticipantPlayers.find((p) => p.id === id))
-              .filter((p): p is Player => p !== undefined)
-              .map((p, i) => ({ ...p, seed: i + 1 }));
-            // Reorder participants to match new order
-            const reorderedParticipants = reordered
-              .map((rp) => participants.find((p) => p.id === rp.id))
-              .filter((p): p is Participant => p !== undefined)
-              .map((p, i) => ({ ...p, seed: i + 1 }));
-            setParticipants(reorderedParticipants);
-            if (teamSize <= 1) {
-              // For singles, also keep players array in sync with participant order
-              const reorderedPlayers = reorderedParticipants
-                .map((p) => players.find((pl) => pl.id === p.id))
-                .filter((pl): pl is Player => pl !== undefined)
-                .map((pl, i) => ({ ...pl, seed: i + 1 }));
-              setPlayers(reorderedPlayers);
-              setCustomGroupsState({ groups, players: reorderedPlayers, participants: reorderedParticipants, format, groupCount });
-            } else {
-              setCustomGroupsState({ groups, players, participants: reorderedParticipants, format, groupCount });
-            }
+          externalGroups={groups}
+          onGroupsChange={(updatedGroups) => {
+            setDraft((current) => changePreparationGroups(current, updatedGroups, groupCount));
           }}
         />
 
