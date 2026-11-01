@@ -1,5 +1,5 @@
 import type { Bracket, DoubleElim, Match, SetScore } from '../types';
-import { getBracketSeedPositions } from './bracketUtils';
+import { getBracketSeedPositions } from './bracketSeeding';
 
 export interface MatchResultChange {
   matchId: string;
@@ -90,7 +90,8 @@ function replayNodes(nodes: Node[], change?: MatchResultChange): void {
     const dependsOnChange = sources.some((source) => source.kind !== 'entrant' && invalid.has(source.matchId))
       || !!(resetFrom && invalid.has(resetFrom.id));
     const edited = change?.matchId === match.id;
-    if (changed || dependsOnChange || edited) invalid.add(match.id);
+    // Score-only corrections preserve dependent results, including a played reset final.
+    if (changed || dependsOnChange || (edited && change.winnerId !== match.winnerId)) invalid.add(match.id);
     if (changed || dependsOnChange || !active) {
       match.winnerId = null;
       match.scores = [];

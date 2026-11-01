@@ -10,9 +10,8 @@ import type {
 } from '../types';
 import {createMatchIdGenerator} from './matchIdGenerator';
 import {createMatch} from './matchFactory';
+import { replayElimination } from './replayElimination';
 import {
-  advanceWinner,
-  clearMatchResult,
   generateBracket,
   getBracketWinner,
   hasPlayedDownstreamMatch,
@@ -86,30 +85,6 @@ function findMatchInDoubleElim(
     return { section: 'finals', match: doubleElim.finals.resetFinal };
   }
   return null;
-}
-
-function getFinalMatch(bracket: Bracket): Match | null {
-  const finalRound = bracket.rounds.at(-1);
-  return finalRound?.[0] ?? null;
-}
-
-function getMatchLoserId(match: MatchUnion): string | null {
-  if (!match?.winnerId) return null;
-  if (match.player1Id && match.player2Id) {
-    return match.winnerId === match.player1Id ? match.player2Id : match.player1Id;
-  }
-  return null;
-}
-
-function isMatchResolved(match: MatchUnion): boolean {
-  if (!match || isDummyMatch(match)) return false;
-  if (match.winnerId) return true;
-  return !match.player1Id && !match.player2Id;
-}
-
-function hasMatchResult(match: MatchUnion): boolean {
-  if (!match || isDummyMatch(match)) return false;
-  return !!match.winnerId || match.walkover || match.scores.length > 0;
 }
 
 function buildFirstLosersRound(winnersRounds: Bracket["rounds"]): {
@@ -224,117 +199,8 @@ function buildLosersBracket(winners: Bracket): {
   return { rounds, loserLinks };
 }
 
-function clearFinalMatch(match: Match | null): void {
-  if (!match) return;
-  match.winnerId = null;
-  match.scores = [];
-  match.walkover = false;
-}
-
-function canAutoAdvanceEntryMatch(
-  match: DoubleElimMatch,
-  prevRound: DoubleElimMatch[] | undefined,
-  winnersRounds: Match[][]
-): boolean {
-  if (isDummyMatch(match)) return false;
-  if (match.winnerId) return false;
-  if (!match.winnersSources || match.winnersSources.length === 0) return false;
-  if (match.player1Id && match.player2Id) return false;
-  if (!match.player1Id && !match.player2Id) return false;
-
-  const allWinnersResolved = match.winnersSources.every(wsId => {
-    const source = findMatchInRounds(winnersRounds, wsId);
-    return isMatchResolved(source);
-  });
-  if (!allWinnersResolved) return false;
-
-  if (prevRound) {
-    const feeder = prevRound.find(m => m.nextMatchId === match.id && !isDummyMatch(m));
-    if (feeder) {
-      // A feeder is "done" (not blocking auto-advance) only if:
-      // 1. It has a winner (was actually played), OR
-      // 2. It is a genuine BYE-source match (has winnersSources, both players null)
-      //    meaning neither W-R1 source produced a real loser
-      const feederDone =
-        !!feeder.winnerId ||
-        (Array.isArray(feeder.winnersSources) &&
-         feeder.winnersSources.length > 0 &&
-         !feeder.player1Id &&
-         !feeder.player2Id);
-      if (!feederDone) return false;
-    }
-  }
-  return true;
-}
-
-function autoAdvanceLosersEntryMatches(
-  winners: Bracket,
-  losers: { rounds: DoubleElimMatch[][] }
-): void {
-  for (let r = 1; r < losers.rounds.length; r++) {
-    const round = losers.rounds[r];
-    if (!round) continue;
-    for (const match of round) {
-      if (isDummyMatch(match)) continue;
-      if (!canAutoAdvanceEntryMatch(match, losers.rounds[r - 1], winners.rounds)) continue;
-      const playerId = match.player1Id ?? match.player2Id;
-      if (playerId) {
-        advanceWinner(losers, match.id, playerId, []);
-      }
-    }
-  }
-}
-
-function syncLosersFromWinners(doubleElim: DoubleElim): void {
-  const { winners, losers, loserLinks } = doubleElim;
-  syncLoserSlots(winners, losers, loserLinks);
-  autoAdvanceLosersFirstRound(winners, losers);
-  autoAdvanceLosersEntryMatches(winners, losers);
-}
-
-function syncFinals(doubleElim: DoubleElim): void {
-  const { winners, losers, finals } = doubleElim;
-  const winnersChampion = getBracketWinner(winners);
-  const winnersFinal = getFinalMatch(winners);
-  const losersChampion =
-    losers.rounds.length > 0 ? getBracketWinner(losers) : getMatchLoserId(winnersFinal);
-
-  const grandFinal = finals.grandFinal;
-  const resetFinal = finals.resetFinal;
-
-  const nextGrandP1 = winnersChampion ?? null;
-  const nextGrandP2 = losersChampion ?? null;
-  const grandChanged =
-    nextGrandP1 !== grandFinal.player1Id || nextGrandP2 !== grandFinal.player2Id;
-
-  if (grandChanged) {
-    clearFinalMatch(grandFinal);
-    clearFinalMatch(resetFinal);
-    grandFinal.player1Id = nextGrandP1;
-    grandFinal.player2Id = nextGrandP2;
-  }
-
-  const resetNeeded =
-    !!grandFinal.winnerId && !!winnersChampion && grandFinal.winnerId !== winnersChampion;
-
-  if (resetNeeded) {
-    const resetChanged =
-      resetFinal.player1Id !== grandFinal.player1Id || resetFinal.player2Id !== grandFinal.player2Id;
-    if (resetChanged) {
-      clearFinalMatch(resetFinal);
-      resetFinal.player1Id = grandFinal.player1Id;
-      resetFinal.player2Id = grandFinal.player2Id;
-    }
-  } else if (resetFinal.player1Id || resetFinal.player2Id || hasMatchResult(resetFinal)) {
-    clearFinalMatch(resetFinal);
-    resetFinal.player1Id = null;
-    resetFinal.player2Id = null;
-  }
-}
-
 export function syncDoubleElim(doubleElim: DoubleElim): DoubleElim {
-  syncLosersFromWinners(doubleElim);
-  syncFinals(doubleElim);
+  replayElimination(doubleElim);
   return doubleElim;
 }
 
@@ -373,17 +239,7 @@ export function advanceDoubleElim(
   const found = findMatchInDoubleElim(doubleElim, matchId);
   if (!found) return doubleElim;
 
-  if (found.section === 'winners') {
-    advanceWinner(doubleElim.winners, matchId, winnerId, scores, walkover);
-  } else if (found.section === 'losers') {
-    advanceWinner(doubleElim.losers, matchId, winnerId, scores, walkover);
-  } else {
-    found.match.winnerId = winnerId;
-    found.match.scores = scores;
-    found.match.walkover = walkover;
-  }
-
-  syncDoubleElim(doubleElim);
+  replayElimination(doubleElim, { matchId, winnerId, scores, walkover });
   return doubleElim;
 }
 
@@ -391,20 +247,7 @@ export function clearDoubleElimMatch(doubleElim: DoubleElim, matchId: string): D
   const found = findMatchInDoubleElim(doubleElim, matchId);
   if (!found) return doubleElim;
 
-  if (found.section === 'winners') {
-    clearMatchResult(doubleElim.winners, matchId);
-  } else if (found.section === 'losers') {
-    clearMatchResult(doubleElim.losers, matchId);
-  } else {
-    clearFinalMatch(found.match);
-    if (doubleElim.finals.grandFinal.id === matchId) {
-      clearFinalMatch(doubleElim.finals.resetFinal);
-      doubleElim.finals.resetFinal.player1Id = null;
-      doubleElim.finals.resetFinal.player2Id = null;
-    }
-  }
-
-  syncDoubleElim(doubleElim);
+  replayElimination(doubleElim, { matchId, winnerId: null, scores: [], walkover: false });
   return doubleElim;
 }
 
@@ -504,53 +347,4 @@ export function swapDoubleElimParticipant(doubleElim: DoubleElim, oldPlayerId: s
   for (const round of doubleElim.losers.rounds) for (const m of round) swap(m);
   swap(doubleElim.finals.grandFinal);
   swap(doubleElim.finals.resetFinal);
-}
-
-function syncLoserSlots(
-  winners: Bracket,
-  losers: { rounds: DoubleElimMatch[][] },
-  loserLinks: Record<string, LoserLink>
-): void {
-  for (const [winnerMatchId, link] of Object.entries(loserLinks)) {
-    const winnerMatch = findMatchInRounds(winners.rounds, winnerMatchId);
-    const loserMatch = findMatchInRounds(losers.rounds, link.matchId);
-    if (!winnerMatch || !loserMatch || isDummyMatch(loserMatch)) continue;
-
-    const expectedLoser = getMatchLoserId(winnerMatch);
-    const currentLoser = link.slot === 'player1Id' ? loserMatch.player1Id : loserMatch.player2Id;
-
-    if (expectedLoser !== currentLoser) {
-      if (hasMatchResult(loserMatch)) {
-        clearMatchResult(losers, loserMatch.id);
-      }
-      if (link.slot === 'player1Id') {
-        loserMatch.player1Id = expectedLoser ?? null;
-      } else {
-        loserMatch.player2Id = expectedLoser ?? null;
-      }
-    }
-  }
-}
-
-function autoAdvanceLosersFirstRound(
-  winners: Bracket,
-  losers: { rounds: DoubleElimMatch[][] }
-): void {
-  const firstRound = losers.rounds[0] ?? [];
-  for (const match of firstRound) {
-    if (isDummyMatch(match)) continue;
-    if (match.winnersSources?.length !== 2) continue;
-    const wsId0 = match.winnersSources[0];
-    const wsId1 = match.winnersSources[1];
-    if (!wsId0 || !wsId1) continue;
-    const sourceA = findMatchInRounds(winners.rounds, wsId0);
-    const sourceB = findMatchInRounds(winners.rounds, wsId1);
-    if (!isMatchResolved(sourceA) || !isMatchResolved(sourceB)) continue;
-
-    if (!match.winnerId && match.player1Id && !match.player2Id) {
-      advanceWinner(losers, match.id, match.player1Id, []);
-    } else if (!match.winnerId && !match.player1Id && match.player2Id) {
-      advanceWinner(losers, match.id, match.player2Id, []);
-    }
-  }
 }

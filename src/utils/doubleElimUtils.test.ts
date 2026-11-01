@@ -25,6 +25,31 @@ describe('generateDoubleElim', () => {
 });
 
 describe('advanceDoubleElim', () => {
+  it.each([3, 5, 8])('plays a saved %i-player draw without optional entry metadata', (count) => {
+    const de = generateDoubleElim(makePlayers(count));
+    for (const match of de.losers.rounds.flat()) {
+      delete match.winnersSources;
+      delete match.loserSlotFromWinners;
+    }
+    for (const round of [...de.winners.rounds, ...de.losers.rounds]) {
+      for (const match of round) {
+        if (!match.dummy && match.player1Id && match.player2Id && !match.winnerId) {
+          advanceDoubleElim(de, match.id, match.player1Id, [[3, 0]]);
+        }
+      }
+    }
+    const grand = de.finals.grandFinal;
+    expect(grand.player1Id).toBeTruthy();
+    expect(grand.player2Id).toBeTruthy();
+    expect(grand.player1Id).not.toBe(grand.player2Id);
+    expect(grand.winnerId).toBeNull();
+    advanceDoubleElim(de, grand.id, grand.player2Id!, [[0, 3]]);
+    const reset = de.finals.resetFinal;
+    expect([reset.player1Id, reset.player2Id]).toEqual([grand.player1Id, grand.player2Id]);
+    advanceDoubleElim(de, reset.id, reset.player1Id!, [[3, 0]]);
+    expect(getDoubleElimWinner(de)).toBe(reset.player1Id);
+  });
+
   it('waits for the winners final loser before resolving the losers final', () => {
     const de = generateDoubleElim(makePlayers(4));
     for (const match of de.winners.rounds[0]!) {

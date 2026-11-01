@@ -1,6 +1,10 @@
 import type { Player, Match, Bracket, SetScore } from '../types';
 import { createMatchIdGenerator } from './matchIdGenerator';
 import { createMatch } from './matchFactory';
+import { seedPositions } from './bracketSeeding';
+import { replayElimination } from './replayElimination';
+import { findBracketMatch } from './matchFinders';
+export { seedPositions, getBracketSeedPositions, getBracketParticipantAtSeed } from './bracketSeeding';
 
 export function nextPowerOf2(n: number): number {
   let p = 1;
@@ -11,39 +15,6 @@ export function nextPowerOf2(n: number): number {
 // Helper function to check if a match is a dummy match (used in losers bracket)
 export function isDummyMatch(match: Match | null | undefined): boolean {
   return match?.dummy ?? false;
-}
-
-/** Maps each zero-based seed to a slot, separating the top 2, 4, 8, ... seeds recursively. */
-export function seedPositions(bracketSize: number): number[] {
-  if (bracketSize < 1 || !Number.isInteger(Math.log2(bracketSize))) {
-    throw new Error('Bracket size must be a positive power of two');
-  }
-  let seeds = [1];
-  for (let size = 2; size <= bracketSize; size *= 2) {
-    seeds = seeds.flatMap((seed) => [seed, size + 1 - seed]);
-  }
-  const positions: number[] = Array.from({ length: bracketSize });
-  for (const [slot, seed] of seeds.entries()) positions[seed - 1] = slot;
-  return positions;
-}
-
-// Unmarked saved brackets retain their original slot mapping during participant synchronization.
-function legacySeedPositions(bracketSize: number): number[] {
-  if (bracketSize === 1) return [0];
-  const positions: number[] = Array.from({ length: bracketSize });
-  const half = bracketSize / 2;
-  const pairOrder: number[] = [];
-  for (let i = 1; i <= half; i += 2) pairOrder.push(i);
-  for (let i = 2; i <= half; i += 2) pairOrder.push(i);
-
-  for (const [pairSlot, pairIndex] of pairOrder.entries()) {
-    const topSeed = pairIndex - 1;
-    const bottomSeed = bracketSize - pairIndex;
-    positions[topSeed] = pairSlot * 2;
-    positions[bottomSeed] = pairSlot * 2 + 1;
-  }
-
-  return positions;
 }
 
 const matchIdGenerator = createMatchIdGenerator();
@@ -78,16 +49,6 @@ function createFirstRound(slots: (string | null)[], nextMatchId: () => string): 
   return round1;
 }
 
-function autoAdvanceByes(round: Match[]): void {
-  for (const match of round) {
-    if (match.player1Id && !match.player2Id) {
-      match.winnerId = match.player1Id;
-    } else if (!match.player1Id && match.player2Id) {
-      match.winnerId = match.player2Id;
-    }
-  }
-}
-
 function createSubsequentRounds(rounds: Match[][], numRounds: number, nextMatchId: () => string): void {
   for (let r = 1; r < numRounds; r++) {
     const prevRound = rounds[r - 1];
@@ -98,22 +59,10 @@ function createSubsequentRounds(rounds: Match[][], numRounds: number, nextMatchI
       const feederB = prevRound[i + 1];
       if (!feederA || !feederB) continue;
       const match: Match = createMatch(nextMatchId(), {
-        player1Id: feederA.winnerId ?? null,
-        player2Id: feederB.winnerId ?? null,
         position: i / 2,
       });
       feederA.nextMatchId = match.id;
       feederB.nextMatchId = match.id;
-      // Auto-advance only when both feeders are fully resolved.
-      const feederAResolved = !!feederA.winnerId || (!feederA.player1Id && !feederA.player2Id);
-      const feederBResolved = !!feederB.winnerId || (!feederB.player1Id && !feederB.player2Id);
-      if (feederAResolved && feederBResolved) {
-        if (match.player1Id && !match.player2Id) {
-          match.winnerId = match.player1Id;
-        } else if (!match.player1Id && match.player2Id) {
-          match.winnerId = match.player2Id;
-        }
-      }
       round.push(match);
     }
     rounds.push(round);
@@ -136,12 +85,13 @@ export function generateBracket(players: Player[]): Bracket {
   const slots = assignPlayersToSlots(players, bracketSize, positions);
   const rounds: Match[][] = [];
   const round1 = createFirstRound(slots, nextMatchId);
-  autoAdvanceByes(round1);
   rounds.push(round1);
   createSubsequentRounds(rounds, numRounds, nextMatchId);
 
   const thirdPlaceMatch = createThirdPlaceMatch(numRounds, nextMatchId);
-  return { rounds, thirdPlaceMatch, seeding: 'balanced' };
+  const bracket: Bracket = { rounds, thirdPlaceMatch, seeding: 'balanced' };
+  replayElimination(bracket);
+  return bracket;
 }
 
 // Pomocná funkce: najde zápas v pavouku a vrátí { match, roundIndex }
@@ -155,104 +105,9 @@ function findMatchInBracket(rounds: Match[][], matchId: string): { match: Match 
   return { match: null, roundIndex: -1 };
 }
 
-// Pomocná funkce: nastaví výsledek zápasu
-function updateMatchResult(match: Match, winnerId: string, scores: SetScore[], walkover: boolean): void {
-  match.winnerId = winnerId;
-  match.scores = scores;
-  match.walkover = walkover;
-}
-
-// Pomocná funkce: nastaví poraženého do zápasu o 3. místo
-function feedSemifinalLoserToThirdPlace(bracket: Bracket, match: Match, winnerId: string, roundIndex: number): void {
-  const semiRoundIndex = bracket.rounds.length - 2;
-  if (bracket.thirdPlaceMatch && roundIndex === semiRoundIndex) {
-    const loserId = match.player1Id === winnerId ? match.player2Id : match.player1Id;
-    if (match.position === 0) {
-      bracket.thirdPlaceMatch.player1Id = loserId;
-    } else {
-      bracket.thirdPlaceMatch.player2Id = loserId;
-    }
-  }
-}
-
-function findNextMatch(
-  rounds: Match[][],
-  nextMatchId: string | null | undefined
-): { match: Match; roundIndex: number } | null {
-  if (!nextMatchId) return null;
-  for (const [nr, roundNr] of rounds.entries()) {
-    const match = roundNr.find((m) => m.id === nextMatchId && !isDummyMatch(m));
-    if (match) {
-      return { match, roundIndex: nr };
-    }
-  }
-  return null;
-}
-
-function getFeedIndex(prevRound: Match[], matchId: string): number {
-  const realMatches = prevRound.filter(m => !isDummyMatch(m));
-  return realMatches.findIndex((m) => m.id === matchId);
-}
-
-function updateNextMatchSlot(nextMatch: Match, feedIndex: number, winnerId: string | null): void {
-  if (feedIndex % 2 === 0) {
-    nextMatch.player1Id = winnerId;
-  } else {
-    nextMatch.player2Id = winnerId;
-  }
-}
-
-function tryAutoAdvance(nextMatch: Match, prevRound: Match[], feedIndex: number): void {
-  // Double-elimination entries also wait for losers from the winners bracket.
-  // Their own synchronizer resolves these sources before allowing a BYE.
-  if ('winnersSources' in nextMatch && Array.isArray(nextMatch.winnersSources) && nextMatch.winnersSources.length > 0) return;
-  const realMatches = prevRound.filter(m => !isDummyMatch(m));
-  const feederAIdx = Math.floor(feedIndex / 2) * 2;
-  const feederA = realMatches[feederAIdx];
-  const feederB = realMatches[feederAIdx + 1];
-  const feederAResolved = !feederA || !!feederA.winnerId || (!feederA.player1Id && !feederA.player2Id);
-  const feederBResolved = !feederB || !!feederB.winnerId || (!feederB.player1Id && !feederB.player2Id);
-  if (feederAResolved && feederBResolved) {
-    if (nextMatch.player1Id && !nextMatch.player2Id) {
-      nextMatch.winnerId = nextMatch.player1Id;
-    } else if (!nextMatch.player1Id && nextMatch.player2Id) {
-      nextMatch.winnerId = nextMatch.player2Id;
-    }
-  }
-}
-
-function cascadeWinner(bracket: Bracket, match: Match, roundIndex: number): void {
-  const rounds = bracket.rounds;
-  let currentMatch = match;
-  let currentRound = roundIndex;
-  while (currentMatch.nextMatchId) {
-    const result = findNextMatch(rounds, currentMatch.nextMatchId);
-    if (!result || result.roundIndex <= currentRound) break;
-    const nextMatch = result.match;
-    const nextRound = result.roundIndex;
-    const prevRound = rounds[nextRound - 1];
-    if (!prevRound) break;
-    const feedIndex = getFeedIndex(prevRound, currentMatch.id);
-    if (feedIndex === -1) break;
-    updateNextMatchSlot(nextMatch, feedIndex, currentMatch.winnerId);
-    tryAutoAdvance(nextMatch, prevRound, feedIndex);
-    if (!nextMatch.winnerId) break;
-    currentMatch = nextMatch;
-    currentRound = nextRound;
-  }
-}
-
+/** Records a result and reconciles all dependent winner and loser slots. */
 export function advanceWinner(bracket: Bracket, matchId: string, winnerId: string, scores: SetScore[], walkover = false): Bracket {
-  // Zápas o 3. místo: pouze aktualizace
-  if (matchId === bracket.thirdPlaceMatch?.id) {
-    updateMatchResult(bracket.thirdPlaceMatch, winnerId, scores, walkover);
-    return bracket;
-  }
-  const { match, roundIndex } = findMatchInBracket(bracket.rounds, matchId);
-  if (!match) return bracket;
-  updateMatchResult(match, winnerId, scores, walkover);
-  feedSemifinalLoserToThirdPlace(bracket, match, winnerId, roundIndex);
-  cascadeWinner(bracket, match, roundIndex);
+  if (findBracketMatch(bracket, matchId)) replayElimination(bracket, { matchId, winnerId, scores, walkover });
   return bracket;
 }
 
@@ -297,29 +152,6 @@ export function canEditMatch(bracket: Bracket, matchId: string): boolean {
 }
 
 /**
- * Returns the player ID seeded at the given 0-based seed index in the bracket's first round.
- * Uses the saved layout, including the legacy mapping for brackets without a seeding marker.
- */
-export function getBracketSeedPositions(bracket: Bracket): number[] {
-  const size = (bracket.rounds[0]?.length ?? 0) * 2;
-  if (!size) return [];
-  return bracket.seeding === 'balanced' ? seedPositions(size) : legacySeedPositions(size);
-}
-
-export function getBracketParticipantAtSeed(bracket: Bracket, seed: number): string | null {
-  const round0 = bracket.rounds[0];
-  if (!round0 || round0.length === 0) return null;
-  const positions = getBracketSeedPositions(bracket);
-  const slotIdx = positions[seed];
-  if (slotIdx === undefined) return null;
-  const matchIdx = Math.floor(slotIdx / 2);
-  const isPlayer2 = slotIdx % 2 === 1;
-  const match = round0[matchIdx];
-  if (!match) return null;
-  return isPlayer2 ? (match.player2Id ?? null) : (match.player1Id ?? null);
-}
-
-/**
  * Returns true if `playerId` has participated in a real bracket match
  * (both players present + result recorded). BYE auto-advances are not counted.
  */
@@ -359,83 +191,7 @@ export function getBracketWinner(bracket: Bracket): string | null {
   return null;
 }
 
-// Pomocná funkce: vyhledá zápas a jeho kolo v pavouku
-function findMatchAndRound(bracket: Bracket, matchId: string): { match: Match | null, roundIndex: number } {
-  for (const [r, roundR] of bracket.rounds.entries()) {
-    if (!Array.isArray(roundR) || roundR.length === 0) continue;
-    const idx = roundR.findIndex((m) => m.id === matchId);
-    if (idx !== -1) {
-      return { match: roundR[idx] ?? null, roundIndex: r };
-    }
-  }
-  return { match: null, roundIndex: -1 };
-}
-
-// Pomocná funkce: vymaže výsledek zápasu
-function resetMatchResult(match: Match): void {
-  match.winnerId = null;
-  match.scores = [];
-  match.walkover = false;
-}
-
-// Pomocná funkce: kaskádově vymaže navazující zápasy
-/** Invalidates both the winner and loser branches of a semifinal. */
-function resetBracketMatchResult(bracket: Bracket, match: Match, roundIndex: number): void {
-  resetMatchResult(match);
-  if (bracket.thirdPlaceMatch && roundIndex === bracket.rounds.length - 2) {
-    if (match.position === 0) bracket.thirdPlaceMatch.player1Id = null;
-    else bracket.thirdPlaceMatch.player2Id = null;
-    resetMatchResult(bracket.thirdPlaceMatch);
-  }
-}
-
-function cascadeClearMatches(bracket: Bracket, startMatch: Match, startRound: number): void {
-  let currentMatch = startMatch;
-  let currentRound = startRound;
-  while (currentMatch.nextMatchId) {
-    let nextMatch: Match | null = null;
-    let nextRound = -1;
-    for (let nr = currentRound + 1; nr < bracket.rounds.length; nr++) {
-      const roundNr = bracket.rounds[nr];
-      if (!roundNr) continue;
-      const idx = roundNr.findIndex((m) => m.id === currentMatch.nextMatchId && !isDummyMatch(m));
-      if (idx !== -1) {
-        nextMatch = roundNr[idx] ?? null;
-        nextRound = nr;
-        break;
-      }
-    }
-    if (!nextMatch) break;
-    const prevRound = bracket.rounds[nextRound - 1];
-    if (!prevRound) break;
-    // Filter out dummy matches when finding feed index
-    const realMatches = prevRound.filter(m => !isDummyMatch(m));
-    const feedIndex = realMatches.findIndex((m) => m.id === currentMatch.id);
-    if (feedIndex !== -1) {
-      if (feedIndex % 2 === 0) {
-        nextMatch.player1Id = null;
-      } else {
-        nextMatch.player2Id = null;
-      }
-    }
-    resetBracketMatchResult(bracket, nextMatch, nextRound);
-    currentMatch = nextMatch;
-    currentRound = nextRound;
-  }
-}
-
 export function clearMatchResult(bracket: Bracket, matchId: string): Bracket {
-  // Zápas o 3. místo
-  if (matchId === bracket.thirdPlaceMatch?.id) {
-    resetMatchResult(bracket.thirdPlaceMatch);
-    return bracket;
-  }
-
-  const { match: currentMatch, roundIndex: currentRound } = findMatchAndRound(bracket, matchId);
-  if (!currentMatch) return bracket;
-
-  resetBracketMatchResult(bracket, currentMatch, currentRound);
-
-  cascadeClearMatches(bracket, currentMatch, currentRound);
+  if (findBracketMatch(bracket, matchId)) replayElimination(bracket, { matchId, winnerId: null, scores: [], walkover: false });
   return bracket;
 }

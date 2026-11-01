@@ -96,7 +96,7 @@ function applyScoreChange(tournament: Tournament, row: LocatedMatch, change: Exc
     walkover = change.walkover;
   }
   const result = { matchId: match.id, winnerId: nextWinnerId, scores, walkover };
-  if (row.elimination && previousWinnerId !== nextWinnerId) replayElimination(row.elimination, result);
+  if (row.elimination) replayElimination(row.elimination, result);
   else Object.assign(match, { winnerId: nextWinnerId, scores, walkover });
   if (previousWinnerId !== nextWinnerId) {
     if (tournament.format === Format.SWISS && previousWinnerId) {
