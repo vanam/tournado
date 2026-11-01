@@ -79,6 +79,18 @@ export function listTournamentMatches(tournament: Tournament): LocatedMatch[] {
   return tournament.schedule.rounds.flatMap((round) => round.matches.map((match) => ({ key: `schedule/${match.id}`, match, stage, round: round.roundNumber })));
 }
 
+/** Resolves the same scoped target for editing, impact planning and saving. */
+export function findTournamentMatch(tournament: Tournament, target: MatchTarget): LocatedMatch | undefined {
+  return listTournamentMatches(tournament).find((entry) => entry.match.id === target.matchId
+    && entry.groupId === target.groupId && (!target.section || entry.section === target.section));
+}
+
+export function getMatchScoring(tournament: Tournament, target: Pick<MatchTarget, 'groupId'>): { scoringMode: ScoreMode; maxSets: number } {
+  let maxSets = tournament.maxSets;
+  if (tournament.format === Format.GROUPS_TO_BRACKET) maxSets = (target.groupId ? tournament.groupStageMaxSets : tournament.bracketMaxSets) ?? maxSets;
+  return { scoringMode: tournament.scoringMode ?? ScoreMode.SETS, maxSets: maxSets ?? DEFAULT_MAX_SETS };
+}
+
 function applyScoreChange(tournament: Tournament, row: LocatedMatch, change: Exclude<MatchChange, { type: 'reseed' }>, removedRounds: number[]): { previousWinnerId: string | null; nextWinnerId: string | null } {
   const { match } = row;
 
@@ -88,9 +100,7 @@ function applyScoreChange(tournament: Tournament, row: LocatedMatch, change: Exc
   let walkover = false;
   if (change.type === 'score') {
     if (!match.player1Id || !match.player2Id) throw new Error('Match does not have both players assigned');
-    let maxSets = tournament.maxSets;
-    if (tournament.format === Format.GROUPS_TO_BRACKET) maxSets = (row.groupId ? tournament.groupStageMaxSets : tournament.bracketMaxSets) ?? maxSets;
-    const side = getScoreWinner(change.scores, { scoringMode: tournament.scoringMode ?? ScoreMode.SETS, maxSets: maxSets ?? DEFAULT_MAX_SETS });
+    const side = getScoreWinner(change.scores, getMatchScoring(tournament, row));
     if (!side) throw new Error('Scores must be valid and have a decisive winner');
     nextWinnerId = side === 1 ? match.player1Id : match.player2Id;
     scores = change.scores.map(([a, b]) => [a, b]);
@@ -121,8 +131,7 @@ export function planMatchChange(original: Tournament, change: MatchChange): { to
     if (tournament.format !== Format.GROUPS_TO_BRACKET) throw new Error('Only group playoffs can be reseeded');
     reseedPlayoffs(tournament);
   } else {
-    const row = listTournamentMatches(tournament).find((entry) => entry.match.id === change.matchId
-      && entry.groupId === change.groupId && (!change.section || entry.section === change.section));
+    const row = findTournamentMatch(tournament, change);
     if (!row) throw new Error('Match not found');
     if (change.expectedPlayers && (row.match.player1Id !== change.expectedPlayers[0] || row.match.player2Id !== change.expectedPlayers[1])) throw new MatchParticipantsChangedError();
     editedKey = row.key;

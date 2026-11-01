@@ -12,10 +12,7 @@ import { GroupStageSettingsModal } from './GroupStageSettingsModal';
 import { PlayoffSection } from './PlayoffSection';
 import { ScoreModalWrapper } from './ScoreModalWrapper';
 import { ensureParticipants, getParticipantPlayers } from '../../utils/participantUtils';
-import {
-  getGroupPlayers,
-} from '../../utils/groupStageUtils';
-import { findGroupMatch, findBracketMatch, findDoubleElimMatch } from '../../utils/matchFinders';
+import type { GroupMatchTarget } from '../../utils/matchEditing';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DEFAULT_MAX_SETS } from '../../constants';
 import { useGroupsToBracketTournament } from '../../context/tournamentContext';
@@ -28,20 +25,6 @@ import { Button } from '@/components/ui/Button';
 type MainTab = 'tournament' | 'results';
 type GroupTab = 'standings' | 'results' | 'schedule';
 
-type EditingType =
-  | 'group'
-  | 'mainBracket'
-  | 'consolationBracket'
-  | 'mainDoubleElim'
-  | 'consolationDoubleElim';
-
-interface EditingState {
-  type: EditingType;
-  groupId?: string;
-  matchId: string;
-}
-
-
 interface GroupStageViewProps {
   onRegisterHeaderActions?: (node: ReactNode) => void;
 }
@@ -49,7 +32,7 @@ interface GroupStageViewProps {
 export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps): ReactElement | null => {
   const { tournament, reloadTournament } = useGroupsToBracketTournament();
   const { t } = useTranslation();
-  const [editing, setEditing] = useState<EditingState | null>(null);
+  const [editing, setEditing] = useState<GroupMatchTarget | null>(null);
   const [groupTabs, setGroupTabs] = useState<Record<string, GroupTab>>({});
   const [mainTab, setMainTab] = useState<MainTab>('tournament');
   const [showSettings, setShowSettings] = useState(false);
@@ -111,31 +94,6 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
     return (): void => { onRegisterHeaderActions(null); };
   }, [onRegisterHeaderActions, canEditSettings, t]);
 
-  const activeMatch = useMemo(() => {
-    if (!editing || !groupStage) return null;
-    if (editing.type === 'group' && editing.groupId) {
-      return findGroupMatch(groupStage, editing.groupId, editing.matchId);
-    }
-    if (editing.type === 'mainBracket' || editing.type === 'consolationBracket') {
-      const bracket = playoffs?.[editing.type];
-      return findBracketMatch(bracket, editing.matchId);
-    }
-    if (editing.type === 'mainDoubleElim' || editing.type === 'consolationDoubleElim') {
-      const doubleElim = playoffs?.[editing.type];
-      return findDoubleElimMatch(doubleElim, editing.matchId);
-    }
-    return null;
-  }, [editing, groupStage, playoffs]);
-
-  const activePlayers = useMemo(() => {
-    if (!editing || !groupStage) return participants;
-    if (editing.type === 'group') {
-      const group = groupStage.groups.find((g) => g.id === editing.groupId);
-      return group ? getGroupPlayers(group, participants) : participants;
-    }
-    return participants;
-  }, [editing, groupStage, participants]);
-
   const finalResults = mainTab === 'results' ? (evaluation?.results ?? []) : [];
 
   function handleSaveSettings(newQualifiers: number[], newBracketType: BracketType): void {
@@ -154,7 +112,7 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
   }
 
   function handleGroupEditMatch(groupId: string, matchId: string): void {
-    setEditing({ type: 'group', groupId, matchId });
+    setEditing({ groupId, matchId });
   }
 
   const mainTabs: { id: MainTab; label: string }[] = [
@@ -212,20 +170,14 @@ export const GroupStageView = ({ onRegisterHeaderActions }: GroupStageViewProps)
             groupPlacementByPlayerId={groupPlacementByPlayerId}
             scoringMode={scoringMode}
             maxSets={bracketMaxSets}
-            onEditMainBracketMatch={(match) => { setEditing({ type: 'mainBracket', matchId: match.id }); }}
-            onEditConsolationBracketMatch={(match) => { setEditing({ type: 'consolationBracket', matchId: match.id }); }}
-            onEditMainDoubleElimMatch={(matchId) => { setEditing({ type: 'mainDoubleElim', matchId }); }}
-            onEditConsolationDoubleElimMatch={(matchId) => { setEditing({ type: 'consolationDoubleElim', matchId }); }}
+            onEditMainBracketMatch={(match) => { setEditing({ section: 'mainBracket', matchId: match.id }); }}
+            onEditConsolationBracketMatch={(match) => { setEditing({ section: 'consolationBracket', matchId: match.id }); }}
+            onEditMainDoubleElimMatch={(matchId) => { setEditing({ section: 'mainDoubleElim', matchId }); }}
+            onEditConsolationDoubleElimMatch={(matchId) => { setEditing({ section: 'consolationDoubleElim', matchId }); }}
           />
 
           <ScoreModalWrapper
             editing={editing}
-            activeMatch={activeMatch}
-            activePlayers={activePlayers}
-            participants={storedParticipants}
-            scoringMode={scoringMode}
-            groupStageMaxSets={groupStageMaxSets}
-            bracketMaxSets={bracketMaxSets}
             tournament={tournament}
             onClose={() => { setEditing(null); }}
           />
